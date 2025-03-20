@@ -1,0 +1,407 @@
+/**
+ * Admin Tables CSS with WordPress-compatible class names
+ * Enhanced with interactive column styles
+ *
+ * @package     ArrayPress\WP\Register
+ * @copyright   Copyright (c) 2025, ArrayPress Limited
+ * @license     GPL2+
+ * @version     1.1.0
+ */
+
+/* Hide default WordPress header */
+.wrap > h1,
+.wrap h1.wp-heading-inline:not(.button),
+a.page-title-action:not(.button) {
+    display: none !important;
+}
+
+/* Modern header styles */
+.wp-header-modern {
+    margin: 0 -20px 20px -22px;
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 8px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.wp-header-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    position: relative;
+}
+
+.wp-header-branding {
+    display: flex;
+    align-items: center;
+    height: 32px;
+}
+
+.wp-header-logo {
+    max-height: 30px;
+    margin-right: 10px;
+    display: block;
+}
+
+.wp-header-title-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.wp-header-separator {
+    margin: 0 10px;
+    opacity: 0.6;
+    color: #3c434a;
+}
+
+.wp-header-title {
+    margin: 0;
+    padding: 0;
+}
+
+/* Improved action button styling */
+.wp-header-modern .page-title-action {
+    margin-left: 12px;
+}
+
+#screen-meta {
+    margin: 0 0 -1px -20px;
+}
+
+/* Filter bar styling */
+.wp-filter-bar {
+    margin: 8px 0;
+}
+
+.wp-filters-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+/* Date filter inputs */
+.wp-filter-date-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.wp-date-input {
+    width: 110px;
+}
+
+/* Clear filters styling */
+.wp-clear-filters {
+    color: #a00;
+}
+
+/* Advanced Filters Panel */
+.wp-advanced-filters {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 15px;
+    margin: 8px 0 15px 0;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    box-sizing: border-box;
+    clear: both;
+}
+
+.wp-advanced-filters h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Filter fields */
+.wp-filter-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.wp-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.wp-filter-field label {
+    font-weight: 500;
+}
+
+.wp-filter-field select,
+.wp-filter-field input[type="text"],
+.wp-filter-field input[type="number"],
+.wp-filter-field input[type="date"] {
+    width: 100%;
+}
+
+/* Date range filter styling */
+.wp-filter-date-range {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.wp-filter-date-range-inputs {
+    display: flex;
+    gap: 10px;
+}
+
+.wp-filter-date-from,
+.wp-filter-date-to {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.wp-filter-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.wp-active-filters {
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    padding: 8px 12px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.wp-active-filters-heading {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.wp-active-filters ul {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+    list-style: none;
+}
+
+.wp-active-filters li {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.wp-filter-label {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.wp-remove-filter {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 14px;
+    font-size: 16px;
+    text-align: center;
+    color: #787c82;
+    text-decoration: none;
+    margin-left: 5px;
+}
+
+.wp-remove-filter:hover {
+    color: #d63638;
+}
+
+.wp-filter-bar {
+    display: inline;
+}
+
+.wp-checkbox-label {
+    margin-top: 6px;
+}
+
+.wp-list-table .column-name img {
+    float: left;
+    margin-right: 10px;
+    margin-top: 1px;
+    border-radius: 5px;
+}
+
+.wp-filter-range {
+    width: 100%;
+}
+
+.tablenav-pages-placeholder {
+    float: right;
+}
+
+/* Support for column widths */
+.wp-list-table th[width] {
+    width: attr(width) !important;
+    min-width: attr(width) !important;
+}
+
+/* Enhanced row action styling */
+.row-actions {
+    padding: 2px 0;
+}
+
+.row-actions .edit a {
+    color: #2271b1;
+}
+
+.row-actions .delete a {
+    color: #b32d2e;
+}
+
+/* Interactive column styles - toggle switch */
+.table-toggle {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.table-toggle.updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 34px;
+    transition: .2s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: '';
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .2s;
+}
+
+.table-toggle.checked .toggle-slider {
+    background-color: #2271b1;
+}
+
+.table-toggle.checked .toggle-slider:before {
+    transform: translateX(16px);
+}
+
+/* Interactive column styles - featured star */
+.table-featured {
+    cursor: pointer;
+    display: inline-block;
+    font-size: 20px;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+}
+
+.table-featured.updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.table-featured .dashicons {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    color: #ccc;
+    transition: color 0.2s ease;
+}
+
+.table-featured:hover .dashicons {
+    color: #ffba00;
+}
+
+.table-featured.featured .dashicons {
+    color: #ffba00;
+}
+
+/* Responsive fixes */
+@media screen and (max-width: 782px) {
+    .wp-header-modern {
+        margin: -10px -20px 20px -20px;
+    }
+
+    .wp-header-wrapper {
+        flex-wrap: wrap;
+        padding: 15px 0;
+    }
+
+    .wp-header-title-wrap {
+        order: 3;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .wp-filter-fields {
+        grid-template-columns: 1fr;
+    }
+
+    /* Make toggle and featured columns always visible */
+    .wp-list-table .is-expanded td.column-is_featured,
+    .wp-list-table .is-expanded td.column-is_active {
+        display: table-cell !important;
+        padding: 3px 8px 3px 35%;
+    }
+
+    /* Proper alignment for mobile view */
+    .column-is_featured:before,
+    .column-is_active:before {
+        width: 35%;
+        padding: 8px;
+    }
+
+    /* Ensure toggles and featured stars are clickable on mobile */
+    .table-toggle,
+    .table-featured {
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+    }
+}
