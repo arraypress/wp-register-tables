@@ -10,7 +10,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register;
+namespace ArrayPress\CustomTables;
 
 // Exit if accessed directly
 defined( 'ABSPATH' ) || exit;
@@ -27,16 +27,17 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  */
 class ListTable extends \WP_List_Table {
 
-	use Traits\Core;
-	use Traits\Filters;
-	use Traits\Data;
-	use Traits\Columns;
-	use Traits\UI;
-	use Traits\Assets;
-	use Traits\BulkActions;
-	use Traits\Overrides;
-	use Traits\Utils;
-	use Traits\Views;
+	use Traits\ListTable\Core;
+	use Traits\ListTable\Filters;
+	use Traits\ListTable\Data;
+	use Traits\ListTable\Columns;
+	use Traits\ListTable\Filters;
+	use Traits\ListTable\FilterUI;
+	use Traits\ListTable\FilterFields;
+	use Traits\ListTable\Assets;
+	use Traits\ListTable\BulkActions;
+	use Traits\ListTable\Overrides;
+	use Traits\ListTable\Views;
 
 	/**
 	 * Constructor
@@ -45,7 +46,6 @@ class ListTable extends \WP_List_Table {
 	 * @param array  $table_config Table configuration
 	 */
 	public function __construct( string $table_id, array $table_config ) {
-		// Initialize WP_List_Table
 		parent::__construct( [
 			'singular' => $table_config['singular'] ?? 'item',
 			'plural'   => $table_config['plural'] ?? 'items',

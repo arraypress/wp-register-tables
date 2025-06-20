@@ -2,9 +2,9 @@
 /**
  * Core Table Instance Trait
  *
- * Provides the core functionality for the Table_Instance class.
+ * Provides the core functionality for the ListTable class.
  *
- * @package     SugarCart\Admin
+ * @package     ArrayPress\WP\Register\Traits
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
  * @version     1.0.0
@@ -12,17 +12,17 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
+namespace ArrayPress\CustomTables\Traits\ListTable;
 
 // Exit if accessed directly
-use ArrayPress\WP\Register\Tables;
+use ArrayPress\CustomTables\Tables;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Trait_Table_Instance_Core
+ * Trait Core
  *
- * Core functionality for the Table_Instance class
+ * Core functionality for the ListTable class
  */
 trait Core {
 
@@ -190,7 +190,7 @@ trait Core {
 	 * @return string Base URL
 	 */
 	protected function get_base_url(): string {
-		return Tables::instance()->get_url( $this->table_id );
+		return Tables::instance()->get_url($this->table_id);
 	}
 
 	/**
@@ -354,6 +354,18 @@ trait Core {
 		}
 
 		return $clean_url;
+	}
+
+	/**
+	 * Get the current screen object
+	 *
+	 * @return \WP_Screen|null Screen object or null
+	 */
+	public function get_screen() {
+		if (function_exists('get_current_screen')) {
+			return get_current_screen();
+		}
+		return null;
 	}
 
 }

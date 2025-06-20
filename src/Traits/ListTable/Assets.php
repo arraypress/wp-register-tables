@@ -12,12 +12,12 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
-
-use ArrayPress\WP\Register\AssetsManager;
+namespace ArrayPress\CustomTables\Traits\ListTable;
 
 // Exit if accessed directly
 defined( 'ABSPATH' ) || exit;
+
+use ArrayPress\CustomTables\AssetsManager;
 
 /**
  * Trait_Table_Instance_UI

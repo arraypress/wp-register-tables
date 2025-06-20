@@ -1,10 +1,10 @@
 {
-  "name": "arraypress/wp-register-submenu-pages",
+  "name": "arraypress/wp-register-tables",
   "version": "1.0.0",
-  "description": "A flexible WordPress submenu pages manager with support for separators and hierarchical organization",
+  "description": "A comprehensive WordPress library for creating and managing custom admin tables with advanced filtering, sorting, and interactive features",
   "type": "library",
   "license": "GPL-2.0-or-later",
-  "homepage": "https://github.com/arraypress/wp-register-submenu-pages/",
+  "homepage": "https://github.com/arraypress/wp-register-tables/",
   "authors": [
     {
       "name": "David Sherlock",
@@ -12,11 +12,12 @@
     }
   ],
   "require": {
-    "php": ">=7.4"
+    "php": ">=7.4",
+    "arraypress/wp-composer-assets": "dev-main"
   },
   "autoload": {
     "psr-4": {
-      "ArrayPress\\WP\\Register\\": "src/"
+      "ArrayPress\\CustomTables\\": "src/"
     },
     "files": [
       "src/Utilities.php"
@@ -30,23 +31,26 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "support": {
-    "issues": "https://github.com/arraypress/wp-register-submenu-pages/issues",
-    "source": "https://github.com/arraypress/wp-register-submenu-pages"
+    "issues": "https://github.com/arraypress/wp-register-tables/issues",
+    "source": "https://github.com/arraypress/wp-register-tables"
   },
   "keywords": [
     "wordpress",
     "admin",
-    "submenu",
-    "pages",
-    "menu",
-    "admin-menu",
+    "tables",
+    "list-tables",
+    "wp-list-table",
+    "admin-tables",
+    "data-tables",
+    "custom-tables",
+    "filtering",
+    "sorting",
+    "pagination",
     "wp-admin",
-    "separators",
-    "navigation",
-    "menu-pages",
-    "admin-pages",
-    "submenus",
-    "menu-items",
-    "management"
+    "interactive",
+    "ajax",
+    "responsive",
+    "management",
+    "crud"
   ]
 }

@@ -1,0 +1,6 @@
+bin/strauss.phar
+vendor-prefixed/
+.DS_Store
+vendor
+reference
+composer.lock

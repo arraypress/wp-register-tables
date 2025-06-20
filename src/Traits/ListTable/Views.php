@@ -12,10 +12,10 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
+namespace ArrayPress\CustomTables\Traits\ListTable;
 
 // Exit if accessed directly
-use Elementify\Create;
+use ArrayPress\CustomTables\ListTable;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -130,9 +130,6 @@ trait Views {
 				// Format the count with number_format_i18n
 				$count_display = '&nbsp;<span class="count">(' . number_format_i18n( absint( $count ) ) . ')</span>';
 
-				// Get status label - first try config then fallback to uppercased status
-				$status_label = '';
-
 				if ( isset( $this->table_config['status_labels'][ $status ] ) ) {
 					$status_label = $this->table_config['status_labels'][ $status ];
 				} elseif ( isset( $this->table_config['status_label_callback'] ) && is_callable( $this->table_config['status_label_callback'] ) ) {
@@ -147,6 +144,14 @@ trait Views {
 			}
 		}
 
+		/**
+		 * Filters the list of views (status tabs) for the table.
+		 *
+		 * @param array     $views Array of views with HTML markup
+		 * @param ListTable $this  Current table instance
+		 *
+		 * @return array Modified array of views
+		 */
 		return apply_filters( "{$this->hook_prefix}views", $views, $this );
 	}
 

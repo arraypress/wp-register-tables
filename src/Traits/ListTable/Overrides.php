@@ -12,11 +12,9 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
+namespace ArrayPress\CustomTables\Traits\ListTable;
 
 // Exit if accessed directly
-use Elementify\Create;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -47,7 +45,7 @@ trait Overrides {
 
 	/**
 	 * Generate the table navigation above or below the table.
-	 * Modified to fix layout issues when no items are found.
+	 * Modified to fix layout issues when no items are found or fewer items than per page.
 	 *
 	 * @param string $which Which part of the table nav we're rendering, top or bottom.
 	 */
@@ -58,6 +56,8 @@ trait Overrides {
 
 		// Get item count
 		$has_items = $this->has_items();
+		// Check if we need pagination
+		$needs_pagination = $has_items && ( $this->get_pagination_arg( 'total_pages' ) > 1 );
 		?>
         <div class="tablenav <?php echo esc_attr( $which ); ?>">
 			<?php if ( $has_items || $which === 'top' ): ?>
@@ -68,7 +68,7 @@ trait Overrides {
 
 			<?php $this->extra_tablenav( $which ); ?>
 
-			<?php if ( $has_items ): ?>
+			<?php if ( $needs_pagination ): ?>
 				<?php $this->pagination( $which ); ?>
 			<?php elseif ( $which === 'top' ): ?>
                 <div class="tablenav-pages-placeholder"></div>

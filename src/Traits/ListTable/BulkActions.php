@@ -12,7 +12,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
+namespace ArrayPress\CustomTables\Traits\ListTable;
 
 // Exit if accessed directly
 use Exception;

@@ -10,12 +10,12 @@
 
 declare( strict_types=1 );
 
-use ArrayPress\WP\Register\Tables;
+use ArrayPress\CustomTables\Tables;
 
 // Exit if accessed directly
 defined( 'ABSPATH' ) || exit;
 
-if ( ! function_exists( 'register_admin_table' ) ):
+if ( ! function_exists( 'register_custom_table' ) ):
 	/**
 	 * Register a WordPress admin table.
 	 *
@@ -24,12 +24,12 @@ if ( ! function_exists( 'register_admin_table' ) ):
 	 *
 	 * @return Tables Instance of Tables class for method chaining
 	 */
-	function register_admin_table( string $id, array $config ): Tables {
+	function register_custom_table( string $id, array $config ): Tables {
 		return Tables::instance()->register( $id, $config );
 	}
 endif;
 
-if ( ! function_exists( 'register_admin_tables' ) ):
+if ( ! function_exists( 'register_custom_tables' ) ):
 	/**
 	 * Register multiple WordPress admin tables at once.
 	 *
@@ -37,7 +37,7 @@ if ( ! function_exists( 'register_admin_tables' ) ):
 	 *
 	 * @return Tables Instance of Tables class for method chaining
 	 */
-	function register_admin_tables( array $tables ): Tables {
+	function register_custom_tables( array $tables ): Tables {
 		$instance = Tables::instance();
 
 		foreach ( $tables as $id => $config ) {
@@ -45,5 +45,21 @@ if ( ! function_exists( 'register_admin_tables' ) ):
 		}
 
 		return $instance;
+	}
+endif;
+
+if ( ! function_exists( 'get_table_url' ) ):
+	/**
+	 * Get a URL for a table operation
+	 *
+	 * @param string       $table_id The table ID
+	 * @param string|array $action   The action name or array of query parameters (optional)
+	 * @param int|string   $item_id  Optional item ID
+	 * @param array        $extra    Optional extra query parameters
+	 *
+	 * @return string The generated URL
+	 */
+	function get_table_url( string $table_id, $action = '', $item_id = null, array $extra = [] ): string {
+		return Tables::instance()->get_url( $table_id, $action, $item_id, $extra );
 	}
 endif;

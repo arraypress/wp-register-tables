@@ -1,10 +1,10 @@
 <?php
 /**
- * Table Instance UI Trait
+ * Utilities Class
  *
- * Provides UI functionality for the Table_Instance class.
+ * Provides utility methods for formatting and data handling.
  *
- * @package     SugarCart\Admin
+ * @package     ArrayPress\CustomTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
  * @version     1.0.0
@@ -12,19 +12,19 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\WP\Register\Traits;
+namespace ArrayPress\CustomTables;
 
 // Exit if accessed directly
-use Elementify\Create;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Trait_Table_Instance_UI
+ * Utils Class
  *
- * UI functionality for the Table_Instance class
+ * Static utility methods for formatting and data handling.
+ *
+ * @since 1.0.0
  */
-trait Utils {
+class Utils {
 
 	/**
 	 * Process filter options into a select-friendly format
@@ -33,7 +33,7 @@ trait Utils {
 	 *
 	 * @return array Formatted options as key-value pairs
 	 */
-	protected function get_processed_options( $source ): array {
+	public static function get_processed_options( $source ): array {
 		$raw_options       = [];
 		$processed_options = [];
 
@@ -59,44 +59,13 @@ trait Utils {
 	}
 
 	/**
-	 * Build HTML attributes string from an array of attributes
-	 *
-	 * @param array $attributes Array of attribute name => value pairs
-	 *
-	 * @return string HTML attributes string
-	 */
-	protected function build_attributes( array $attributes ): string {
-		$html_attributes = [];
-
-		foreach ( $attributes as $name => $value ) {
-			// Skip attributes with empty values
-			if ( $value === '' || $value === null ) {
-				continue;
-			}
-
-			// Boolean attributes (just the name)
-			if ( is_bool( $value ) && $value ) {
-				$html_attributes[] = esc_attr( $name );
-				continue;
-			}
-
-			// Regular attributes with values
-			if ( ! is_bool( $value ) ) {
-				$html_attributes[] = sprintf( '%s="%s"', esc_attr( $name ), esc_attr( $value ) );
-			}
-		}
-
-		return implode( ' ', $html_attributes );
-	}
-
-	/**
 	 * Validate a date string
 	 *
 	 * @param string $date Date string to validate
 	 *
-	 * @return string Valid date string or empty string
+	 * @return string Valid date string in Y-m-d format or empty string if invalid
 	 */
-	protected function validate_date_format( string $date ): string {
+	public static function validate_date_format( string $date ): string {
 		if ( empty( $date ) ) {
 			return '';
 		}
@@ -110,6 +79,28 @@ trait Utils {
 
 		// Return the date in standard Y-m-d format
 		return $dt->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Get display value for select options
+	 *
+	 * @param mixed $value   The selected value
+	 * @param array $options Array of available options
+	 *
+	 * @return string Display value for the selected option
+	 */
+	public static function get_select_option_display( $value, array $options ): string {
+		// Handle array of options with value/label pairs
+		foreach ( $options as $option_key => $option_value ) {
+			if ( is_array( $option_value ) && isset( $option_value['value'] ) && $option_value['value'] == $value ) {
+				return $option_value['label'] ?? (string) $value;
+			} elseif ( $option_key == $value ) {
+				return $option_value;
+			}
+		}
+
+		// Return original value if no match found
+		return (string) $value;
 	}
 
 }
