@@ -84,8 +84,8 @@ class Table extends WP_List_Table {
 
         // Set up parent
         parent::__construct( [
-                'singular' => $config['entity'],
-                'plural'   => $config['entity_plural'],
+                'singular' => $config['labels']['singular'] ?? 'item',
+                'plural'   => $config['labels']['plural'] ?? 'items',
                 'ajax'     => false
         ] );
     }
@@ -621,7 +621,7 @@ class Table extends WP_List_Table {
         }
 
         // Get selected items
-        $items = $_REQUEST[ $this->config['entity_plural'] ] ?? [];
+        $items = $_REQUEST[ $this->config['labels']['plural'] ] ?? [];
         if ( empty( $items ) ) {
             return;
         }
@@ -958,34 +958,6 @@ class Table extends WP_List_Table {
         $page = $_GET['page'] ?? $this->config['page'];
 
         return add_query_arg( 'page', $page, admin_url( 'admin.php' ) );
-    }
-
-    /**
-     * Get function name with namespace
-     *
-     * @param string $function Base function name
-     *
-     * @return string Full function name with namespace
-     * @since 1.0.0
-     *
-     */
-    private function get_function_name( string $function ): string {
-        if ( ! empty( $this->config['namespace'] ) ) {
-            // Try namespace format first
-            $namespaced = '\\' . trim( $this->config['namespace'], '\\' ) . '\\' . $function;
-            if ( function_exists( $namespaced ) ) {
-                return $namespaced;
-            }
-
-            // Try underscore prefix format
-            $prefixed = strtolower( $this->config['namespace'] ) . '_' . $function;
-            if ( function_exists( $prefixed ) ) {
-                return $prefixed;
-            }
-        }
-
-        // Try without namespace
-        return $function;
     }
 
 }
