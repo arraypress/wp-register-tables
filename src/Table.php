@@ -67,6 +67,14 @@ class Table extends WP_List_Table {
     private array $counts = [];
 
     /**
+     * Items per page
+     *
+     * @since 1.0.0
+     * @var int
+     */
+    private int $per_page;
+
+    /**
      * Constructor
      *
      * @param string $id     Table identifier
@@ -82,12 +90,45 @@ class Table extends WP_List_Table {
         // Get current status
         $this->status = sanitize_key( $_GET['status'] ?? '' );
 
+        // Get per page from screen options or use default
+        $this->per_page = $this->get_items_per_page( 'per_page', $config['per_page'] );
+
         // Set up parent
         parent::__construct( [
                 'singular' => $config['labels']['singular'] ?? 'item',
                 'plural'   => $config['labels']['plural'] ?? 'items',
                 'ajax'     => false
         ] );
+    }
+
+    /**
+     * Get items per page
+     *
+     * Gets the user's saved per page preference or uses default.
+     *
+     * @param string $option  Option name
+     * @param int    $default Default value
+     *
+     * @return int Items per page
+     * @since 1.0.0
+     *
+     */
+    protected function get_items_per_page( $option, $default = 30 ): int {
+        $screen = get_current_screen();
+
+        if ( ! $screen ) {
+            return $default;
+        }
+
+        // Check if user has set a custom value
+        $user     = get_current_user_id();
+        $per_page = get_user_meta( $user, $screen->get_option( 'per_page', 'option' ), true );
+
+        if ( empty( $per_page ) || $per_page < 1 ) {
+            $per_page = $screen->get_option( 'per_page', 'default' ) ?: $default;
+        }
+
+        return absint( $per_page );
     }
 
     /**
@@ -470,7 +511,7 @@ class Table extends WP_List_Table {
 
         return sprintf(
                 '<input type="checkbox" name="%s[]" value="%s" />',
-                esc_attr( $this->config['labels']['plural'] ),
+                esc_attr( $this->config['labels']['plural'] ?? 'items' ),
                 esc_attr( $id )
         );
     }
@@ -621,7 +662,7 @@ class Table extends WP_List_Table {
         }
 
         // Get selected items
-        $items = $_REQUEST[ $this->config['labels']['plural'] ] ?? [];
+        $items = $_REQUEST[ $this->config['labels']['plural'] ?? 'items' ] ?? [];
         if ( empty( $items ) ) {
             return;
         }
@@ -861,8 +902,8 @@ class Table extends WP_List_Table {
 
         $this->set_pagination_args( [
                 'total_items' => $total,
-                'per_page'    => $this->config['per_page'],
-                'total_pages' => ceil( $total / $this->config['per_page'] )
+                'per_page'    => $this->per_page,
+                'total_pages' => ceil( $total / $this->per_page )
         ] );
     }
 
@@ -913,7 +954,7 @@ class Table extends WP_List_Table {
      */
     private function parse_pagination_args(): array {
         $paged  = absint( $_REQUEST['paged'] ?? 1 );
-        $offset = $paged > 1 ? $this->config['per_page'] * ( $paged - 1 ) : 0;
+        $offset = $paged > 1 ? $this->per_page * ( $paged - 1 ) : 0;
 
         $orderby = sanitize_key( $_REQUEST['orderby'] ?? '' );
         $order   = strtoupper( sanitize_key( $_REQUEST['order'] ?? '' ) );
@@ -929,7 +970,7 @@ class Table extends WP_List_Table {
         }
 
         return [
-                'number'  => $this->config['per_page'],
+                'number'  => $this->per_page,
                 'offset'  => $offset,
                 'order'   => $order,
                 'orderby' => $orderby

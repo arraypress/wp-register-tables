@@ -1,8 +1,8 @@
 <?php
 /**
- * Admin Tables Registration System
+ * Admin Tables Registration Manager
  *
- * A declarative system for registering WordPress admin tables with BerlinDB integration.
+ * Manages registration and rendering of admin tables.
  *
  * @package     ArrayPress\WP\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
@@ -84,6 +84,12 @@ class Manager {
      * @type bool     $searchable       Whether to show search box (default: true)
      * @type array    $capabilities     Permission requirements
      * @type bool     $show_count       Show item count in title (default: false)
+     * @type array    $help             {
+     *                                  Help tab configuration.
+     *
+     * @type array    $overview         Help tab with 'title' and 'content'
+     * @type string   $sidebar          Help sidebar content
+     *                                  }
      *                                  }
      *
      * @return void
@@ -106,7 +112,8 @@ class Manager {
                 'per_page'       => 30,
                 'searchable'     => true,
                 'capabilities'   => [],
-                'show_count'     => false
+                'show_count'     => false,
+                'help'           => []
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -173,6 +180,77 @@ class Manager {
     }
 
     /**
+     * Setup screen options and help tabs
+     *
+     * @param array $config Table configuration
+     *
+     * @return void
+     * @since 1.0.0
+     *
+     */
+    private static function setup_screen( array $config ): void {
+        $screen = get_current_screen();
+
+        if ( ! $screen ) {
+            return;
+        }
+
+        // Add per page screen option
+        $per_page_label = ! empty( $config['labels']['plural'] )
+                ? sprintf( __( '%s per page', 'arraypress' ), $config['labels']['plural'] )
+                : __( 'Items per page', 'arraypress' );
+
+        $screen->add_option( 'per_page', [
+                'label'   => $per_page_label,
+                'default' => $config['per_page'],
+                'option'  => 'per_page'
+        ] );
+
+        // Add help tabs if configured
+        if ( ! empty( $config['help'] ) ) {
+            foreach ( $config['help'] as $key => $help ) {
+                if ( $key === 'sidebar' ) {
+                    $screen->set_help_sidebar( $help );
+                    continue;
+                }
+
+                if ( is_array( $help ) && isset( $help['title'] ) ) {
+                    $content = '';
+
+                    if ( isset( $help['callback'] ) && is_callable( $help['callback'] ) ) {
+                        $content = call_user_func( $help['callback'] );
+                    } elseif ( isset( $help['content'] ) ) {
+                        $content = $help['content'];
+                    }
+
+                    $screen->add_help_tab( [
+                            'id'      => sanitize_key( $key ),
+                            'title'   => $help['title'],
+                            'content' => $content
+                    ] );
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle screen option saving
+     *
+     * @return void
+     * @since 1.0.0
+     *
+     */
+    private static function handle_screen_options(): void {
+        add_filter( 'set-screen-option', function ( $status, $option, $value ) {
+            if ( $option === 'per_page' ) {
+                return absint( $value );
+            }
+
+            return $status;
+        }, 10, 3 );
+    }
+
+    /**
      * Render a registered table
      *
      * Outputs the complete admin page with the table.
@@ -196,6 +274,12 @@ class Manager {
                 wp_die( __( 'Sorry, you are not allowed to access this page.', 'arraypress' ) );
             }
         }
+
+        // Setup screen options and help tabs (must be done before page renders)
+        add_action( 'current_screen', function () use ( $config ) {
+            self::setup_screen( $config );
+            self::handle_screen_options();
+        } );
 
         // Enqueue styles if needed
         self::maybe_enqueue_styles();
@@ -419,7 +503,20 @@ class Manager {
     }
 
     /**
-     * Remove a registered table
+     * Check if a table is registered
+     *
+     * @param string $id Table identifier
+     *
+     * @return bool True if registered, false otherwise
+     * @since 1.0.0
+     *
+     */
+    public static function has_table( string $id ): bool {
+        return isset( self::$tables[ $id ] );
+    }
+
+    /**
+     * Unregister a table
      *
      * @param string $id Table identifier
      *
@@ -435,6 +532,17 @@ class Manager {
         }
 
         return false;
+    }
+
+    /**
+     * Get all registered tables
+     *
+     * @return array All registered table configurations
+     * @since 1.0.0
+     *
+     */
+    public static function get_all_tables(): array {
+        return self::$tables;
     }
 
 }
