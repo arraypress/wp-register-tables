@@ -1,0 +1,49 @@
+{
+  "name": "arraypress/wp-register-tables",
+  "version": "1.0.0",
+  "description": "A declarative WordPress admin table registration system for BerlinDB-powered plugins",
+  "type": "library",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://github.com/arraypress/wp-register-tables/",
+  "authors": [
+    {
+      "name": "David Sherlock",
+      "homepage": "https://arraypress.com/"
+    }
+  ],
+  "require": {
+    "php": ">=7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "ArrayPress\\RegisterTables\\": "src/"
+    },
+    "files": [
+      "src/Functions.php"
+    ]
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true,
+    "preferred-install": "dist"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "support": {
+    "issues": "https://github.com/arraypress/wp-register-tables/issues",
+    "source": "https://github.com/arraypress/wp-register-tables"
+  },
+  "keywords": [
+    "wordpress",
+    "admin-tables",
+    "wp-list-table",
+    "berlindb",
+    "admin-interface",
+    "table-registration",
+    "list-tables",
+    "wp-admin",
+    "crud",
+    "data-tables",
+    "declarative-api"
+  ]
+}
