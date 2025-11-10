@@ -198,7 +198,6 @@ class Table extends WP_List_Table {
             if ( isset( $_GET[ $filter_key ] ) ) {
                 $value = sanitize_text_field( $_GET[ $filter_key ] );
                 if ( ! empty( $value ) ) {
-                    // Check for filter callback
                     if ( is_array( $filter ) && isset( $filter['apply_callback'] ) ) {
                         call_user_func_array( $filter['apply_callback'], [ &$args, $value ] );
                     } else {
@@ -220,21 +219,9 @@ class Table extends WP_List_Table {
          */
         $args = apply_filters( 'arraypress_table_query_args', $args, $this->id, $this->config );
 
-        // Call data callback
-        if ( isset( $this->config['data']['get_items'] ) ) {
-            $callback = $this->config['data']['get_items'];
-
-            if ( is_callable( $callback ) ) {
-                return call_user_func( $callback, $args );
-            } elseif ( is_string( $callback ) && function_exists( $callback ) ) {
-                return call_user_func( $callback, $args );
-            }
-
-            // Try function name with namespace
-            $function = $this->get_function_name( 'get_' . $this->config['entity_plural'] );
-            if ( function_exists( $function ) ) {
-                return call_user_func( $function, $args );
-            }
+        // Call the get_items callback
+        if ( isset( $this->config['callbacks']['get_items'] ) && is_callable( $this->config['callbacks']['get_items'] ) ) {
+            return call_user_func( $this->config['callbacks']['get_items'], $args );
         }
 
         return [];
@@ -252,20 +239,8 @@ class Table extends WP_List_Table {
             return $this->counts;
         }
 
-        if ( isset( $this->config['data']['get_counts'] ) ) {
-            $callback = $this->config['data']['get_counts'];
-
-            if ( is_callable( $callback ) ) {
-                $this->counts = call_user_func( $callback );
-            } elseif ( is_string( $callback ) && function_exists( $callback ) ) {
-                $this->counts = call_user_func( $callback );
-            } else {
-                // Try function name with namespace
-                $function = $this->get_function_name( 'get_' . $this->config['entity'] . '_counts' );
-                if ( function_exists( $function ) ) {
-                    $this->counts = call_user_func( $function );
-                }
-            }
+        if ( isset( $this->config['callbacks']['get_counts'] ) && is_callable( $this->config['callbacks']['get_counts'] ) ) {
+            $this->counts = call_user_func( $this->config['callbacks']['get_counts'] );
         }
 
         // Default to just total
@@ -495,7 +470,7 @@ class Table extends WP_List_Table {
 
         return sprintf(
                 '<input type="checkbox" name="%s[]" value="%s" />',
-                esc_attr( $this->config['entity_plural'] ),
+                esc_attr( $this->config['labels']['plural'] ),
                 esc_attr( $id )
         );
     }
@@ -899,36 +874,29 @@ class Table extends WP_List_Table {
      *
      */
     public function no_items(): void {
-        $message = '';
+        $search = $this->get_search();
 
-        // Check for custom message
-        if ( ! empty( $this->config['messages']['no_items'] ) ) {
-            if ( is_callable( $this->config['messages']['no_items'] ) ) {
-                $message = call_user_func( $this->config['messages']['no_items'], $this->status, $this->get_search() );
-            } else {
-                $message = $this->config['messages']['no_items'];
-            }
-        }
-
-        // Default messages
-        if ( empty( $message ) ) {
-            $search = $this->get_search();
-
+        if ( ! empty( $search ) && ! empty( $this->config['labels']['not_found_search'] ) ) {
+            $message = $this->config['labels']['not_found_search'];
+        } elseif ( ! empty( $this->config['labels']['not_found'] ) ) {
+            $message = $this->config['labels']['not_found'];
+        } else {
+            // Default messages
             if ( ! empty( $search ) ) {
                 $message = sprintf(
                         __( 'No %s found for your search.', 'arraypress' ),
-                        $this->config['entity_plural']
+                        $this->config['labels']['plural'] ?: 'items'
                 );
             } elseif ( ! empty( $this->status ) ) {
                 $message = sprintf(
                         __( 'No %s %s found.', 'arraypress' ),
                         $this->get_status_label( $this->status ),
-                        $this->config['entity_plural']
+                        $this->config['labels']['plural'] ?: 'items'
                 );
             } else {
                 $message = sprintf(
                         __( 'No %s found.', 'arraypress' ),
-                        $this->config['entity_plural']
+                        $this->config['labels']['plural'] ?: 'items'
                 );
             }
         }

@@ -27,13 +27,13 @@ defined( 'ABSPATH' ) || exit;
  */
 class Manager {
 
-	/**
-	 * Registered tables
-	 *
-	 * @since 1.0.0
-	 * @var array<string, array>
-	 */
-	private static array $tables = [];
+    /**
+     * Registered tables
+     *
+     * @since 1.0.0
+     * @var array<string, array>
+     */
+    private static array $tables = [];
 
     /**
      * Whether styles have been enqueued
@@ -43,190 +43,283 @@ class Manager {
      */
     private static bool $styles_enqueued = false;
 
-	/**
-	 * Register an admin table
-	 *
-	 * Registers a new admin table with configuration for columns, actions, and data handling.
-	 *
-	 * @param string $id             Unique table identifier
-	 * @param array  $config         {
-	 *                               Table configuration array.
-	 *
-	 * @type string  $namespace      Function namespace/prefix (e.g., 'sugarcart')
-	 * @type string  $entity         Entity name singular (e.g., 'customer')
-	 * @type string  $entity_plural  Entity name plural (e.g., 'customers')
-	 * @type string  $page           Admin page slug
-	 * @type string  $flyout         Flyout identifier for edit/view actions
-	 * @type array   $columns        Column definitions
-	 * @type array   $sortable       Sortable column configurations
-	 * @type array   $primary_column Primary column key
-	 * @type array   $row_actions    Row action definitions
-	 * @type array   $bulk_actions   Bulk action definitions
-	 * @type array   $views          View/filter definitions
-	 * @type array   $filters        Additional filter dropdowns
-	 * @type array   $data           Data source callbacks
-	 * @type array   $messages       Custom messages
-	 * @type int     $per_page       Items per page (default: 30)
-	 * @type bool    $searchable     Whether to show search box (default: true)
-	 * @type array   $capabilities   Permission requirements
-	 *                               }
-	 *
-	 * @return void
-	 * @since 1.0.0
-	 *
-	 */
-	public static function register( string $id, array $config ): void {
-		$defaults = [
-			'namespace'      => '',
-			'entity'         => '',
-			'entity_plural'  => '',
-			'page'           => '',
-			'flyout'         => '',
-			'columns'        => [],
-			'sortable'       => [],
-			'primary_column' => '',
-			'row_actions'    => [],
-			'bulk_actions'   => [],
-			'views'          => [],
-			'filters'        => [],
-			'data'           => [],
-			'messages'       => [],
-			'per_page'       => 30,
-			'searchable'     => true,
-			'capabilities'   => []
-		];
+    /**
+     * Register an admin table
+     *
+     * Registers a new admin table with configuration for columns, actions, and data handling.
+     *
+     * @since 1.0.0
+     *
+     * @param string $id     Unique table identifier
+     * @param array  $config {
+     *     Table configuration array.
+     *
+     *     @type array    $labels {
+     *         Labels for display purposes.
+     *
+     *         @type string $singular      Singular name (e.g., 'order')
+     *         @type string $plural        Plural name (e.g., 'orders')
+     *         @type string $title         Page title (e.g., 'Orders')
+     *         @type string $add_new       Add new button label (e.g., 'Add New Order')
+     *         @type string $search        Search button label (e.g., 'Search Orders')
+     *         @type string $not_found     No items message (e.g., 'No orders found.')
+     *         @type string $not_found_search No items found in search (e.g., 'No orders found for your search.')
+     *     }
+     *     @type array    $callbacks {
+     *         Data operation callbacks.
+     *
+     *         @type callable $get_items   Callback to get items. Receives query args.
+     *         @type callable $get_counts  Callback to get status counts.
+     *         @type callable $delete      Callback to delete single item. Receives ID.
+     *         @type callable $update      Callback to update single item. Receives ID and data array.
+     *     }
+     *     @type string   $page           Admin page slug
+     *     @type string   $flyout         Flyout identifier for edit/view actions
+     *     @type array    $columns        Column definitions
+     *     @type array    $sortable       Sortable column configurations
+     *     @type string   $primary_column Primary column key
+     *     @type array    $row_actions    Row action definitions
+     *     @type array    $bulk_actions   Bulk action definitions
+     *     @type array    $views          View/filter definitions
+     *     @type array    $filters        Additional filter dropdowns
+     *     @type int      $per_page       Items per page (default: 30)
+     *     @type bool     $searchable     Whether to show search box (default: true)
+     *     @type array    $capabilities   Permission requirements
+     *     @type bool     $show_count     Show item count in title (default: false)
+     * }
+     *
+     * @return void
+     */
+    public static function register( string $id, array $config ): void {
+        $defaults = [
+                'labels'         => [],
+                'callbacks'      => [],
+                'page'           => '',
+                'flyout'         => '',
+                'columns'        => [],
+                'sortable'       => [],
+                'primary_column' => '',
+                'row_actions'    => [],
+                'bulk_actions'   => [],
+                'views'          => [],
+                'filters'        => [],
+                'per_page'       => 30,
+                'searchable'     => true,
+                'capabilities'   => [],
+                'show_count'     => false
+        ];
 
-		$config = wp_parse_args( $config, $defaults );
+        $config = wp_parse_args( $config, $defaults );
 
-		// Auto-generate entity_plural if not provided
-		if ( empty( $config['entity_plural'] ) && ! empty( $config['entity'] ) ) {
-			$config['entity_plural'] = $config['entity'] . 's';
-		}
+        // Parse labels with defaults
+        $config['labels'] = wp_parse_args( $config['labels'], [
+                'singular'        => '',
+                'plural'          => '',
+                'title'           => '',
+                'add_new'         => '',
+                'search'          => '',
+                'not_found'       => '',
+                'not_found_search'=> ''
+        ] );
 
-		// Store configuration
-		self::$tables[ $id ] = $config;
+        // Parse callbacks with defaults
+        $config['callbacks'] = wp_parse_args( $config['callbacks'], [
+                'get_items'  => null,
+                'get_counts' => null,
+                'delete'     => null,
+                'update'     => null
+        ] );
 
-		// Hook into admin page rendering
-		if ( ! empty( $config['page'] ) ) {
-			add_action( 'load-toplevel_page_' . $config['page'], [ __CLASS__, 'load_table' ] );
-			add_action( 'load-admin_page_' . $config['page'], [ __CLASS__, 'load_table' ] );
-		}
-	}
+        // Auto-generate missing labels
+        if ( empty( $config['labels']['title'] ) && ! empty( $config['labels']['plural'] ) ) {
+            $config['labels']['title'] = ucfirst( $config['labels']['plural'] );
+        }
 
-	/**
-	 * Load table for current admin page
-	 *
-	 * @return void
-	 * @since 1.0.0
-	 *
-	 */
-	public static function load_table(): void {
-		$page = $_GET['page'] ?? '';
+        if ( empty( $config['labels']['add_new'] ) && ! empty( $config['labels']['singular'] ) ) {
+            $config['labels']['add_new'] = sprintf(
+                    __( 'Add New %s', 'arraypress' ),
+                    ucfirst( $config['labels']['singular'] )
+            );
+        }
 
-		foreach ( self::$tables as $id => $config ) {
-			if ( $config['page'] === $page ) {
-				self::render_table( $id );
-				break;
-			}
-		}
-	}
+        if ( empty( $config['labels']['search'] ) && ! empty( $config['labels']['plural'] ) ) {
+            $config['labels']['search'] = sprintf(
+                    __( 'Search %s', 'arraypress' ),
+                    $config['labels']['plural']
+            );
+        }
 
-	/**
-	 * Render a registered table
-	 *
-	 * @param string $id Table identifier
-	 *
-	 * @return void
-	 * @since 1.0.0
-	 *
-	 */
-	public static function render_table( string $id ): void {
-		if ( ! isset( self::$tables[ $id ] ) ) {
-			return;
-		}
+        // Auto-detect primary column if not set
+        if ( empty( $config['primary_column'] ) && ! empty( $config['columns'] ) ) {
+            foreach ( $config['columns'] as $key => $column ) {
+                if ( is_array( $column ) && ! empty( $column['primary'] ) ) {
+                    $config['primary_column'] = $key;
+                    break;
+                }
+            }
+            // If still empty, use first non-cb column
+            if ( empty( $config['primary_column'] ) ) {
+                foreach ( $config['columns'] as $key => $column ) {
+                    if ( $key !== 'cb' ) {
+                        $config['primary_column'] = $key;
+                        break;
+                    }
+                }
+            }
+        }
 
-		$config = self::$tables[ $id ];
-		$table  = new Table( $id, $config );
+        // Store configuration
+        self::$tables[ $id ] = $config;
+    }
 
-		// Process bulk actions if needed
-		$table->process_bulk_action();
+    /**
+     * Render a registered table
+     *
+     * Outputs the complete admin page with the table.
+     *
+     * @since 1.0.0
+     *
+     * @param string $id Table identifier
+     *
+     * @return void
+     */
+    public static function render_table( string $id ): void {
+        if ( ! isset( self::$tables[ $id ] ) ) {
+            return;
+        }
 
-		// Prepare items
-		$table->prepare_items();
+        $config = self::$tables[ $id ];
 
+        // Check capabilities if set
+        if ( ! empty( $config['capabilities']['view'] ) ) {
+            if ( ! current_user_can( $config['capabilities']['view'] ) ) {
+                wp_die( __( 'Sorry, you are not allowed to access this page.', 'arraypress' ) );
+            }
+        }
+
+        // Enqueue styles if needed
         self::maybe_enqueue_styles();
 
-        // Output the table
-		add_action( 'admin_notices', function () use ( $table, $config ) {
-			?>
-            <div class="wrap">
-                <h1 class="wp-heading-inline">
-					<?php echo esc_html( $config['title'] ?? ucfirst( $config['entity_plural'] ) ); ?>
-                </h1>
+        // Create table instance
+        $table = new Table( $id, $config );
 
-				<?php if ( ! empty( $config['flyout'] ) && ! empty( $config['add_new_label'] ) ) : ?>
+        // Process bulk actions if needed
+        $table->process_bulk_action();
+
+        // Prepare items
+        $table->prepare_items();
+
+        // Get total count for title if needed
+        $total_count = '';
+        if ( $config['show_count'] ) {
+            $counts = $table->get_counts();
+            $total = $counts['total'] ?? 0;
+            if ( $total > 0 ) {
+                $total_count = sprintf( ' <span class="count">(%s)</span>', number_format_i18n( $total ) );
+            }
+        }
+
+        // Render the page
+        ?>
+        <div class="wrap arraypress-table-wrap">
+            <h1 class="wp-heading-inline">
+                <?php echo esc_html( $config['labels']['title'] ); ?><?php echo $total_count; ?>
+            </h1>
+
+            <?php if ( ! empty( $config['labels']['add_new'] ) ) : ?>
+                <?php if ( ! empty( $config['flyout'] ) ) : ?>
                     <a href="#"
                        class="page-title-action"
                        data-flyout-trigger="<?php echo esc_attr( $config['flyout'] ); ?>"
                        data-flyout-action="load">
-						<?php echo esc_html( $config['add_new_label'] ); ?>
+                        <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
+                        <?php echo esc_html( $config['labels']['add_new'] ); ?>
                     </a>
-				<?php endif; ?>
+                <?php else : ?>
+                    <a href="<?php echo esc_url( add_query_arg( 'action', 'add', $_SERVER['REQUEST_URI'] ) ); ?>"
+                       class="page-title-action">
+                        <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
+                        <?php echo esc_html( $config['labels']['add_new'] ); ?>
+                    </a>
+                <?php endif; ?>
+            <?php endif; ?>
 
-                <hr class="wp-header-end">
+            <hr class="wp-header-end">
 
-                <form method="get">
-                    <input type="hidden" name="page" value="<?php echo esc_attr( $config['page'] ); ?>">
+            <?php
+            /**
+             * Fires before the table is rendered
+             *
+             * @since 1.0.0
+             *
+             * @param string $id     Table identifier
+             * @param array  $config Table configuration
+             */
+            do_action( 'arraypress_before_render_table', $id, $config );
 
-					<?php
-					$table->views();
+            /**
+             * Fires before a specific table is rendered
+             *
+             * @since 1.0.0
+             *
+             * @param array $config Table configuration
+             */
+            do_action( "arraypress_before_render_table_{$id}", $config );
+            ?>
 
-					if ( $config['searchable'] ) {
-						$table->search_box(
-							$config['messages']['search_label'] ?? __( 'Search', 'arraypress' ),
-							$config['entity']
-						);
-					}
+            <form method="get">
+                <input type="hidden" name="page" value="<?php echo esc_attr( $_GET['page'] ?? $config['page'] ); ?>">
 
-					$table->display();
-					?>
-                </form>
-            </div>
-			<?php
-		} );
-	}
+                <?php
+                // Preserve other query args
+                foreach ( $_GET as $key => $value ) {
+                    if ( ! in_array( $key, ['page', 'paged', '_wpnonce', '_wp_http_referer'], true ) ) {
+                        if ( is_array( $value ) ) {
+                            foreach ( $value as $v ) {
+                                printf( '<input type="hidden" name="%s[]" value="%s">', esc_attr( $key ), esc_attr( $v ) );
+                            }
+                        } else {
+                            printf( '<input type="hidden" name="%s" value="%s">', esc_attr( $key ), esc_attr( $value ) );
+                        }
+                    }
+                }
 
-	/**
-	 * Get a registered table configuration
-	 *
-	 * @param string $id Table identifier
-	 *
-	 * @return array|null Table configuration or null if not found
-	 * @since 1.0.0
-	 *
-	 */
-	public static function get_table( string $id ): ?array {
-		return self::$tables[ $id ] ?? null;
-	}
+                $table->views();
 
-	/**
-	 * Remove a registered table
-	 *
-	 * @param string $id Table identifier
-	 *
-	 * @return bool True if removed, false if not found
-	 * @since 1.0.0
-	 *
-	 */
-	public static function unregister( string $id ): bool {
-		if ( isset( self::$tables[ $id ] ) ) {
-			unset( self::$tables[ $id ] );
+                if ( $config['searchable'] !== false ) {
+                    $table->search_box(
+                            $config['labels']['search'] ?: __( 'Search', 'arraypress' ),
+                            $config['labels']['singular'] ?: 'item'
+                    );
+                }
 
-			return true;
-		}
+                $table->display();
+                ?>
+            </form>
 
-		return false;
-	}
+            <?php
+            /**
+             * Fires after the table is rendered
+             *
+             * @since 1.0.0
+             *
+             * @param string $id     Table identifier
+             * @param array  $config Table configuration
+             */
+            do_action( 'arraypress_after_render_table', $id, $config );
+
+            /**
+             * Fires after a specific table is rendered
+             *
+             * @since 1.0.0
+             *
+             * @param array $config Table configuration
+             */
+            do_action( "arraypress_after_render_table_{$id}", $config );
+            ?>
+        </div>
+        <?php
+    }
 
     /**
      * Maybe enqueue styles
@@ -297,5 +390,37 @@ class Manager {
 
         self::$styles_enqueued = true;
     }
+
+	/**
+	 * Get a registered table configuration
+	 *
+	 * @param string $id Table identifier
+	 *
+	 * @return array|null Table configuration or null if not found
+	 * @since 1.0.0
+	 *
+	 */
+	public static function get_table( string $id ): ?array {
+		return self::$tables[ $id ] ?? null;
+	}
+
+	/**
+	 * Remove a registered table
+	 *
+	 * @param string $id Table identifier
+	 *
+	 * @return bool True if removed, false if not found
+	 * @since 1.0.0
+	 *
+	 */
+	public static function unregister( string $id ): bool {
+		if ( isset( self::$tables[ $id ] ) ) {
+			unset( self::$tables[ $id ] );
+
+			return true;
+		}
+
+		return false;
+	}
 
 }
