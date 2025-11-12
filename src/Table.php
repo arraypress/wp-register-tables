@@ -376,11 +376,11 @@ class Table extends WP_List_Table {
             }
 
             // Assume cents, convert to dollars
-            $amount = is_numeric( $value ) ? floatval( $value ) / 100 : 0;
+            $amount = is_numeric( $value ) ? intval( $value ) : 0;
 
             return sprintf(
                     '<span class="price">%s</span>',
-                    esc_html( $this->format_currency( $amount, $currency ) )
+                    esc_html( format_currency( $amount, $currency ) )
             );
         }
 
@@ -406,32 +406,6 @@ class Table extends WP_List_Table {
 
         // Default
         return esc_html( $value );
-    }
-
-    /**
-     * Format currency value
-     *
-     * @param float  $amount   Amount to format
-     * @param string $currency Currency code
-     *
-     * @return string Formatted currency
-     * @since 1.0.0
-     *
-     */
-    private function format_currency( float $amount, string $currency = 'USD' ): string {
-        $symbols = [
-                'USD' => '$',
-                'EUR' => '€',
-                'GBP' => '£',
-                'JPY' => '¥',
-        ];
-
-        $symbol = $symbols[ $currency ] ?? $currency . ' ';
-
-        // Handle different decimal places for different currencies
-        $decimals = $currency === 'JPY' ? 0 : 2;
-
-        return $symbol . number_format( $amount, $decimals );
     }
 
     /**
