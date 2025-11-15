@@ -156,16 +156,51 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter table columns
+         * Filters the table columns.
          *
-         * @param array  $columns Column definitions
-         * @param string $id      Table identifier
-         * @param array  $config  Table configuration
+         * @param array  $columns Column definitions with keys as column IDs and values as labels
+         * @param string $id      Table identifier used during registration
+         * @param array  $config  Full table configuration array
          *
          * @since 1.0.0
          *
          */
         return apply_filters( 'arraypress_table_columns', $columns, $this->id, $this->config );
+
+        /**
+         * Filters the columns for a specific table.
+         *
+         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
+         *
+         * @param array $columns Column definitions with keys as column IDs and values as labels
+         * @param array $config  Full table configuration array
+         *
+         * @since 1.0.0
+         *
+         */
+        return apply_filters( "arraypress_table_columns_{$this->id}", $columns, $this->config );
+    }
+
+    /**
+     * Get hidden columns
+     *
+     * @return array Hidden column names
+     * @since 1.0.0
+     */
+    public function get_hidden_columns(): array {
+        $hidden = $this->config['hidden_columns'] ?? [];
+
+        /**
+         * Filters the hidden columns.
+         *
+         * @param array  $hidden Array of column IDs to hide
+         * @param string $id     Table identifier
+         * @param array  $config Full table configuration
+         *
+         * @since 1.0.0
+         *
+         */
+        return apply_filters( 'arraypress_table_hidden_columns', $hidden, $this->id, $this->config );
     }
 
     /**
@@ -189,11 +224,11 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter sortable columns
+         * Filters the sortable columns.
          *
-         * @param array  $sortable Sortable column definitions
+         * @param array  $sortable Sortable column definitions as [column_id => [orderby, desc]]
          * @param string $id       Table identifier
-         * @param array  $config   Table configuration
+         * @param array  $config   Full table configuration
          *
          * @since 1.0.0
          *
@@ -249,16 +284,29 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter query arguments before fetching data
+         * Filters the query arguments before fetching data.
          *
-         * @param array  $args   Query arguments
+         * @param array  $args   Query arguments including pagination, search, and filters
          * @param string $id     Table identifier
-         * @param array  $config Table configuration
+         * @param array  $config Full table configuration
          *
          * @since 1.0.0
          *
          */
         $args = apply_filters( 'arraypress_table_query_args', $args, $this->id, $this->config );
+
+        /**
+         * Filters the query arguments for a specific table.
+         *
+         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
+         *
+         * @param array $args   Query arguments including pagination, search, and filters
+         * @param array $config Full table configuration
+         *
+         * @since 1.0.0
+         *
+         */
+        $args = apply_filters( "arraypress_table_query_args_{$this->id}", $args, $this->config );
 
         // Call the get_items callback
         if ( isset( $this->config['callbacks']['get_items'] ) && is_callable( $this->config['callbacks']['get_items'] ) ) {
@@ -308,6 +356,7 @@ class Table extends WP_List_Table {
             $column_config = $this->config['columns'][ $column_name ];
 
             if ( is_array( $column_config ) && isset( $column_config['callback'] ) ) {
+                // Callbacks can return HTML, so don't escape their output
                 return call_user_func( $column_config['callback'], $item );
             }
         }
@@ -326,7 +375,7 @@ class Table extends WP_List_Table {
             return $this->auto_format_column( $column_name, $item->$column_name, $item );
         }
 
-        return '—';
+        return '<span aria-hidden="true">—</span><span class="screen-reader-text">Unknown</span>';
     }
 
     /**
@@ -341,19 +390,20 @@ class Table extends WP_List_Table {
      *
      */
     private function auto_format_column( string $column_name, $value, $item ): string {
+        // Handle empty values with proper WordPress markup
         if ( empty( $value ) && $value !== 0 && $value !== '0' ) {
-            return '<span class="text-muted">—</span>';
+            return '<span aria-hidden="true">—</span><span class="screen-reader-text">Unknown</span>';
         }
 
         // Email columns
-        if ( strpos( $column_name, 'email' ) !== false ) {
+        if ( str_contains( $column_name, 'email' ) ) {
             return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $value ) );
         }
 
         // Date columns
-        if ( strpos( $column_name, '_at' ) !== false ||
-             strpos( $column_name, 'date' ) !== false ||
-             in_array( $column_name, [ 'created', 'updated', 'modified', 'registered' ], true ) ) {
+        if ( str_contains( $column_name, '_at' ) ||
+             str_contains( $column_name, 'date' ) ||
+             in_array( $column_name, [ 'created', 'updated', 'modified', 'registered', 'last_sync' ], true ) ) {
             $time  = strtotime( $value );
             $human = human_time_diff( $time, current_time( 'timestamp' ) ) . ' ' . __( 'ago', 'arraypress' );
 
@@ -364,28 +414,52 @@ class Table extends WP_List_Table {
             );
         }
 
-        // Price/money columns
-        if ( strpos( $column_name, 'price' ) !== false ||
-             strpos( $column_name, 'total' ) !== false ||
-             strpos( $column_name, 'amount' ) !== false ||
-             strpos( $column_name, '_spent' ) !== false ) {
-            // Check if there's a currency method
+        // Price/money columns with Stripe-style formatting
+        if ( str_contains( $column_name, 'price' ) ||
+             str_contains( $column_name, 'total' ) ||
+             str_contains( $column_name, 'amount' ) ||
+             str_contains( $column_name, '_spent' ) ) {
+
+            // Get currency from item methods or properties
             $currency = 'USD';
             if ( method_exists( $item, 'get_currency' ) ) {
                 $currency = $item->get_currency();
+            } elseif ( property_exists( $item, 'currency' ) ) {
+                $currency = $item->currency;
             }
 
-            // Assume cents, convert to dollars
+            // Amount is stored in cents (Stripe format)
             $amount = is_numeric( $value ) ? intval( $value ) : 0;
 
-            return sprintf(
-                    '<span class="price">%s</span>',
-                    esc_html( format_currency( $amount, $currency ) )
-            );
+            // Check for recurring interval
+            $interval       = null;
+            $interval_count = 1;
+
+            if ( method_exists( $item, 'get_recurring_interval' ) ) {
+                $interval = $item->get_recurring_interval();
+                if ( method_exists( $item, 'get_recurring_interval_count' ) ) {
+                    $interval_count = $item->get_recurring_interval_count();
+                }
+            } elseif ( property_exists( $item, 'recurring_interval' ) ) {
+                $interval = $item->recurring_interval;
+                if ( property_exists( $item, 'recurring_interval_count' ) ) {
+                    $interval_count = $item->recurring_interval_count;
+                }
+            }
+
+            // Use the Currency library to format (assuming global function exists)
+            if ( function_exists( 'format_price_interval' ) ) {
+                $formatted = format_price_interval( $amount, $currency, $interval, $interval_count );
+            } else {
+                // Fallback to basic formatting
+                $formatted = format_currency( $amount, $currency );
+            }
+
+            return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
         }
 
         // Status columns
-        if ( $column_name === 'status' || strpos( $column_name, '_status' ) !== false ) {
+        if ( $column_name === 'status' || str_contains( $column_name, '_status' ) ) {
             $class = $this->get_status_class( $value );
             $label = $this->get_status_label( $value );
 
@@ -397,11 +471,57 @@ class Table extends WP_List_Table {
         }
 
         // Count columns
-        if ( strpos( $column_name, '_count' ) !== false ||
-             strpos( $column_name, 'count' ) !== false ) {
+        if ( str_contains( $column_name, '_count' ) ||
+             str_contains( $column_name, 'count' ) ||
+             str_contains( $column_name, 'limit' ) ) {
+
+            // Handle unlimited (-1 or 0 can mean unlimited depending on context)
+            if ( $value == - 1 ) {
+                return '<span class="unlimited">∞</span>';
+            }
+
             return $value > 0
                     ? number_format_i18n( $value )
                     : '<span class="text-muted">0</span>';
+        }
+
+        // URL columns (including image_url)
+        if ( str_contains( $column_name, '_url' ) || str_contains( $column_name, 'url' ) ) {
+            if ( str_contains( $column_name, 'image' ) ) {
+                // Image URL - show as thumbnail
+                return sprintf(
+                        '<a href="%1$s" target="_blank"><img src="%1$s" style="max-width: 50px; height: auto;" alt="" /></a>',
+                        esc_url( $value )
+                );
+            } else {
+                // Regular URL
+                $display_url = parse_url( $value, PHP_URL_HOST ) ?: $value;
+
+                return sprintf(
+                        '<a href="%s" target="_blank">%s</a>',
+                        esc_url( $value ),
+                        esc_html( $display_url )
+                );
+            }
+        }
+
+        // Boolean/test mode columns
+        if ( str_starts_with( $column_name, 'is_' ) || in_array( $column_name, [
+                        'test',
+                        'active',
+                        'enabled'
+                ], true ) ) {
+            $is_true = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
+
+            if ( $column_name === 'is_test' ) {
+                return $is_true
+                        ? '<span class="badge badge-warning">Test</span>'
+                        : '<span class="badge badge-success">Live</span>';
+            }
+
+            return $is_true
+                    ? '<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>'
+                    : '<span class="dashicons dashicons-minus" style="color: #d63638;"></span>';
         }
 
         // Default
@@ -418,30 +538,57 @@ class Table extends WP_List_Table {
      *
      */
     private function get_status_class( string $status ): string {
-        // Check config first
+        // Check config first for custom status styles
         if ( isset( $this->config['status_styles'][ $status ] ) ) {
             return $this->config['status_styles'][ $status ];
         }
 
-        // Default mappings
+        // Default mappings for common status values
         $status_map = [
-                'active'     => 'success',
-                'completed'  => 'success',
-                'paid'       => 'success',
-                'published'  => 'success',
-                'approved'   => 'success',
-                'pending'    => 'warning',
-                'processing' => 'warning',
-                'draft'      => 'warning',
-                'on-hold'    => 'warning',
-                'failed'     => 'error',
-                'cancelled'  => 'error',
-                'refunded'   => 'error',
-                'rejected'   => 'error',
-                'declined'   => 'error',
-                'inactive'   => 'default',
-                'disabled'   => 'default',
-                'paused'     => 'default'
+            // Success states (green)
+                'active'             => 'success',
+                'completed'          => 'success',
+                'paid'               => 'success',
+                'published'          => 'success',
+                'approved'           => 'success',
+                'confirmed'          => 'success',
+                'delivered'          => 'success',
+
+            // Warning states (yellow/orange)
+                'pending'            => 'warning',
+                'processing'         => 'warning',
+                'draft'              => 'warning',
+                'on-hold'            => 'warning',
+                'on_hold'            => 'warning',
+                'partially_refunded' => 'warning',
+                'unpaid'             => 'warning',
+                'expired'            => 'warning',
+                'expiring'           => 'warning',
+                'scheduled'          => 'warning',
+
+            // Error states (red)
+                'failed'             => 'error',
+                'cancelled'          => 'error',
+                'canceled'           => 'error',
+                'refunded'           => 'error',
+                'rejected'           => 'error',
+                'declined'           => 'error',
+                'blocked'            => 'error',
+                'revoked'            => 'error',
+                'suspended'          => 'error',
+                'terminated'         => 'error',
+
+            // Info states (blue)
+                'new'                => 'info',
+                'updated'            => 'info',
+
+            // Default/neutral states (gray)
+                'inactive'           => 'default',
+                'disabled'           => 'default',
+                'paused'             => 'default',
+                'archived'           => 'default',
+                'hidden'             => 'default',
+                'trashed'            => 'default'
         ];
 
         return $status_map[ $status ] ?? 'default';
@@ -568,16 +715,29 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter row actions
+         * Filters the row actions for a table row.
          *
-         * @param array  $actions Row actions
-         * @param object $item    Data object
+         * @param array  $actions Row actions as [action_key => html_link]
+         * @param object $item    The current row's data object
          * @param string $id      Table identifier
          *
          * @since 1.0.0
          *
          */
         $actions = apply_filters( 'arraypress_table_row_actions', $actions, $item, $this->id );
+
+        /**
+         * Filters the row actions for a specific table.
+         *
+         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
+         *
+         * @param array  $actions Row actions as [action_key => html_link]
+         * @param object $item    The current row's data object
+         *
+         * @since 1.0.0
+         *
+         */
+        $actions = apply_filters( "arraypress_table_row_actions_{$this->id}", $actions, $item );
 
         return $this->row_actions( $actions );
     }
@@ -605,9 +765,9 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter bulk actions
+         * Filters the bulk actions dropdown.
          *
-         * @param array  $actions Bulk actions
+         * @param array  $actions Bulk actions as [action_key => label]
          * @param string $id      Table identifier
          *
          * @since 1.0.0
@@ -662,17 +822,41 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Process bulk action
+         * Fires when a bulk action is processed.
          *
          * @param array  $items  Selected item IDs
-         * @param string $action Action key
+         * @param string $action Action key being performed
          * @param string $id     Table identifier
          *
          * @since 1.0.0
          *
          */
         do_action( 'arraypress_table_bulk_action', $items, $action, $this->id );
+
+        /**
+         * Fires when a bulk action is processed for a specific table.
+         *
+         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
+         *
+         * @param array  $items  Selected item IDs
+         * @param string $action Action key being performed
+         *
+         * @since 1.0.0
+         *
+         */
         do_action( "arraypress_table_bulk_action_{$this->id}", $items, $action );
+
+        /**
+         * Fires when a specific bulk action is processed for a specific table.
+         *
+         * The dynamic portions of the hook name, `$id` and `$action`, refer to the
+         * table identifier and action key respectively.
+         *
+         * @param array $items Selected item IDs
+         *
+         * @since 1.0.0
+         *
+         */
         do_action( "arraypress_table_bulk_action_{$this->id}_{$action}", $items );
 
         // Process action
@@ -747,11 +931,11 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter table views
+         * Filters the available views (status filters) for the table.
          *
-         * @param array  $views  View links
+         * @param array  $views  View links as [view_key => html_link]
          * @param string $id     Table identifier
-         * @param string $status Current status
+         * @param string $status Current active status filter
          *
          * @since 1.0.0
          *
@@ -862,7 +1046,7 @@ class Table extends WP_List_Table {
     public function prepare_items(): void {
         $this->_column_headers = [
                 $this->get_columns(),
-                [], // Hidden columns
+                $this->get_hidden_columns(),
                 $this->get_sortable_columns(),
                 $this->get_primary_column_name()
         ];

@@ -76,10 +76,13 @@ class Manager {
      * @type array    $columns          Column definitions
      * @type array    $sortable         Sortable column configurations
      * @type string   $primary_column   Primary column key
+     * @type array    $hidden_columns   Array of column IDs to hide by default
+     * @type array    $column_widths    Array of column widths as [column_id => width]
      * @type array    $row_actions      Row action definitions
      * @type array    $bulk_actions     Bulk action definitions
      * @type array    $views            View/filter definitions
      * @type array    $filters          Additional filter dropdowns
+     * @type array    $status_styles    Custom status badge styles as [status => class]
      * @type int      $per_page         Items per page (default: 30)
      * @type bool     $searchable       Whether to show search box (default: true)
      * @type array    $capabilities     Permission requirements
@@ -98,22 +101,27 @@ class Manager {
      */
     public static function register( string $id, array $config ): void {
         $defaults = [
-                'labels'         => [],
-                'callbacks'      => [],
-                'page'           => '',
-                'flyout'         => '',
-                'columns'        => [],
-                'sortable'       => [],
-                'primary_column' => '',
-                'row_actions'    => [],
-                'bulk_actions'   => [],
-                'views'          => [],
-                'filters'        => [],
-                'per_page'       => 30,
-                'searchable'     => true,
-                'capabilities'   => [],
-                'show_count'     => false,
-                'help'           => []
+                'labels'              => [],
+                'callbacks'           => [],
+                'page'                => '',
+                'flyout'              => '',
+                'add_flyout'          => '',
+                'add_button_callback' => null,
+                'columns'             => [],
+                'sortable'            => [],
+                'primary_column'      => '',
+                'hidden_columns'      => [],
+                'column_widths'       => [],
+                'row_actions'         => [],
+                'bulk_actions'        => [],
+                'views'               => [],
+                'filters'             => [],
+                'status_styles'       => [],
+                'per_page'            => 30,
+                'searchable'          => true,
+                'capabilities'        => [],
+                'show_count'          => false,
+                'help'                => []
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -282,7 +290,7 @@ class Manager {
         } );
 
         // Enqueue styles if needed
-        self::maybe_enqueue_styles();
+        self::maybe_enqueue_styles( $config );
 
         // Create table instance
         $table = new Table( $id, $config );
@@ -311,11 +319,23 @@ class Manager {
             </h1>
 
             <?php if ( ! empty( $config['labels']['add_new'] ) ) : ?>
-                <?php if ( ! empty( $config['flyout'] ) ) : ?>
+                <?php if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) : ?>
+                    <?php echo call_user_func( $config['add_button_callback'] ); ?>
+                <?php elseif ( ! empty( $config['add_flyout'] ) ) : ?>
+                    <a href="#"
+                       class="page-title-action"
+                       data-flyout-trigger="<?php echo esc_attr( $config['add_flyout'] ); ?>"
+                       data-flyout-action="add"
+                       data-id="0">
+                        <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
+                        <?php echo esc_html( $config['labels']['add_new'] ); ?>
+                    </a>
+                <?php elseif ( ! empty( $config['flyout'] ) ) : ?>
                     <a href="#"
                        class="page-title-action"
                        data-flyout-trigger="<?php echo esc_attr( $config['flyout'] ); ?>"
-                       data-flyout-action="load">
+                       data-flyout-action="add"
+                       data-id="0">
                         <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
                         <?php echo esc_html( $config['labels']['add_new'] ); ?>
                     </a>
@@ -332,7 +352,7 @@ class Manager {
 
             <?php
             /**
-             * Fires before the table is rendered
+             * Fires before the table is rendered.
              *
              * @param string $id     Table identifier
              * @param array  $config Table configuration
@@ -343,7 +363,9 @@ class Manager {
             do_action( 'arraypress_before_render_table', $id, $config );
 
             /**
-             * Fires before a specific table is rendered
+             * Fires before a specific table is rendered.
+             *
+             * The dynamic portion of the hook name, `$id`, refers to the table identifier.
              *
              * @param array $config Table configuration
              *
@@ -385,7 +407,7 @@ class Manager {
 
             <?php
             /**
-             * Fires after the table is rendered
+             * Fires after the table is rendered.
              *
              * @param string $id     Table identifier
              * @param array  $config Table configuration
@@ -396,7 +418,9 @@ class Manager {
             do_action( 'arraypress_after_render_table', $id, $config );
 
             /**
-             * Fires after a specific table is rendered
+             * Fires after a specific table is rendered.
+             *
+             * The dynamic portion of the hook name, `$id`, refers to the table identifier.
              *
              * @param array $config Table configuration
              *
@@ -414,16 +438,18 @@ class Manager {
      *
      * Enqueues table styles if not already enqueued.
      *
+     * @param array $config Table configuration for dynamic styles
+     *
      * @return void
      * @since 1.0.0
      *
      */
-    private static function maybe_enqueue_styles(): void {
+    private static function maybe_enqueue_styles( array $config = [] ): void {
         if ( self::$styles_enqueued ) {
             return;
         }
 
-        add_action( 'admin_head', function () {
+        add_action( 'admin_head', function () use ( $config ) {
             ?>
             <style>
                 .arraypress-table-wrap .badge {
@@ -467,8 +493,25 @@ class Manager {
                     color: #00a32a;
                 }
 
+                .arraypress-table-wrap .recurring-badge {
+                    display: inline-block;
+                    padding: 2px 6px;
+                    margin-left: 4px;
+                    font-size: 11px;
+                    font-weight: normal;
+                    color: #50575e;
+                    background: #f0f0f1;
+                    border-radius: 2px;
+                }
+
                 .arraypress-table-wrap .text-muted {
                     color: #a7aaad;
+                }
+
+                .arraypress-table-wrap .unlimited {
+                    font-size: 18px;
+                    color: #0073aa;
+                    font-weight: 600;
                 }
 
                 .arraypress-table-wrap .column-cb {
@@ -482,6 +525,28 @@ class Manager {
                 .arraypress-table-wrap .delete-link:hover {
                     color: #dc3545;
                 }
+
+                /* Match WordPress native avatar styling */
+                .arraypress-table-wrap .avatar {
+                    border-radius: 50%;
+                    vertical-align: middle;
+                    margin-right: 10px;
+                }
+
+                /* Handle primary column with avatar */
+                .arraypress-table-wrap .column-primary strong {
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+
+                <?php
+                // Add custom column widths
+                if ( ! empty( $config['column_widths'] ) ) {
+                    foreach ( $config['column_widths'] as $column => $width ) {
+                        echo ".arraypress-table-wrap .column-{$column} { width: {$width}; }\n";
+                    }
+                }
+                ?>
             </style>
             <?php
         } );

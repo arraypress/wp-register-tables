@@ -9,9 +9,6 @@ composer require arraypress/wp-register-tables
 
 ## Basic Usage
 ```php
-use function ArrayPress\RegisterTables\register_admin_table;
-use function ArrayPress\RegisterTables\create_page_callback;
-
 // Register your table
 register_admin_table( 'my_orders', [
     'labels' => [
