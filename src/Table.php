@@ -166,19 +166,6 @@ class Table extends WP_List_Table {
          *
          */
         return apply_filters( 'arraypress_table_columns', $columns, $this->id, $this->config );
-
-        /**
-         * Filters the columns for a specific table.
-         *
-         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
-         *
-         * @param array $columns Column definitions with keys as column IDs and values as labels
-         * @param array $config  Full table configuration array
-         *
-         * @since 1.0.0
-         *
-         */
-        return apply_filters( "arraypress_table_columns_{$this->id}", $columns, $this->config );
     }
 
     /**
