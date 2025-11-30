@@ -532,7 +532,7 @@ class Table extends WP_List_Table {
 
         // Default mappings for common status values
         $status_map = [
-            // Success states (green)
+                // Success states (green)
                 'active'             => 'success',
                 'completed'          => 'success',
                 'paid'               => 'success',
@@ -541,7 +541,7 @@ class Table extends WP_List_Table {
                 'confirmed'          => 'success',
                 'delivered'          => 'success',
 
-            // Warning states (yellow/orange)
+                // Warning states (yellow/orange)
                 'pending'            => 'warning',
                 'processing'         => 'warning',
                 'draft'              => 'warning',
@@ -553,7 +553,7 @@ class Table extends WP_List_Table {
                 'expiring'           => 'warning',
                 'scheduled'          => 'warning',
 
-            // Error states (red)
+                // Error states (red)
                 'failed'             => 'error',
                 'cancelled'          => 'error',
                 'canceled'           => 'error',
@@ -565,11 +565,11 @@ class Table extends WP_List_Table {
                 'suspended'          => 'error',
                 'terminated'         => 'error',
 
-            // Info states (blue)
+                // Info states (blue)
                 'new'                => 'info',
                 'updated'            => 'info',
 
-            // Default/neutral states (gray)
+                // Default/neutral states (gray)
                 'inactive'           => 'default',
                 'disabled'           => 'default',
                 'paused'             => 'default',
