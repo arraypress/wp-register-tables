@@ -216,41 +216,46 @@ class Manager {
      * @since 1.0.0
      */
     public static function init(): void {
-        // Process at priority 20 to ensure tables are registered first (usually at priority 10)
+        // Process actions early (before output)
         add_action( 'admin_init', [ __CLASS__, 'process_early_actions' ], 20 );
 
-        // Setup screen options after menu is registered
-        add_action( 'admin_menu', [ __CLASS__, 'setup_screen_hooks' ], 999 );
+        // Setup screen options - needs to happen on load-{hook} which we detect
+        add_action( 'admin_init', [ __CLASS__, 'setup_load_hooks' ], 999 );
     }
 
     /**
-     * Setup screen option hooks for all registered tables
+     * Setup load hooks for screen options
+     *
+     * This runs after tables are registered and sets up the load-{page} hooks.
      *
      * @return void
      * @since 1.0.0
      */
-    public static function setup_screen_hooks(): void {
+    public static function setup_load_hooks(): void {
+        global $pagenow;
+
+        // Only on admin.php
+        if ( $pagenow !== 'admin.php' ) {
+            return;
+        }
+
+        $page = $_GET['page'] ?? '';
+
+        if ( empty( $page ) ) {
+            return;
+        }
+
+        // Find our table config for this page
         foreach ( self::$tables as $id => $config ) {
-            // We need to find the page hook for this table's page
-            // The hook name is based on how the menu was registered
-            $page = $config['page'] ?? '';
-
-            if ( empty( $page ) ) {
-                continue;
+            if ( ( $config['page'] ?? '' ) === $page ) {
+                // We're on one of our pages - setup screen options now
+                // current_screen is available at this point
+                add_action( 'current_screen', function () use ( $config ) {
+                    self::setup_screen( $config );
+                    self::handle_screen_options();
+                } );
+                break;
             }
-
-            // Hook into load-{page} to setup screen options
-            // This fires before the page renders but after current_screen is set
-            add_action( 'load-toplevel_page_' . $page, function () use ( $config ) {
-                self::setup_screen( $config );
-                self::handle_screen_options();
-            } );
-
-            // Also try submenu page format
-            add_action( 'load-admin_page_' . $page, function () use ( $config ) {
-                self::setup_screen( $config );
-                self::handle_screen_options();
-            } );
         }
     }
 
