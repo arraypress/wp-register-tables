@@ -723,22 +723,24 @@ class Manager {
             <?php if ( ! empty( $config['labels']['add_new'] ) ) : ?>
                 <?php if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) : ?>
                     <?php echo call_user_func( $config['add_button_callback'] ); ?>
-                <?php elseif ( ! empty( $config['add_flyout'] ) && function_exists( 'get_flyout_link' ) ) : ?>
+                <?php elseif ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) : ?>
                     <?php
-                    echo \get_flyout_link( $config['add_flyout'], [
-                            'text'  => '<span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span> ' . esc_html( $config['labels']['add_new'] ),
+                    \render_flyout_button( $config['add_flyout'], [
+                            'text'  => $config['labels']['add_new'],
                             'class' => 'page-title-action',
+                            'icon'  => 'plus-alt',
                     ] );
                     ?>
-                <?php elseif ( ! empty( $config['flyout'] ) && function_exists( 'get_flyout_link' ) ) : ?>
+                <?php elseif ( ! empty( $config['flyout'] ) && function_exists( 'render_flyout_button' ) ) : ?>
                     <?php
-                    echo \get_flyout_link( $config['flyout'], [
-                            'text'  => '<span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span> ' . esc_html( $config['labels']['add_new'] ),
+                    \render_flyout_button( $config['flyout'], [
+                            'text'  => $config['labels']['add_new'],
                             'class' => 'page-title-action',
+                            'icon'  => 'plus-alt',
                     ] );
                     ?>
                 <?php else : ?>
-                    <a href="<?php echo esc_url( add_query_arg( 'action', 'add', $_SERVER['REQUEST_URI'] ) ); ?>"
+                    <a href="<?php echo esc_url( add_query_arg( 'action', 'add', admin_url( 'admin.php?page=' . $config['page'] ) ) ); ?>"
                        class="page-title-action">
                         <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
                         <?php echo esc_html( $config['labels']['add_new'] ); ?>
