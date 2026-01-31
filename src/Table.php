@@ -81,7 +81,6 @@ class Table extends WP_List_Table {
      * @param array  $config Table configuration
      *
      * @since 1.0.0
-     *
      */
     public function __construct( string $id, array $config ) {
         $this->id     = $id;
@@ -111,7 +110,6 @@ class Table extends WP_List_Table {
      *
      * @return int Items per page
      * @since 1.0.0
-     *
      */
     protected function get_items_per_page( $option, $default = 30 ): int {
         $screen = get_current_screen();
@@ -120,9 +118,16 @@ class Table extends WP_List_Table {
             return $default;
         }
 
+        // Get the option name from screen
+        $option_name = $screen->get_option( 'per_page', 'option' );
+
+        if ( empty( $option_name ) ) {
+            return $default;
+        }
+
         // Check if user has set a custom value
         $user     = get_current_user_id();
-        $per_page = get_user_meta( $user, $screen->get_option( 'per_page', 'option' ), true );
+        $per_page = get_user_meta( $user, $option_name, true );
 
         if ( empty( $per_page ) || $per_page < 1 ) {
             $per_page = $screen->get_option( 'per_page', 'default' ) ?: $default;
@@ -136,7 +141,6 @@ class Table extends WP_List_Table {
      *
      * @return array Column definitions
      * @since 1.0.0
-     *
      */
     public function get_columns(): array {
         $columns = [];
@@ -163,7 +167,6 @@ class Table extends WP_List_Table {
          * @param array  $config  Full table configuration array
          *
          * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_columns', $columns, $this->id, $this->config );
     }
@@ -185,7 +188,6 @@ class Table extends WP_List_Table {
          * @param array  $config Full table configuration
          *
          * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_hidden_columns', $hidden, $this->id, $this->config );
     }
@@ -195,7 +197,6 @@ class Table extends WP_List_Table {
      *
      * @return array Sortable column definitions
      * @since 1.0.0
-     *
      */
     public function get_sortable_columns(): array {
         $sortable = [];
@@ -218,7 +219,6 @@ class Table extends WP_List_Table {
          * @param array  $config   Full table configuration
          *
          * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_sortable_columns', $sortable, $this->id, $this->config );
     }
@@ -228,7 +228,6 @@ class Table extends WP_List_Table {
      *
      * @return string Primary column name
      * @since 1.0.0
-     *
      */
     protected function get_primary_column_name(): string {
         return $this->config['primary_column'] ?? parent::get_primary_column_name();
@@ -239,11 +238,17 @@ class Table extends WP_List_Table {
      *
      * @return array Array of items
      * @since 1.0.0
-     *
      */
     public function get_data(): array {
-        // Build query arguments
-        $args = $this->parse_pagination_args();
+        // Start with base query args if defined
+        $args = [];
+
+        if ( ! empty( $this->config['base_query_args'] ) ) {
+            $args = $this->config['base_query_args'];
+        }
+
+        // Merge pagination args
+        $args = array_merge( $args, $this->parse_pagination_args() );
 
         // Add search
         $search = $this->get_search();
@@ -258,15 +263,20 @@ class Table extends WP_List_Table {
 
         // Add custom filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( isset( $_GET[ $filter_key ] ) ) {
-                $value = sanitize_text_field( $_GET[ $filter_key ] );
-                if ( ! empty( $value ) ) {
-                    if ( is_array( $filter ) && isset( $filter['apply_callback'] ) ) {
-                        call_user_func_array( $filter['apply_callback'], [ &$args, $value ] );
-                    } else {
-                        $args[ $filter_key ] = $value;
-                    }
-                }
+            if ( ! isset( $_GET[ $filter_key ] ) ) {
+                continue;
+            }
+
+            $value = sanitize_text_field( $_GET[ $filter_key ] );
+
+            if ( empty( $value ) ) {
+                continue;
+            }
+
+            if ( is_array( $filter ) && isset( $filter['apply_callback'] ) && is_callable( $filter['apply_callback'] ) ) {
+                call_user_func_array( $filter['apply_callback'], [ &$args, $value ] );
+            } else {
+                $args[ $filter_key ] = $value;
             }
         }
 
@@ -278,7 +288,6 @@ class Table extends WP_List_Table {
          * @param array  $config Full table configuration
          *
          * @since 1.0.0
-         *
          */
         $args = apply_filters( 'arraypress_table_query_args', $args, $this->id, $this->config );
 
@@ -291,7 +300,6 @@ class Table extends WP_List_Table {
          * @param array $config Full table configuration
          *
          * @since 1.0.0
-         *
          */
         $args = apply_filters( "arraypress_table_query_args_{$this->id}", $args, $this->config );
 
@@ -308,7 +316,6 @@ class Table extends WP_List_Table {
      *
      * @return array Status counts
      * @since 1.0.0
-     *
      */
     public function get_counts(): array {
         if ( ! empty( $this->counts ) ) {
@@ -335,14 +342,13 @@ class Table extends WP_List_Table {
      *
      * @return string Column content
      * @since 1.0.0
-     *
      */
     public function column_default( $item, $column_name ) {
         // Check for column callback
         if ( isset( $this->config['columns'][ $column_name ] ) ) {
             $column_config = $this->config['columns'][ $column_name ];
 
-            if ( is_array( $column_config ) && isset( $column_config['callback'] ) ) {
+            if ( is_array( $column_config ) && isset( $column_config['callback'] ) && is_callable( $column_config['callback'] ) ) {
                 // Callbacks can return HTML, so don't escape their output
                 return call_user_func( $column_config['callback'], $item );
             }
@@ -362,7 +368,7 @@ class Table extends WP_List_Table {
             return $this->auto_format_column( $column_name, $item->$column_name, $item );
         }
 
-        return '<span aria-hidden="true">—</span><span class="screen-reader-text">Unknown</span>';
+        return '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( 'Unknown', 'arraypress' ) . '</span>';
     }
 
     /**
@@ -374,12 +380,11 @@ class Table extends WP_List_Table {
      *
      * @return string Formatted value
      * @since 1.0.0
-     *
      */
     private function auto_format_column( string $column_name, $value, $item ): string {
         // Handle empty values with proper WordPress markup
         if ( empty( $value ) && $value !== 0 && $value !== '0' ) {
-            return '<span aria-hidden="true">—</span><span class="screen-reader-text">Unknown</span>';
+            return '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( 'Unknown', 'arraypress' ) . '</span>';
         }
 
         // Email columns
@@ -434,11 +439,10 @@ class Table extends WP_List_Table {
                 }
             }
 
-            // Use the Currency library to format (assuming global function exists)
+            // Use the Currency library to format
             if ( function_exists( 'format_price_interval' ) ) {
                 $formatted = format_price_interval( $amount, $currency, $interval, $interval_count );
             } else {
-                // Fallback to basic formatting
                 $formatted = format_currency( $amount, $currency );
             }
 
@@ -493,17 +497,13 @@ class Table extends WP_List_Table {
         }
 
         // Boolean/test mode columns
-        if ( str_starts_with( $column_name, 'is_' ) || in_array( $column_name, [
-                        'test',
-                        'active',
-                        'enabled'
-                ], true ) ) {
+        if ( str_starts_with( $column_name, 'is_' ) || in_array( $column_name, [ 'test', 'active', 'enabled' ], true ) ) {
             $is_true = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 
             if ( $column_name === 'is_test' ) {
                 return $is_true
-                        ? '<span class="badge badge-warning">Test</span>'
-                        : '<span class="badge badge-success">Live</span>';
+                        ? '<span class="badge badge-warning">' . esc_html__( 'Test', 'arraypress' ) . '</span>'
+                        : '<span class="badge badge-success">' . esc_html__( 'Live', 'arraypress' ) . '</span>';
             }
 
             return $is_true
@@ -522,7 +522,6 @@ class Table extends WP_List_Table {
      *
      * @return string Badge class
      * @since 1.0.0
-     *
      */
     private function get_status_class( string $status ): string {
         // Check config first for custom status styles
@@ -532,7 +531,7 @@ class Table extends WP_List_Table {
 
         // Default mappings for common status values
         $status_map = [
-                // Success states (green)
+            // Success states (green)
                 'active'             => 'success',
                 'completed'          => 'success',
                 'paid'               => 'success',
@@ -541,7 +540,7 @@ class Table extends WP_List_Table {
                 'confirmed'          => 'success',
                 'delivered'          => 'success',
 
-                // Warning states (yellow/orange)
+            // Warning states (yellow/orange)
                 'pending'            => 'warning',
                 'processing'         => 'warning',
                 'draft'              => 'warning',
@@ -553,7 +552,7 @@ class Table extends WP_List_Table {
                 'expiring'           => 'warning',
                 'scheduled'          => 'warning',
 
-                // Error states (red)
+            // Error states (red)
                 'failed'             => 'error',
                 'cancelled'          => 'error',
                 'canceled'           => 'error',
@@ -565,11 +564,11 @@ class Table extends WP_List_Table {
                 'suspended'          => 'error',
                 'terminated'         => 'error',
 
-                // Info states (blue)
+            // Info states (blue)
                 'new'                => 'info',
                 'updated'            => 'info',
 
-                // Default/neutral states (gray)
+            // Default/neutral states (gray)
                 'inactive'           => 'default',
                 'disabled'           => 'default',
                 'paused'             => 'default',
@@ -588,7 +587,6 @@ class Table extends WP_List_Table {
      *
      * @return string Status label
      * @since 1.0.0
-     *
      */
     private function get_status_label( string $status ): string {
         // Check views for label
@@ -612,16 +610,31 @@ class Table extends WP_List_Table {
      *
      * @return string Checkbox HTML
      * @since 1.0.0
-     *
      */
     public function column_cb( $item ): string {
-        $id = method_exists( $item, 'get_id' ) ? $item->get_id() : ( $item->id ?? 0 );
+        $id = $this->get_item_id( $item );
 
         return sprintf(
                 '<input type="checkbox" name="%s[]" value="%s" />',
                 esc_attr( $this->config['labels']['plural'] ?? 'items' ),
                 esc_attr( $id )
         );
+    }
+
+    /**
+     * Get item ID from item object
+     *
+     * @param object $item Data object
+     *
+     * @return int Item ID
+     * @since 1.0.0
+     */
+    private function get_item_id( $item ): int {
+        if ( method_exists( $item, 'get_id' ) ) {
+            return (int) $item->get_id();
+        }
+
+        return (int) ( $item->id ?? 0 );
     }
 
     /**
@@ -633,15 +646,65 @@ class Table extends WP_List_Table {
      *
      * @return string Column content with row actions
      * @since 1.0.0
-     *
      */
     protected function handle_row_actions( $item, $column_name, $primary ) {
         if ( $column_name !== $primary ) {
             return '';
         }
 
+        $item_id = $this->get_item_id( $item );
         $actions = [];
-        $item_id = method_exists( $item, 'get_id' ) ? $item->get_id() : ( $item->id ?? 0 );
+
+        // Check if row_actions is a callable (shorthand for full control)
+        if ( is_callable( $this->config['row_actions'] ) ) {
+            $actions = call_user_func( $this->config['row_actions'], $item, $item_id );
+        } else {
+            // Process configured row actions
+            $actions = $this->build_row_actions( $item, $item_id );
+        }
+
+        // Auto-add delete action if callback exists and not already defined
+        if ( $this->should_add_auto_delete_action( $actions ) ) {
+            $actions['delete'] = $this->build_delete_action( $item_id );
+        }
+
+        /**
+         * Filters the row actions for a table row.
+         *
+         * @param array  $actions Row actions as [action_key => html_link]
+         * @param object $item    The current row's data object
+         * @param string $id      Table identifier
+         *
+         * @since 1.0.0
+         */
+        $actions = apply_filters( 'arraypress_table_row_actions', $actions, $item, $this->id );
+
+        /**
+         * Filters the row actions for a specific table.
+         *
+         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
+         *
+         * @param array  $actions Row actions as [action_key => html_link]
+         * @param object $item    The current row's data object
+         *
+         * @since 1.0.0
+         */
+        $actions = apply_filters( "arraypress_table_row_actions_{$this->id}", $actions, $item );
+
+        return $this->row_actions( $actions );
+    }
+
+    /**
+     * Build row actions from configuration
+     *
+     * @param object $item    Data object
+     * @param int    $item_id Item ID
+     *
+     * @return array Row actions
+     * @since 1.0.0
+     */
+    private function build_row_actions( $item, int $item_id ): array {
+        $actions = [];
 
         foreach ( $this->config['row_actions'] as $key => $action ) {
             // Skip if not array
@@ -662,71 +725,145 @@ class Table extends WP_List_Table {
             }
 
             // Build action link
-            if ( isset( $action['callback'] ) && is_callable( $action['callback'] ) ) {
-                $result = call_user_func( $action['callback'], $item );
-                if ( ! empty( $result ) ) {
-                    $actions[ $key ] = $result;
-                }
-            } elseif ( isset( $action['flyout'] ) && $action['flyout'] === true ) {
-                // Use table's flyout
-                $actions[ $key ] = sprintf(
-                        '<a href="#" data-flyout-trigger="%s" data-flyout-action="load" data-id="%s">%s</a>',
-                        esc_attr( $this->config['flyout'] ),
-                        esc_attr( $item_id ),
-                        esc_html( $action['label'] )
-                );
-            } elseif ( isset( $action['url'] ) ) {
-                $url = is_callable( $action['url'] )
-                        ? call_user_func( $action['url'], $item )
-                        : $action['url'];
+            $action_html = $this->build_single_action( $action, $item, $item_id, $key );
 
-                $class = $action['class'] ?? '';
-                $attrs = '';
-
-                // Add confirmation if needed
-                if ( ! empty( $action['confirm'] ) ) {
-                    $confirm_msg = is_string( $action['confirm'] )
-                            ? $action['confirm']
-                            : __( 'Are you sure?', 'arraypress' );
-                    $attrs       .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
-                }
-
-                $actions[ $key ] = sprintf(
-                        '<a href="%s" class="%s"%s>%s</a>',
-                        esc_url( $url ),
-                        esc_attr( $class ),
-                        $attrs,
-                        esc_html( $action['label'] )
-                );
+            if ( ! empty( $action_html ) ) {
+                $actions[ $key ] = $action_html;
             }
         }
 
-        /**
-         * Filters the row actions for a table row.
-         *
-         * @param array  $actions Row actions as [action_key => html_link]
-         * @param object $item    The current row's data object
-         * @param string $id      Table identifier
-         *
-         * @since 1.0.0
-         *
-         */
-        $actions = apply_filters( 'arraypress_table_row_actions', $actions, $item, $this->id );
+        return $actions;
+    }
 
-        /**
-         * Filters the row actions for a specific table.
-         *
-         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
-         *
-         * @param array  $actions Row actions as [action_key => html_link]
-         * @param object $item    The current row's data object
-         *
-         * @since 1.0.0
-         *
-         */
-        $actions = apply_filters( "arraypress_table_row_actions_{$this->id}", $actions, $item );
+    /**
+     * Build a single row action
+     *
+     * @param array  $action  Action configuration
+     * @param object $item    Data object
+     * @param int    $item_id Item ID
+     * @param string $key     Action key
+     *
+     * @return string Action HTML
+     * @since 1.0.0
+     */
+    private function build_single_action( array $action, $item, int $item_id, string $key ): string {
+        // Custom callback has highest priority
+        if ( isset( $action['callback'] ) && is_callable( $action['callback'] ) ) {
+            return call_user_func( $action['callback'], $item );
+        }
 
-        return $this->row_actions( $actions );
+        // Flyout action
+        if ( isset( $action['flyout'] ) && $action['flyout'] === true && ! empty( $this->config['flyout'] ) ) {
+            if ( function_exists( 'get_flyout_link' ) ) {
+                return \get_flyout_link( $this->config['flyout'], [
+                        'id'   => $item_id,
+                        'text' => $action['label'] ?? ucfirst( $key ),
+                ] );
+            }
+
+            // Fallback if flyout library not available
+            return sprintf(
+                    '<a href="#">%s</a>',
+                    esc_html( $action['label'] ?? ucfirst( $key ) )
+            );
+        }
+
+        // URL-based action
+        if ( isset( $action['url'] ) ) {
+            $url = is_callable( $action['url'] )
+                    ? call_user_func( $action['url'], $item )
+                    : $action['url'];
+
+            $class = $action['class'] ?? '';
+            $attrs = '';
+
+            // Add confirmation if needed
+            if ( ! empty( $action['confirm'] ) ) {
+                $confirm_msg = is_string( $action['confirm'] )
+                        ? $action['confirm']
+                        : __( 'Are you sure?', 'arraypress' );
+                $attrs       .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
+            }
+
+            return sprintf(
+                    '<a href="%s" class="%s"%s>%s</a>',
+                    esc_url( $url ),
+                    esc_attr( $class ),
+                    $attrs,
+                    esc_html( $action['label'] ?? ucfirst( $key ) )
+            );
+        }
+
+        return '';
+    }
+
+    /**
+     * Check if auto delete action should be added
+     *
+     * @param array $actions Current actions
+     *
+     * @return bool Whether to add auto delete
+     * @since 1.0.0
+     */
+    private function should_add_auto_delete_action( array $actions ): bool {
+        // Check if auto delete is disabled
+        if ( ! $this->config['auto_delete_action'] ) {
+            return false;
+        }
+
+        // Check if delete already exists
+        if ( isset( $actions['delete'] ) ) {
+            return false;
+        }
+
+        // Check if delete callback exists
+        if ( ! isset( $this->config['callbacks']['delete'] ) || ! is_callable( $this->config['callbacks']['delete'] ) ) {
+            return false;
+        }
+
+        // Check capability if set
+        if ( ! empty( $this->config['capabilities']['delete'] ) ) {
+            if ( ! current_user_can( $this->config['capabilities']['delete'] ) ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Build auto delete action
+     *
+     * @param int $item_id Item ID
+     *
+     * @return string Delete action HTML
+     * @since 1.0.0
+     */
+    private function build_delete_action( int $item_id ): string {
+        $singular = $this->config['labels']['singular'] ?? 'item';
+
+        $delete_url = wp_nonce_url(
+                add_query_arg(
+                        [
+                                'action' => 'delete',
+                                'item'   => $item_id,
+                        ],
+                        $this->get_current_url()
+                ),
+                "delete_{$singular}_{$item_id}"
+        );
+
+        $confirm_message = sprintf(
+                __( 'Are you sure you want to delete this %s?', 'arraypress' ),
+                $singular
+        );
+
+        return sprintf(
+                '<a href="%s" class="delete-link" onclick="return confirm(\'%s\')">%s</a>',
+                esc_url( $delete_url ),
+                esc_js( $confirm_message ),
+                esc_html__( 'Delete', 'arraypress' )
+        );
     }
 
     /**
@@ -734,10 +871,16 @@ class Table extends WP_List_Table {
      *
      * @return array Bulk action options
      * @since 1.0.0
-     *
      */
     public function get_bulk_actions(): array {
         $actions = [];
+
+        // Check bulk capability if set
+        if ( ! empty( $this->config['capabilities']['bulk'] ) ) {
+            if ( ! current_user_can( $this->config['capabilities']['bulk'] ) ) {
+                return $actions;
+            }
+        }
 
         foreach ( $this->config['bulk_actions'] as $key => $action ) {
             if ( is_string( $action ) ) {
@@ -758,7 +901,6 @@ class Table extends WP_List_Table {
          * @param string $id      Table identifier
          *
          * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_bulk_actions', $actions, $this->id );
     }
@@ -768,10 +910,10 @@ class Table extends WP_List_Table {
      *
      * @return void
      * @since 1.0.0
-     *
      */
     public function process_bulk_action(): void {
         $action = $this->current_action();
+
         if ( empty( $action ) ) {
             return;
         }
@@ -783,7 +925,9 @@ class Table extends WP_List_Table {
         }
 
         // Get selected items
-        $items = $_REQUEST[ $this->config['labels']['plural'] ?? 'items' ] ?? [];
+        $plural = $this->config['labels']['plural'] ?? 'items';
+        $items  = $_REQUEST[ $plural ] ?? [];
+
         if ( empty( $items ) ) {
             return;
         }
@@ -792,6 +936,7 @@ class Table extends WP_List_Table {
 
         // Get bulk action config
         $action_config = $this->config['bulk_actions'][ $action ] ?? null;
+
         if ( ! $action_config ) {
             return;
         }
@@ -816,7 +961,6 @@ class Table extends WP_List_Table {
          * @param string $id     Table identifier
          *
          * @since 1.0.0
-         *
          */
         do_action( 'arraypress_table_bulk_action', $items, $action, $this->id );
 
@@ -829,7 +973,6 @@ class Table extends WP_List_Table {
          * @param string $action Action key being performed
          *
          * @since 1.0.0
-         *
          */
         do_action( "arraypress_table_bulk_action_{$this->id}", $items, $action );
 
@@ -842,7 +985,6 @@ class Table extends WP_List_Table {
          * @param array $items Selected item IDs
          *
          * @since 1.0.0
-         *
          */
         do_action( "arraypress_table_bulk_action_{$this->id}_{$action}", $items );
 
@@ -854,12 +996,31 @@ class Table extends WP_List_Table {
 
             if ( is_array( $result ) ) {
                 $redirect_args = $result;
+            } elseif ( is_int( $result ) ) {
+                // Handle simple count return
+                $redirect_args = [ 'updated' => $result ];
+            } elseif ( is_bool( $result ) ) {
+                // Handle boolean return
+                $redirect_args = [ 'updated' => $result ? count( $items ) : 0 ];
             }
+        } else {
+            // No callback - assume success for item count
+            $redirect_args = [ 'updated' => count( $items ) ];
         }
 
         // Redirect with notice parameters
         if ( ! empty( $redirect_args ) ) {
-            $redirect_url = add_query_arg( $redirect_args, $this->get_current_url() );
+            $remove_args = [
+                    'action',
+                    'action2',
+                    $plural,
+                    '_wpnonce',
+                    '_wp_http_referer'
+            ];
+
+            $redirect_url = remove_query_arg( $remove_args, $this->get_current_url() );
+            $redirect_url = add_query_arg( $redirect_args, $redirect_url );
+
             wp_safe_redirect( $redirect_url );
             exit;
         }
@@ -870,18 +1031,15 @@ class Table extends WP_List_Table {
      *
      * @return array View links
      * @since 1.0.0
-     *
      */
     public function get_views(): array {
-        $views    = [];
-        $current  = $this->status;
-        $base_url = remove_query_arg( [
-                'status',
-                'paged',
-                's',
-                '_wpnonce',
-                '_wp_http_referer'
-        ], $this->get_current_url() );
+        $views   = [];
+        $current = $this->status;
+
+        $base_url = remove_query_arg(
+                [ 'status', 'paged', 's', '_wpnonce', '_wp_http_referer', 'deleted', 'updated', 'error' ],
+                $this->get_current_url()
+        );
 
         // Get counts
         $this->get_counts();
@@ -891,8 +1049,8 @@ class Table extends WP_List_Table {
                 '<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
                 esc_url( $base_url ),
                 empty( $current ) ? 'current' : '',
-                __( 'All', 'arraypress' ),
-                number_format_i18n( $this->counts['total'] ?? 0 )
+                esc_html__( 'All', 'arraypress' ),
+                esc_html( number_format_i18n( $this->counts['total'] ?? 0 ) )
         );
 
         // Add configured views
@@ -905,7 +1063,7 @@ class Table extends WP_List_Table {
                 continue;
             }
 
-            $label = is_array( $view ) ? $view['label'] : $view;
+            $label = is_array( $view ) ? ( $view['label'] ?? $key ) : $view;
             $url   = add_query_arg( 'status', $key, $base_url );
 
             $views[ $key ] = sprintf(
@@ -913,7 +1071,7 @@ class Table extends WP_List_Table {
                     esc_url( $url ),
                     $current === $key ? 'current' : '',
                     esc_html( $label ),
-                    number_format_i18n( $this->counts[ $key ] )
+                    esc_html( number_format_i18n( $this->counts[ $key ] ) )
             );
         }
 
@@ -925,7 +1083,6 @@ class Table extends WP_List_Table {
          * @param string $status Current active status filter
          *
          * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_views', $views, $this->id, $this->status );
     }
@@ -937,7 +1094,6 @@ class Table extends WP_List_Table {
      *
      * @return void
      * @since 1.0.0
-     *
      */
     protected function extra_tablenav( $which ): void {
         if ( $which !== 'top' ) {
@@ -971,7 +1127,7 @@ class Table extends WP_List_Table {
                 printf(
                         '<a href="%s" class="button">%s</a>',
                         esc_url( $clear_url ),
-                        __( 'Clear', 'arraypress' )
+                        esc_html__( 'Clear', 'arraypress' )
                 );
             }
             ?>
@@ -987,17 +1143,16 @@ class Table extends WP_List_Table {
      *
      * @return void
      * @since 1.0.0
-     *
      */
     private function render_filter( string $key, $filter ): void {
         $options = [];
         $label   = '';
-        $current = $_GET[ $key ] ?? '';
+        $current = sanitize_text_field( $_GET[ $key ] ?? '' );
 
         if ( is_array( $filter ) ) {
             $label = $filter['label'] ?? '';
 
-            if ( isset( $filter['options'] ) ) {
+            if ( isset( $filter['options'] ) && is_array( $filter['options'] ) ) {
                 $options = $filter['options'];
             } elseif ( isset( $filter['options_callback'] ) && is_callable( $filter['options_callback'] ) ) {
                 $options = call_user_func( $filter['options_callback'] );
@@ -1015,7 +1170,7 @@ class Table extends WP_List_Table {
             <?php endif; ?>
 
             <?php foreach ( $options as $value => $text ) : ?>
-                <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $current, $value ); ?>>
+                <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $current, (string) $value ); ?>>
                     <?php echo esc_html( $text ); ?>
                 </option>
             <?php endforeach; ?>
@@ -1028,7 +1183,6 @@ class Table extends WP_List_Table {
      *
      * @return void
      * @since 1.0.0
-     *
      */
     public function prepare_items(): void {
         $this->_column_headers = [
@@ -1043,7 +1197,7 @@ class Table extends WP_List_Table {
 
         $total = ! empty( $this->status ) && isset( $this->counts[ $this->status ] )
                 ? $this->counts[ $this->status ]
-                : $this->counts['total'] ?? 0;
+                : ( $this->counts['total'] ?? 0 );
 
         $this->set_pagination_args( [
                 'total_items' => $total,
@@ -1057,10 +1211,11 @@ class Table extends WP_List_Table {
      *
      * @return void
      * @since 1.0.0
-     *
      */
     public function no_items(): void {
-        $search = $this->get_search();
+        $search   = $this->get_search();
+        $singular = $this->config['labels']['singular'] ?? 'item';
+        $plural   = $this->config['labels']['plural'] ?? 'items';
 
         if ( ! empty( $search ) && ! empty( $this->config['labels']['not_found_search'] ) ) {
             $message = $this->config['labels']['not_found_search'];
@@ -1071,18 +1226,18 @@ class Table extends WP_List_Table {
             if ( ! empty( $search ) ) {
                 $message = sprintf(
                         __( 'No %s found for your search.', 'arraypress' ),
-                        $this->config['labels']['plural'] ?: 'items'
+                        $plural
                 );
             } elseif ( ! empty( $this->status ) ) {
                 $message = sprintf(
                         __( 'No %s %s found.', 'arraypress' ),
                         $this->get_status_label( $this->status ),
-                        $this->config['labels']['plural'] ?: 'items'
+                        $plural
                 );
             } else {
                 $message = sprintf(
                         __( 'No %s found.', 'arraypress' ),
-                        $this->config['labels']['plural'] ?: 'items'
+                        $plural
                 );
             }
         }
@@ -1095,7 +1250,6 @@ class Table extends WP_List_Table {
      *
      * @return array Query arguments
      * @since 1.0.0
-     *
      */
     private function parse_pagination_args(): array {
         $paged  = absint( $_REQUEST['paged'] ?? 1 );
@@ -1127,7 +1281,6 @@ class Table extends WP_List_Table {
      *
      * @return string Search query
      * @since 1.0.0
-     *
      */
     private function get_search(): string {
         return sanitize_text_field( $_REQUEST['s'] ?? '' );
@@ -1136,14 +1289,24 @@ class Table extends WP_List_Table {
     /**
      * Get current page URL
      *
+     * Returns a clean URL with just the page parameter, excluding
+     * form submission parameters like action, _wpnonce, etc.
+     *
      * @return string Current URL
      * @since 1.0.0
-     *
      */
     private function get_current_url(): string {
         $page = $_GET['page'] ?? $this->config['page'];
 
-        return add_query_arg( 'page', $page, admin_url( 'admin.php' ) );
+        // Build clean URL with only essential parameters
+        $url = add_query_arg( 'page', $page, admin_url( 'admin.php' ) );
+
+        // Preserve status filter if set
+        if ( ! empty( $_GET['status'] ) ) {
+            $url = add_query_arg( 'status', sanitize_key( $_GET['status'] ), $url );
+        }
+
+        return $url;
     }
 
 }

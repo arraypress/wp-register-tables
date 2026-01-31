@@ -15,6 +15,11 @@ declare( strict_types=1 );
 
 use ArrayPress\RegisterTables\Manager;
 
+// Initialize the manager early action processing
+if ( is_admin() ) {
+	Manager::init();
+}
+
 if ( ! function_exists( 'register_admin_table' ) ) {
 	/**
 	 * Register an admin table
