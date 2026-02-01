@@ -14,16 +14,13 @@
     border-bottom: 1px solid #c3c4c7;
     margin: 0 0 0 -20px;
     padding: 0 20px;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
 }
 
 .list-table-header__inner {
     display: flex;
     align-items: center;
     gap: 16px;
-    width: 100%;
+    height: 80px;
 }
 
 .list-table-header__branding {
@@ -195,18 +192,18 @@
 }
 
 /* ==========================================================================
-   Avatar Styling
+   Avatar Styling (matches WordPress users table)
    ========================================================================== */
+
+.wp-list-table .column-name img.avatar,
+.wp-list-table .column-customer img.avatar {
+    float: left;
+    margin-right: 10px;
+    margin-top: 1px;
+}
 
 .wp-list-table .avatar {
     border-radius: 50%;
-    vertical-align: middle;
-    margin-right: 10px;
-}
-
-.wp-list-table .column-primary strong {
-    display: inline-block;
-    vertical-align: middle;
 }
 
 /* ==========================================================================
