@@ -107,12 +107,33 @@ class StatusBadge {
 	public static function render( string $status, array $custom_styles = [], array $labels = [] ): string {
 		$class = self::get_class( $status, $custom_styles );
 		$label = self::get_label( $status, $labels );
+		$icon  = self::get_icon( $class );
 
 		return sprintf(
-			'<span class="badge badge-%s">%s</span>',
+			'<span class="badge badge-%s"><span class="dashicons %s"></span>%s</span>',
 			esc_attr( $class ),
+			esc_attr( $icon ),
 			esc_html( $label )
 		);
+	}
+
+	/**
+	 * Get the dashicon class for a badge type
+	 *
+	 * @param string $class Badge class (success, warning, error, info, default)
+	 *
+	 * @return string Dashicon class
+	 */
+	public static function get_icon( string $class ): string {
+		$icons = [
+			'success' => 'dashicons-yes-alt',
+			'warning' => 'dashicons-clock',
+			'error'   => 'dashicons-dismiss',
+			'info'    => 'dashicons-info-outline',
+			'default' => 'dashicons-marker',
+		];
+
+		return $icons[ $class ] ?? 'dashicons-marker';
 	}
 
 	/**

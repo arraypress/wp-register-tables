@@ -5,6 +5,19 @@
  */
 
 /* ==========================================================================
+   Table Tweaks
+   ========================================================================== */
+
+.admin-table .metabox-prefs {
+    margin: 0 0 0 -20px !important;
+}
+
+.admin-table .notice {
+    margin-top: 12px;
+    margin-left: 0;
+}
+
+/* ==========================================================================
    List Table Header (outside .wrap, sibling to it)
    Matches EDD pattern - sits in #wpcontent, uses negative margin to stretch
    ========================================================================== */
@@ -117,42 +130,52 @@
 }
 
 /* ==========================================================================
-   Status Badges
+   Status Badges (EDD-inspired)
    ========================================================================== */
 
 .badge {
-    display: inline-block;
-    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
     font-size: 12px;
-    line-height: 1.2;
-    font-weight: 600;
-    border-radius: 3px;
-    background: #dcdcde;
-    color: #2c3338;
+    line-height: 1.4;
+    font-weight: 500;
+    border-radius: 4px;
+    background: #ececec;
+    color: #50575e;
+}
+
+.badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    opacity: 0.85;
 }
 
 .badge-success {
-    background: #d4f4dd;
-    color: #00a32a;
+    background: #e5f5f0;
+    color: #017d5c;
 }
 
 .badge-warning {
-    background: #fcf0e4;
+    background: #f5f2e5;
     color: #996800;
 }
 
 .badge-error {
-    background: #facfd2;
-    color: #d63638;
+    background: #ffd6d6;
+    color: #ac3d3d;
 }
 
 .badge-info {
-    background: #e5f5fa;
-    color: #0073aa;
+    background: #e5f1f5;
+    color: #016087;
 }
 
 .badge-default {
-    background: #f0f0f1;
+    background: #ececec;
     color: #50575e;
 }
 
@@ -192,6 +215,14 @@
 }
 
 /* ==========================================================================
+   Filter Actions
+   ========================================================================== */
+
+.tablenav .actions > .button + .button {
+    margin-left: 6px;
+}
+
+/* ==========================================================================
    Avatar Styling (matches WordPress users table)
    ========================================================================== */
 
@@ -203,7 +234,7 @@
 }
 
 .wp-list-table .avatar {
-    border-radius: 50%;
+    border-radius: 4px;
 }
 
 /* ==========================================================================

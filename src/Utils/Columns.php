@@ -15,6 +15,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Utils;
 
+use ArrayPress\Countries\Countries;
+use ArrayPress\Currencies\Currency;
 use ArrayPress\DateUtils\Dates;
 
 // Exit if accessed directly
@@ -132,6 +134,11 @@ class Columns {
 			return self::format_email( $value );
 		}
 
+		// Country columns
+		if ( self::is_country_column( $column_name ) ) {
+			return self::format_country( $value );
+		}
+
 		// Date columns
 		if ( self::is_date_column( $column_name ) ) {
 			return self::format_date( $value );
@@ -199,66 +206,49 @@ class Columns {
 	 * @return string Formatted date HTML with title
 	 */
 	public static function format_date( string $utc_datetime ): string {
-		// Check for zero/empty dates
-		if ( class_exists( '\\ArrayPress\\DateUtils\\Dates' ) ) {
-			if ( Dates::is_zero( $utc_datetime ) ) {
-				return self::render_empty();
-			}
-
-			$human     = Dates::human_diff( $utc_datetime );
-			$formatted = Dates::format( $utc_datetime );
-
-			return sprintf(
-				'<span title="%s">%s</span>',
-				esc_attr( $formatted ),
-				esc_html( $human )
-			);
-		}
-
-		// Fallback if DateUtils not available
-		$timestamp = strtotime( $utc_datetime . ' UTC' );
-
-		if ( ! $timestamp || $timestamp <= 0 ) {
+		if ( Dates::is_zero( $utc_datetime ) ) {
 			return self::render_empty();
 		}
 
-		$human = human_time_diff( $timestamp, time() ) . ' ' . __( 'ago', 'arraypress' );
+		$human     = Dates::human_diff( $utc_datetime );
+		$formatted = Dates::format( $utc_datetime );
 
 		return sprintf(
 			'<span title="%s">%s</span>',
-			esc_attr( $utc_datetime ),
+			esc_attr( $formatted ),
 			esc_html( $human )
 		);
 	}
 
 	/**
-	 * Format price value (cents to currency)
+	 * Format price value (smallest unit to currency)
 	 *
-	 * @param mixed  $value Amount in cents
-	 * @param object $item  Data object (to get currency)
+	 * Converts amount stored in smallest unit (cents, pence, etc.) to
+	 * formatted currency string with proper symbol and decimals.
 	 *
-	 * @return string Formatted price HTML
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $value    Amount in smallest unit (e.g., cents).
+	 * @param object $item     Data object (checked for currency property/method).
+	 * @param string $currency Optional currency code override (default: USD).
+	 *
+	 * @return string Formatted price HTML.
 	 */
-	public static function format_price( $value, $item ): string {
+	public static function format_price( $value, $item, string $currency = '' ): string {
 		$amount = is_numeric( $value ) ? intval( $value ) : 0;
 
-		// Get currency from item if available
-		$currency = 'USD';
-		if ( method_exists( $item, 'get_currency' ) ) {
-			$currency = $item->get_currency();
-		} elseif ( property_exists( $item, 'currency' ) && ! empty( $item->currency ) ) {
-			$currency = $item->currency;
+		// Get currency from item if not provided
+		if ( empty( $currency ) ) {
+			if ( method_exists( $item, 'get_currency' ) ) {
+				$currency = $item->get_currency();
+			} elseif ( is_object( $item ) && property_exists( $item, 'currency' ) && ! empty( $item->currency ) ) {
+				$currency = $item->currency;
+			} else {
+				$currency = 'USD';
+			}
 		}
 
-		// Use Currency class if available
-		if ( class_exists( '\\ArrayPress\\Utils\\Currency\\Currency' ) ) {
-			$formatted = \ArrayPress\Utils\Currency\Currency::format( $amount, $currency );
-		} elseif ( function_exists( 'format_currency' ) ) {
-			$formatted = format_currency( $amount, $currency );
-		} else {
-			// Fallback formatting
-			$formatted = '$' . number_format( $amount / 100, 2 );
-		}
+		$formatted = Currency::format( $amount, $currency );
 
 		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
@@ -339,6 +329,38 @@ class Columns {
 			: '<span class="dashicons dashicons-minus" style="color: #a7aaad;"></span><span class="screen-reader-text">' . esc_html__( 'No', 'arraypress' ) . '</span>';
 	}
 
+	/**
+	 * Format country code with flag and name
+	 *
+	 * Displays a country code as "🇺🇸 United States" format.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $code         Country code (ISO 3166-1 alpha-2, e.g., 'US', 'GB').
+	 * @param bool   $include_flag Include emoji flag (default true).
+	 * @param bool   $include_name Include country name (default true).
+	 *
+	 * @return string Formatted country HTML.
+	 */
+	public static function format_country( string $code, bool $include_flag = true, bool $include_name = true ): string {
+		if ( empty( $code ) ) {
+			return self::render_empty();
+		}
+
+		$code = strtoupper( trim( $code ) );
+		$flag = $include_flag ? Countries::get_flag( $code ) : '';
+		$name = $include_name ? Countries::get_name( $code ) : '';
+
+		// If name came back as the code itself, the country wasn't found
+		if ( $name === $code && ! Countries::exists( $code ) ) {
+			return esc_html( $code );
+		}
+
+		$parts = array_filter( [ $flag, $name ] );
+
+		return esc_html( implode( ' ', $parts ) );
+	}
+
 	/* ========================================================================
 	 * COLUMN TYPE DETECTION
 	 * ======================================================================== */
@@ -363,6 +385,19 @@ class Columns {
 	 */
 	public static function is_email_column( string $column_name ): bool {
 		return str_contains( $column_name, 'email' );
+	}
+
+	/**
+	 * Check if column is a country column
+	 *
+	 * @param string $column_name Column name
+	 *
+	 * @return bool
+	 */
+	public static function is_country_column( string $column_name ): bool {
+		return $column_name === 'country' ||
+		       $column_name === 'country_code' ||
+		       str_ends_with( $column_name, '_country' );
 	}
 
 	/**

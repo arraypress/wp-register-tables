@@ -16,33 +16,6 @@ declare( strict_types=1 );
 
 use ArrayPress\RegisterTables\Manager;
 
-if ( ! function_exists( 'init_admin_tables' ) ) {
-	/**
-	 * Initialize the admin tables manager
-	 *
-	 * Sets up WordPress hooks for action processing, screen options, and asset
-	 * enqueuing. Call this once in your plugin after registering all tables,
-	 * typically on the 'plugins_loaded' or 'init' hook.
-	 *
-	 * @return void
-	 *
-	 * @since 1.0.0
-	 *
-	 * @example
-	 * // In your plugin's main file
-	 * add_action( 'plugins_loaded', function() {
-	 *     // Register tables first
-	 *     register_admin_table( 'my_customers', [ ... ] );
-	 *
-	 *     // Then initialize
-	 *     init_admin_tables();
-	 * } );
-	 */
-	function init_admin_tables(): void {
-		Manager::init();
-	}
-}
-
 if ( ! function_exists( 'register_admin_table' ) ) {
 	/**
 	 * Register an admin table

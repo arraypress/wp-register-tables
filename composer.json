@@ -14,7 +14,9 @@
   "require": {
     "php": ">=7.4",
     "arraypress/wp-composer-assets": "dev-main",
-    "arraypress/wp-date-utils": "dev-main"
+    "arraypress/wp-date-utils": "dev-main",
+    "arraypress/wp-countries": "dev-main",
+    "arraypress/wp-currencies": "dev-main"
   },
   "autoload": {
     "psr-4": {
