@@ -227,6 +227,8 @@ class Manager {
                 $config['columns']
         );
 
+        self::init();
+
         // Store configuration
         self::$tables[ $id ] = $config;
     }

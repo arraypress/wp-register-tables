@@ -134,12 +134,11 @@ class Table extends WP_List_Table {
      * Initializes the table with configuration and sets up the parent
      * WP_List_Table with appropriate labels.
      *
+     * @since 1.0.0
+     *
      * @param string $id     Unique table identifier used in hooks and element IDs.
      * @param array  $config Table configuration array containing columns, actions,
      *                       callbacks, and display options.
-     *
-     * @since 1.0.0
-     *
      */
     public function __construct( string $id, array $config ) {
         $this->id     = $id;
@@ -169,10 +168,10 @@ class Table extends WP_List_Table {
      * Returns array of column key => label pairs for the table header.
      * Automatically adds checkbox column if bulk actions are configured.
      *
-     * @return array Column definitions where keys are column identifiers
-     *               and values are display labels.
      * @since 1.0.0
      *
+     * @return array Column definitions where keys are column identifiers
+     *               and values are display labels.
      */
     public function get_columns(): array {
         $columns = [];
@@ -194,12 +193,11 @@ class Table extends WP_List_Table {
         /**
          * Filter the table columns
          *
+         * @since 1.0.0
+         *
          * @param array  $columns Column definitions.
          * @param string $id      Table identifier.
          * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_columns', $columns, $this->id, $this->config );
     }
@@ -210,9 +208,9 @@ class Table extends WP_List_Table {
      * Returns array of column keys that should be hidden by default.
      * Users can show/hide columns via Screen Options.
      *
-     * @return array Column keys to hide by default.
      * @since 1.0.0
      *
+     * @return array Column keys to hide by default.
      */
     public function get_hidden_columns(): array {
         $hidden = $this->config['hidden_columns'] ?? [];
@@ -220,12 +218,11 @@ class Table extends WP_List_Table {
         /**
          * Filter the hidden columns
          *
-         * @param array  $hidden Hidden column keys.
-         * @param string $id     Table identifier.
-         * @param array  $config Table configuration.
-         *
          * @since 1.0.0
          *
+         * @param array  $hidden  Hidden column keys.
+         * @param string $id      Table identifier.
+         * @param array  $config  Table configuration.
          */
         return apply_filters( 'arraypress_table_hidden_columns', $hidden, $this->id, $this->config );
     }
@@ -236,10 +233,10 @@ class Table extends WP_List_Table {
      * Returns array defining which columns are sortable and their
      * default sort direction.
      *
-     * @return array Sortable column definitions where keys are column names
-     *               and values are [orderby, is_descending_default] arrays.
      * @since 1.0.0
      *
+     * @return array Sortable column definitions where keys are column names
+     *               and values are [orderby, is_descending_default] arrays.
      */
     public function get_sortable_columns(): array {
         $sortable = [];
@@ -257,12 +254,11 @@ class Table extends WP_List_Table {
         /**
          * Filter the sortable columns
          *
+         * @since 1.0.0
+         *
          * @param array  $sortable Sortable column definitions.
          * @param string $id       Table identifier.
          * @param array  $config   Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_sortable_columns', $sortable, $this->id, $this->config );
     }
@@ -273,9 +269,9 @@ class Table extends WP_List_Table {
      * Returns the column that should display row actions.
      * Falls back to parent method if not configured.
      *
-     * @return string Primary column identifier.
      * @since 1.0.0
      *
+     * @return string Primary column identifier.
      */
     protected function get_primary_column_name(): string {
         return $this->config['primary_column'] ?? parent::get_primary_column_name();
@@ -291,9 +287,9 @@ class Table extends WP_List_Table {
      * Retrieves items for display by calling the configured get_items callback.
      * Applies pagination, sorting, search, status filter, and custom filters.
      *
-     * @return array Array of item objects to display.
      * @since 1.0.0
      *
+     * @return array Array of item objects to display.
      */
     public function get_data(): array {
         // Start with base query args
@@ -362,23 +358,21 @@ class Table extends WP_List_Table {
         /**
          * Filter the query arguments before fetching items
          *
+         * @since 1.0.0
+         *
          * @param array  $args   Query arguments.
          * @param string $id     Table identifier.
          * @param array  $config Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         $args = apply_filters( 'arraypress_table_query_args', $args, $this->id, $this->config );
 
         /**
          * Filter query arguments for a specific table
          *
-         * @param array $args   Query arguments.
-         * @param array $config Table configuration.
-         *
          * @since 1.0.0
          *
+         * @param array $args   Query arguments.
+         * @param array $config Table configuration.
          */
         $args = apply_filters( "arraypress_table_query_args_{$this->id}", $args, $this->config );
 
@@ -396,10 +390,10 @@ class Table extends WP_List_Table {
      * Retrieves and caches item counts per status. Used for view tabs
      * and determining total items for pagination.
      *
-     * @return array Associative array of status => count pairs.
-     *               Always includes 'total' key.
      * @since 1.0.0
      *
+     * @return array Associative array of status => count pairs.
+     *               Always includes 'total' key.
      */
     public function get_counts(): array {
         // Return cached counts if available
@@ -431,12 +425,12 @@ class Table extends WP_List_Table {
      * Checks for configured callbacks, then falls back to automatic
      * formatting based on column name patterns.
      *
+     * @since 1.0.0
+     *
      * @param object $item        Data object (typically a BerlinDB Row).
      * @param string $column_name Column identifier.
      *
      * @return string Rendered column HTML content.
-     * @since 1.0.0
-     *
      */
     public function column_default( $item, $column_name ) {
         // Check for column-specific config
@@ -482,12 +476,12 @@ class Table extends WP_List_Table {
      * - `after`: Content after the title
      * - `link`: How to link the title ('view_flyout', 'edit_flyout', callable, or URL)
      *
+     * @since 1.0.0
+     *
      * @param array  $config Column configuration.
      * @param object $item   Data object.
      *
      * @return string Rendered column HTML.
-     * @since 1.0.0
-     *
      */
     private function render_structured_column( array $config, $item ): string {
         $output = '';
@@ -512,17 +506,8 @@ class Table extends WP_List_Table {
         }
 
         if ( ! empty( $title ) ) {
-            $link_url = $this->get_column_link_url( $config, $item );
-
-            if ( $link_url ) {
-                $output .= sprintf(
-                        '<a href="%s"><strong>%s</strong></a>',
-                        esc_url( $link_url ),
-                        esc_html( $title )
-                );
-            } else {
-                $output .= '<strong>' . esc_html( $title ) . '</strong>';
-            }
+            $title_html = $this->render_column_title_link( $config, $item, $title );
+            $output    .= $title_html;
         }
 
         // Render "after" content
@@ -538,57 +523,95 @@ class Table extends WP_List_Table {
     }
 
     /**
-     * Get the link URL for a column based on link configuration
+     * Render the title with optional link
      *
-     * Supports:
-     * - 'view_flyout': Links to the view flyout (uses config's view_flyout)
-     * - 'edit_flyout': Links to the edit flyout (uses config's flyout)
-     * - callable: Custom function returning URL
-     * - string: Direct URL
+     * Handles different link types including flyouts which need special attributes.
+     *
+     * @since 1.0.0
      *
      * @param array  $config Column configuration.
      * @param object $item   Data object.
+     * @param string $title  Title text.
      *
-     * @return string|null Link URL or null if no link.
-     * @since 1.0.0
-     *
+     * @return string Title HTML with link if configured.
      */
-    private function get_column_link_url( array $config, $item ): ?string {
+    private function render_column_title_link( array $config, $item, string $title ): string {
         if ( ! isset( $config['link'] ) ) {
-            return null;
+            return '<strong>' . esc_html( $title ) . '</strong>';
         }
 
         $link    = $config['link'];
         $item_id = $this->get_item_id( $item );
 
-        // Flyout links
+        // Flyout links need special handling with data attributes
         if ( $link === 'view_flyout' && ! empty( $this->config['view_flyout'] ) ) {
-            if ( function_exists( 'get_flyout_url' ) ) {
-                return \get_flyout_url( $this->config['view_flyout'], $item_id );
-            }
-
-            return null;
+            return $this->build_flyout_title_link( $this->config['view_flyout'], $item_id, $title );
         }
 
         if ( $link === 'edit_flyout' && ! empty( $this->config['flyout'] ) ) {
-            if ( function_exists( 'get_flyout_url' ) ) {
-                return \get_flyout_url( $this->config['flyout'], $item_id );
-            }
-
-            return null;
+            return $this->build_flyout_title_link( $this->config['flyout'], $item_id, $title );
         }
 
         // Callable returns URL
         if ( is_callable( $link ) ) {
-            return call_user_func( $link, $item );
+            $url = call_user_func( $link, $item );
+            if ( $url ) {
+                return sprintf(
+                        '<a href="%s"><strong>%s</strong></a>',
+                        esc_url( $url ),
+                        esc_html( $title )
+                );
+            }
         }
 
         // Direct URL string
         if ( is_string( $link ) && ! empty( $link ) ) {
-            return $link;
+            return sprintf(
+                    '<a href="%s"><strong>%s</strong></a>',
+                    esc_url( $link ),
+                    esc_html( $title )
+            );
         }
 
-        return null;
+        return '<strong>' . esc_html( $title ) . '</strong>';
+    }
+
+    /**
+     * Build a flyout trigger link for column title
+     *
+     * Uses get_flyout_link() if available to ensure proper attributes.
+     *
+     * @since 1.0.0
+     *
+     * @param string $flyout_id Full flyout identifier (e.g., 'ate_view_customer').
+     * @param int    $item_id   Item ID.
+     * @param string $title     Title text.
+     *
+     * @return string Flyout link HTML.
+     */
+    private function build_flyout_title_link( string $flyout_id, int $item_id, string $title ): string {
+        // Use the flyout library's link function if available
+        if ( function_exists( 'get_flyout_link' ) ) {
+            // get_flyout_link returns: <a class="wp-flyout-trigger" data-*...>Text</a>
+            // We need to wrap the title in <strong> - replace the text content
+            $link = \get_flyout_link( $flyout_id, [
+                    'id'   => $item_id,
+                    'text' => $title,
+            ] );
+
+            if ( ! empty( $link ) ) {
+                // Wrap the text in <strong> tags
+                // Replace >Text</a> with ><strong>Text</strong></a>
+                return preg_replace(
+                        '/>([^<]+)<\/a>$/',
+                        '><strong>$1</strong></a>',
+                        $link
+                );
+            }
+        }
+
+        // Fallback: plain link (won't trigger flyout properly but shows something)
+        return '<strong>' . esc_html( $title ) . '</strong>';
     }
 
     /**
@@ -597,13 +620,13 @@ class Table extends WP_List_Table {
      * Delegates to Utils\Columns for intelligent formatting based on
      * column name patterns (dates, prices, statuses, etc.).
      *
+     * @since 1.0.0
+     *
      * @param string $column_name Column identifier.
      * @param mixed  $value       Raw column value.
      * @param object $item        Data object for context (e.g., getting currency).
      *
      * @return string Formatted HTML content.
-     * @since 1.0.0
-     *
      */
     private function auto_format_column( string $column_name, $value, $item ): string {
         return Utils\Columns::auto_format(
@@ -620,11 +643,11 @@ class Table extends WP_List_Table {
      *
      * Renders the checkbox for bulk action selection.
      *
+     * @since 1.0.0
+     *
      * @param object $item Data object.
      *
      * @return string Checkbox input HTML.
-     * @since 1.0.0
-     *
      */
     public function column_cb( $item ): string {
         $id = $this->get_item_id( $item );
@@ -646,13 +669,13 @@ class Table extends WP_List_Table {
      * Builds and renders row actions (Edit, View, Delete, etc.) that appear
      * on hover below the primary column content.
      *
+     * @since 1.0.0
+     *
      * @param object $item        Data object.
      * @param string $column_name Current column being rendered.
      * @param string $primary     Primary column identifier.
      *
      * @return string Row actions HTML (empty for non-primary columns).
-     * @since 1.0.0
-     *
      */
     protected function handle_row_actions( $item, $column_name, $primary ) {
         // Only show actions on primary column
@@ -678,23 +701,21 @@ class Table extends WP_List_Table {
         /**
          * Filter row actions
          *
+         * @since 1.0.0
+         *
          * @param array  $actions Row action links.
          * @param object $item    Data object.
          * @param string $id      Table identifier.
-         *
-         * @since 1.0.0
-         *
          */
         $actions = apply_filters( 'arraypress_table_row_actions', $actions, $item, $this->id );
 
         /**
          * Filter row actions for a specific table
          *
-         * @param array  $actions Row action links.
-         * @param object $item    Data object.
-         *
          * @since 1.0.0
          *
+         * @param array  $actions Row action links.
+         * @param object $item    Data object.
          */
         $actions = apply_filters( "arraypress_table_row_actions_{$this->id}", $actions, $item );
 
@@ -707,12 +728,12 @@ class Table extends WP_List_Table {
      * Processes the row_actions config array to generate action links.
      * Supports conditions, capabilities, and various action types.
      *
+     * @since 1.0.0
+     *
      * @param object $item    Data object.
      * @param int    $item_id Item ID.
      *
      * @return array Associative array of action key => HTML link.
-     * @since 1.0.0
-     *
      */
     private function build_row_actions( $item, int $item_id ): array {
         $actions = [];
@@ -753,14 +774,14 @@ class Table extends WP_List_Table {
      * - handler: Server-side handler with automatic nonce
      * - url: Simple link to URL
      *
+     * @since 1.0.0
+     *
      * @param array  $action  Action configuration array.
      * @param object $item    Data object.
      * @param int    $item_id Item ID.
      * @param string $key     Action identifier.
      *
      * @return string Action link HTML.
-     * @since 1.0.0
-     *
      */
     private function build_single_action( array $action, $item, int $item_id, string $key ): string {
         // Custom callback - full control over output
@@ -861,11 +882,11 @@ class Table extends WP_List_Table {
      * - A delete callback is configured
      * - User has delete capability (if configured)
      *
+     * @since 1.0.0
+     *
      * @param array $actions Current row actions.
      *
      * @return bool True if auto delete should be added.
-     * @since 1.0.0
-     *
      */
     private function should_add_auto_delete_action( array $actions ): bool {
         if ( ! $this->config['auto_delete_action'] ) {
@@ -894,11 +915,11 @@ class Table extends WP_List_Table {
      *
      * Generates a delete action link with nonce and confirmation dialog.
      *
+     * @since 1.0.0
+     *
      * @param int $item_id Item ID to delete.
      *
      * @return string Delete action link HTML.
-     * @since 1.0.0
-     *
      */
     private function build_delete_action( int $item_id ): string {
         $singular = $this->config['labels']['singular'] ?? 'item';
@@ -938,9 +959,9 @@ class Table extends WP_List_Table {
      * Returns array of bulk action options for the dropdown.
      * Respects capability requirements.
      *
-     * @return array Bulk action key => label pairs.
      * @since 1.0.0
      *
+     * @return array Bulk action key => label pairs.
      */
     public function get_bulk_actions(): array {
         $actions = [];
@@ -967,11 +988,10 @@ class Table extends WP_List_Table {
         /**
          * Filter bulk actions
          *
-         * @param array  $actions Bulk action options.
-         * @param string $id      Table identifier.
-         *
          * @since 1.0.0
          *
+         * @param array  $actions Bulk action options.
+         * @param string $id      Table identifier.
          */
         return apply_filters( 'arraypress_table_bulk_actions', $actions, $this->id );
     }
@@ -997,9 +1017,9 @@ class Table extends WP_List_Table {
      * Builds the list of status links shown above the table.
      * Only shows statuses that have items.
      *
-     * @return array View key => HTML link pairs.
      * @since 1.0.0
      *
+     * @return array View key => HTML link pairs.
      */
     public function get_views(): array {
         $views   = [];
@@ -1046,12 +1066,11 @@ class Table extends WP_List_Table {
         /**
          * Filter the status views
          *
+         * @since 1.0.0
+         *
          * @param array  $views  View links.
          * @param string $id     Table identifier.
          * @param string $status Current status filter.
-         *
-         * @since 1.0.0
-         *
          */
         return apply_filters( 'arraypress_table_views', $views, $this->id, $this->status );
     }
@@ -1065,10 +1084,9 @@ class Table extends WP_List_Table {
      *
      * Renders dropdown filters above the table (top position only).
      *
-     * @param string $which Position: 'top' or 'bottom'.
-     *
      * @since 1.0.0
      *
+     * @param string $which Position: 'top' or 'bottom'.
      */
     protected function extra_tablenav( $which ): void {
         if ( $which !== 'top' ) {
@@ -1118,11 +1136,10 @@ class Table extends WP_List_Table {
      * Generates a select element for filtering table data.
      * Supports static options array or dynamic options callback.
      *
-     * @param string $key    Filter identifier (used as form field name).
-     * @param mixed  $filter Filter configuration array or simple options array.
-     *
      * @since 1.0.0
      *
+     * @param string $key    Filter identifier (used as form field name).
+     * @param mixed  $filter Filter configuration array or simple options array.
      */
     private function render_filter( string $key, $filter ): void {
         $options = [];
@@ -1252,12 +1269,12 @@ class Table extends WP_List_Table {
      * Retrieves the user's preferred items per page from their user meta,
      * falling back to the default from screen options or config.
      *
+     * @since 1.0.0
+     *
      * @param string $option  Option name (unused, kept for compatibility).
      * @param int    $default Default value from config.
      *
      * @return int Items per page.
-     * @since 1.0.0
-     *
      */
     protected function get_items_per_page( $option, $default = 30 ): int {
         $screen = get_current_screen();
@@ -1288,11 +1305,11 @@ class Table extends WP_List_Table {
      * Extracts the ID from a data object, checking for get_id() method
      * first, then falling back to id property.
      *
+     * @since 1.0.0
+     *
      * @param object $item Data object.
      *
      * @return int Item ID.
-     * @since 1.0.0
-     *
      */
     private function get_item_id( $item ): int {
         if ( method_exists( $item, 'get_id' ) ) {
@@ -1308,9 +1325,9 @@ class Table extends WP_List_Table {
      * Extracts and sanitizes pagination/sorting parameters from the
      * request for use in database queries.
      *
-     * @return array Query arguments with number, offset, order, orderby keys.
      * @since 1.0.0
      *
+     * @return array Query arguments with number, offset, order, orderby keys.
      */
     private function parse_pagination_args(): array {
         $paged  = absint( $_REQUEST['paged'] ?? 1 );
@@ -1340,9 +1357,9 @@ class Table extends WP_List_Table {
      *
      * Retrieves and sanitizes the search term from the request.
      *
-     * @return string Sanitized search query.
      * @since 1.0.0
      *
+     * @return string Sanitized search query.
      */
     private function get_search(): string {
         return sanitize_text_field( $_REQUEST['s'] ?? '' );
@@ -1354,9 +1371,9 @@ class Table extends WP_List_Table {
      * Builds a clean URL for the current page with current filters,
      * status, and search preserved.
      *
-     * @return string Current admin page URL with query args.
      * @since 1.0.0
      *
+     * @return string Current admin page URL with query args.
      */
     private function get_current_url(): string {
         $url = add_query_arg( 'page', $this->config['page'], admin_url( 'admin.php' ) );
