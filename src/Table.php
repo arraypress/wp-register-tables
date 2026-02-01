@@ -439,12 +439,20 @@ class Table extends WP_List_Table {
      *
      */
     public function column_default( $item, $column_name ) {
-        // Check for column-specific callback in config
+        // Check for column-specific config
         if ( isset( $this->config['columns'][ $column_name ] ) ) {
             $column_config = $this->config['columns'][ $column_name ];
 
-            if ( is_array( $column_config ) && isset( $column_config['callback'] ) && is_callable( $column_config['callback'] ) ) {
-                return call_user_func( $column_config['callback'], $item );
+            if ( is_array( $column_config ) ) {
+                // New structured format with before/title/after/link
+                if ( isset( $column_config['title'] ) ) {
+                    return $this->render_structured_column( $column_config, $item );
+                }
+
+                // Legacy callback format
+                if ( isset( $column_config['callback'] ) && is_callable( $column_config['callback'] ) ) {
+                    return call_user_func( $column_config['callback'], $item );
+                }
             }
         }
 
@@ -463,6 +471,124 @@ class Table extends WP_List_Table {
 
         // No value found
         return Utils\Columns::render_empty();
+    }
+
+    /**
+     * Render a structured column with before/title/after/link support
+     *
+     * Allows columns to be defined with separate components:
+     * - `before`: Content before the title (e.g., avatar)
+     * - `title`: The main clickable title text
+     * - `after`: Content after the title
+     * - `link`: How to link the title ('view_flyout', 'edit_flyout', callable, or URL)
+     *
+     * @param array  $config Column configuration.
+     * @param object $item   Data object.
+     *
+     * @return string Rendered column HTML.
+     * @since 1.0.0
+     *
+     */
+    private function render_structured_column( array $config, $item ): string {
+        $output = '';
+
+        // Render "before" content (e.g., avatar)
+        if ( isset( $config['before'] ) ) {
+            if ( is_callable( $config['before'] ) ) {
+                $output .= call_user_func( $config['before'], $item );
+            } else {
+                $output .= $config['before'];
+            }
+        }
+
+        // Render title (with optional link)
+        $title = '';
+        if ( isset( $config['title'] ) ) {
+            if ( is_callable( $config['title'] ) ) {
+                $title = call_user_func( $config['title'], $item );
+            } else {
+                $title = $config['title'];
+            }
+        }
+
+        if ( ! empty( $title ) ) {
+            $link_url = $this->get_column_link_url( $config, $item );
+
+            if ( $link_url ) {
+                $output .= sprintf(
+                        '<a href="%s"><strong>%s</strong></a>',
+                        esc_url( $link_url ),
+                        esc_html( $title )
+                );
+            } else {
+                $output .= '<strong>' . esc_html( $title ) . '</strong>';
+            }
+        }
+
+        // Render "after" content
+        if ( isset( $config['after'] ) ) {
+            if ( is_callable( $config['after'] ) ) {
+                $output .= call_user_func( $config['after'], $item );
+            } else {
+                $output .= $config['after'];
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Get the link URL for a column based on link configuration
+     *
+     * Supports:
+     * - 'view_flyout': Links to the view flyout (uses config's view_flyout)
+     * - 'edit_flyout': Links to the edit flyout (uses config's flyout)
+     * - callable: Custom function returning URL
+     * - string: Direct URL
+     *
+     * @param array  $config Column configuration.
+     * @param object $item   Data object.
+     *
+     * @return string|null Link URL or null if no link.
+     * @since 1.0.0
+     *
+     */
+    private function get_column_link_url( array $config, $item ): ?string {
+        if ( ! isset( $config['link'] ) ) {
+            return null;
+        }
+
+        $link    = $config['link'];
+        $item_id = $this->get_item_id( $item );
+
+        // Flyout links
+        if ( $link === 'view_flyout' && ! empty( $this->config['view_flyout'] ) ) {
+            if ( function_exists( 'get_flyout_url' ) ) {
+                return \get_flyout_url( $this->config['view_flyout'], $item_id );
+            }
+
+            return null;
+        }
+
+        if ( $link === 'edit_flyout' && ! empty( $this->config['flyout'] ) ) {
+            if ( function_exists( 'get_flyout_url' ) ) {
+                return \get_flyout_url( $this->config['flyout'], $item_id );
+            }
+
+            return null;
+        }
+
+        // Callable returns URL
+        if ( is_callable( $link ) ) {
+            return call_user_func( $link, $item );
+        }
+
+        // Direct URL string
+        if ( is_string( $link ) && ! empty( $link ) ) {
+            return $link;
+        }
+
+        return null;
     }
 
     /**
