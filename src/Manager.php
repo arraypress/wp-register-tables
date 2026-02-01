@@ -218,7 +218,7 @@ class Manager {
         // Enqueue CSS from composer assets
         if ( function_exists( 'wp_enqueue_composer_style' ) ) {
             wp_enqueue_composer_style(
-                    'arraypress-admin-tables',
+                    'list-table-styles',
                     __FILE__,
                     'css/admin-tables.css'
             );
@@ -243,7 +243,7 @@ class Manager {
         if ( ! empty( $config['column_widths'] ) ) {
             foreach ( $config['column_widths'] as $column => $width ) {
                 $styles .= sprintf(
-                        ".arraypress-table-wrap .column-%s { width: %s; }\n",
+                        ".wp-list-table .column-%s { width: %s; }\n",
                         esc_attr( $column ),
                         esc_attr( $width )
                 );
@@ -258,7 +258,7 @@ class Manager {
                             ? $col_config['align']
                             : 'left';
                     $styles .= sprintf(
-                            ".arraypress-table-wrap .column-%s { text-align: %s; }\n",
+                            ".wp-list-table .column-%s { text-align: %s; }\n",
                             esc_attr( $column ),
                             esc_attr( $align )
                     );
@@ -267,7 +267,7 @@ class Manager {
         }
 
         if ( ! empty( $styles ) ) {
-            wp_add_inline_style( 'arraypress-admin-tables', $styles );
+            wp_add_inline_style( 'list-table-styles', $styles );
         }
     }
 
@@ -917,11 +917,12 @@ class Manager {
             }
         }
 
-        // Render the page
-        ?>
-        <div class="wrap arraypress-table-wrap">
-            <?php self::render_header( $config, $total_count ); ?>
+        // Render header OUTSIDE the wrap (WordPress-native pattern)
+        self::render_header( $config, $total_count );
 
+        // Start standard WordPress wrap
+        ?>
+        <div class="wrap">
             <?php self::render_admin_notices( $id, $config ); ?>
 
             <?php self::render_search_results_banner( $config ); ?>
@@ -1021,20 +1022,23 @@ class Manager {
         $show_title   = $config['show_title'] ?? true;
 
         ?>
-        <div class="arraypress-table-header">
-            <div class="arraypress-table-header-top">
-                <div class="arraypress-table-header-branding">
+        <div class="list-table-header">
+            <div class="list-table-header__inner">
+                <div class="list-table-header__branding">
                     <?php if ( $logo_url ) : ?>
-                        <img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="arraypress-table-header-logo">
+                        <img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="list-table-header__logo">
+                        <?php if ( $show_title ) : ?>
+                            <span class="list-table-header__separator">/</span>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <?php if ( $show_title ) : ?>
-                        <h1 class="arraypress-table-header-title">
+                        <h1 class="list-table-header__title">
                             <?php echo esc_html( $header_title ); ?><?php echo $total_count; ?>
                         </h1>
                     <?php endif; ?>
                 </div>
 
-                <div class="arraypress-table-header-actions">
+                <div class="list-table-header__actions">
                     <?php self::render_add_button( $config ); ?>
                 </div>
             </div>
@@ -1056,27 +1060,38 @@ class Manager {
             return;
         }
 
+        // Custom callback takes priority
         if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) {
             echo call_user_func( $config['add_button_callback'] );
-        } elseif ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) {
+
+            return;
+        }
+
+        // Dedicated add flyout
+        if ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) {
             \render_flyout_button( $config['add_flyout'], [
                     'text'  => $config['labels']['add_new'],
                     'class' => 'page-title-action',
                     'icon'  => 'plus-alt',
             ] );
-        } elseif ( ! empty( $config['flyout'] ) && function_exists( 'render_flyout_button' ) ) {
-            \render_flyout_button( $config['flyout'], [
-                    'text'  => $config['labels']['add_new'],
-                    'class' => 'page-title-action',
-                    'icon'  => 'plus-alt',
-            ] );
-        } else {
+
+            return;
+        }
+
+        // Add URL if configured
+        if ( ! empty( $config['add_url'] ) ) {
+            $url = is_callable( $config['add_url'] )
+                    ? call_user_func( $config['add_url'] )
+                    : $config['add_url'];
+
             printf(
                     '<a href="%s" class="page-title-action"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
-                    esc_url( add_query_arg( 'action', 'add', admin_url( 'admin.php?page=' . $config['page'] ) ) ),
+                    esc_url( $url ),
                     esc_html( $config['labels']['add_new'] )
             );
         }
+
+        // No add button if only edit flyout is configured - that doesn't make sense
     }
 
     /**
@@ -1098,8 +1113,8 @@ class Manager {
         $plural    = $config['labels']['plural'] ?? 'items';
 
         ?>
-        <div class="arraypress-table-search-results">
-            <span class="arraypress-table-search-results-text">
+        <div class="list-table-search-banner">
+            <span class="list-table-search-banner__text">
                 <span class="dashicons dashicons-search"></span>
                 <?php
                 printf(
@@ -1109,7 +1124,7 @@ class Manager {
                 );
                 ?>
             </span>
-            <a href="<?php echo esc_url( $clear_url ); ?>" class="arraypress-table-search-results-clear">
+            <a href="<?php echo esc_url( $clear_url ); ?>" class="list-table-search-banner__clear">
                 <?php esc_html_e( 'Clear search', 'arraypress' ); ?>
             </a>
         </div>

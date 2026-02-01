@@ -5,46 +5,42 @@
  */
 
 /* ==========================================================================
-   General Wrapper
+   List Table Header (outside .wrap, sibling to it)
+   Matches EDD pattern - sits in #wpcontent, uses negative margin to stretch
    ========================================================================== */
 
-.arraypress-table-wrap {
-    margin-right: 20px;
-}
-
-.arraypress-table-wrap * {
-    box-sizing: border-box;
-}
-
-/* ==========================================================================
-   Modern Header
-   ========================================================================== */
-
-.arraypress-table-header {
+.list-table-header {
     background: #fff;
-    margin: -8px -20px 0 -20px;
     border-bottom: 1px solid #c3c4c7;
+    margin: 0 0 0 -20px;
+    padding: 0 20px;
 }
 
-.arraypress-table-header-top {
+.list-table-header__inner {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    gap: 16px;
+    padding: 16px 0;
 }
 
-.arraypress-table-header-branding {
+.list-table-header__branding {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.arraypress-table-header-logo {
+.list-table-header__logo {
     max-height: 36px;
     width: auto;
 }
 
-.arraypress-table-header-title {
+.list-table-header__separator {
+    color: #c3c4c7;
+    font-size: 24px;
+    font-weight: 300;
+}
+
+.list-table-header__title {
     margin: 0;
     padding: 0;
     font-size: 21px;
@@ -53,26 +49,26 @@
     color: #1d2327;
 }
 
-.arraypress-table-header-title .count {
+.list-table-header__title .count {
     color: #646970;
     font-weight: 400;
     font-size: 14px;
 }
 
-.arraypress-table-header-actions {
+.list-table-header__actions {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
 /* Add New Button in Header */
-.arraypress-table-header-actions .page-title-action {
+.list-table-header__actions .page-title-action {
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
 
-.arraypress-table-header-actions .page-title-action .dashicons {
+.list-table-header__actions .page-title-action .dashicons {
     font-size: 16px;
     width: 16px;
     height: 16px;
@@ -83,7 +79,7 @@
    Search Results Banner
    ========================================================================== */
 
-.arraypress-table-search-results {
+.list-table-search-banner {
     background: #f0f6fc;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
@@ -94,7 +90,7 @@
     justify-content: space-between;
 }
 
-.arraypress-table-search-results-text {
+.list-table-search-banner__text {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -102,21 +98,21 @@
     font-size: 13px;
 }
 
-.arraypress-table-search-results-text .dashicons {
+.list-table-search-banner__text .dashicons {
     color: #2271b1;
 }
 
-.arraypress-table-search-results-text strong {
+.list-table-search-banner__text strong {
     color: #1d2327;
 }
 
-.arraypress-table-search-results-clear {
+.list-table-search-banner__clear {
     text-decoration: none;
     color: #2271b1;
     font-size: 13px;
 }
 
-.arraypress-table-search-results-clear:hover {
+.list-table-search-banner__clear:hover {
     color: #135e96;
 }
 
@@ -124,7 +120,7 @@
    Status Badges
    ========================================================================== */
 
-.arraypress-table-wrap .badge {
+.badge {
     display: inline-block;
     padding: 3px 8px;
     font-size: 12px;
@@ -135,27 +131,27 @@
     color: #2c3338;
 }
 
-.arraypress-table-wrap .badge-success {
+.badge-success {
     background: #d4f4dd;
     color: #00a32a;
 }
 
-.arraypress-table-wrap .badge-warning {
+.badge-warning {
     background: #fcf0e4;
     color: #996800;
 }
 
-.arraypress-table-wrap .badge-error {
+.badge-error {
     background: #facfd2;
     color: #d63638;
 }
 
-.arraypress-table-wrap .badge-info {
+.badge-info {
     background: #e5f5fa;
     color: #0073aa;
 }
 
-.arraypress-table-wrap .badge-default {
+.badge-default {
     background: #f0f0f1;
     color: #50575e;
 }
@@ -164,49 +160,34 @@
    Price & Currency
    ========================================================================== */
 
-.arraypress-table-wrap .price {
+.price {
     font-weight: 600;
     color: #00a32a;
-}
-
-.arraypress-table-wrap .recurring-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    margin-left: 4px;
-    font-size: 11px;
-    font-weight: normal;
-    color: #50575e;
-    background: #f0f0f1;
-    border-radius: 2px;
 }
 
 /* ==========================================================================
    Misc Column Styles
    ========================================================================== */
 
-.arraypress-table-wrap .text-muted {
+.text-muted {
     color: #a7aaad;
 }
 
-.arraypress-table-wrap .unlimited {
+.unlimited {
     font-size: 18px;
     color: #0073aa;
     font-weight: 600;
-}
-
-.arraypress-table-wrap .column-cb {
-    width: 2.2em;
 }
 
 /* ==========================================================================
    Row Actions
    ========================================================================== */
 
-.arraypress-table-wrap .delete-link {
+.delete-link {
     color: #b32d2e;
 }
 
-.arraypress-table-wrap .delete-link:hover {
+.delete-link:hover {
     color: #dc3545;
 }
 
@@ -214,13 +195,13 @@
    Avatar Styling
    ========================================================================== */
 
-.arraypress-table-wrap .avatar {
+.wp-list-table .avatar {
     border-radius: 50%;
     vertical-align: middle;
     margin-right: 10px;
 }
 
-.arraypress-table-wrap .column-primary strong {
+.wp-list-table .column-primary strong {
     display: inline-block;
     vertical-align: middle;
 }
@@ -230,26 +211,21 @@
    ========================================================================== */
 
 @media screen and (max-width: 782px) {
-    .arraypress-table-header {
-        margin: -8px -10px 0 -10px;
+    .list-table-header {
+        margin-left: -10px;
+        padding: 0 10px;
     }
 
-    .arraypress-table-header-top {
+    .list-table-header__inner {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
-        padding: 12px 15px;
+        padding: 12px 0;
     }
 
-    .arraypress-table-search-results {
+    .list-table-search-banner {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .arraypress-table-wrap {
-        margin-right: 10px;
     }
 }
