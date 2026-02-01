@@ -14,13 +14,16 @@
     border-bottom: 1px solid #c3c4c7;
     margin: 0 0 0 -20px;
     padding: 0 20px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
 }
 
 .list-table-header__inner {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px 0;
+    width: 100%;
 }
 
 .list-table-header__branding {
