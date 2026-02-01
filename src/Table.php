@@ -1198,14 +1198,13 @@ class Table extends WP_List_Table {
                 $this->get_primary_column_name()
         ];
 
-        // Fetch counts and items
+        // Fetch counts (for status views) and items
         $this->get_counts();
         $this->items = $this->get_data();
 
         // Determine total for pagination
-        $total = ! empty( $this->status ) && isset( $this->counts[ $this->status ] )
-                ? $this->counts[ $this->status ]
-                : ( $this->counts['total'] ?? 0 );
+        // If filters are active (search or custom filters), count filtered results
+        $total = $this->get_filtered_total();
 
         // Set pagination
         $this->set_pagination_args( [
@@ -1213,6 +1212,119 @@ class Table extends WP_List_Table {
                 'per_page'    => $this->per_page,
                 'total_pages' => ceil( $total / $this->per_page )
         ] );
+    }
+
+    /**
+     * Get total count for pagination, accounting for active filters
+     *
+     * When search or custom filters are active, we need to get the actual
+     * filtered count rather than using the cached status counts.
+     *
+     * @since 1.0.0
+     *
+     * @return int Total items matching current filters.
+     */
+    private function get_filtered_total(): int {
+        // Check if any filters are active (besides status)
+        $has_search  = ! empty( $this->get_search() );
+        $has_filters = $this->has_active_filters();
+
+        // If no filters active, use cached counts
+        if ( ! $has_search && ! $has_filters ) {
+            if ( ! empty( $this->status ) && isset( $this->counts[ $this->status ] ) ) {
+                return (int) $this->counts[ $this->status ];
+            }
+            return (int) ( $this->counts['total'] ?? 0 );
+        }
+
+        // Filters are active - get count from callback or count items
+        return $this->get_filtered_count();
+    }
+
+    /**
+     * Check if any custom filters are currently active
+     *
+     * @since 1.0.0
+     *
+     * @return bool True if any filters have values set.
+     */
+    private function has_active_filters(): bool {
+        foreach ( $this->config['filters'] as $filter_key => $filter ) {
+            if ( isset( $_GET[ $filter_key ] ) && $_GET[ $filter_key ] !== '' ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get count of items matching current filters
+     *
+     * Builds query args with all active filters and gets the count
+     * either from a dedicated callback or by querying without pagination.
+     *
+     * @since 1.0.0
+     *
+     * @return int Filtered item count.
+     */
+    private function get_filtered_count(): int {
+        // Build the same query args as get_data() but for counting
+        $args = [];
+        if ( ! empty( $this->config['base_query_args'] ) ) {
+            $args = $this->config['base_query_args'];
+        }
+
+        // Add search
+        $search = $this->get_search();
+        if ( ! empty( $search ) ) {
+            $args['search'] = $search;
+        }
+
+        // Add status filter
+        if ( ! empty( $this->status ) ) {
+            $args['status'] = $this->status;
+        }
+
+        // Process custom filters
+        foreach ( $this->config['filters'] as $filter_key => $filter ) {
+            if ( ! isset( $_GET[ $filter_key ] ) ) {
+                continue;
+            }
+
+            $value = sanitize_text_field( $_GET[ $filter_key ] );
+
+            if ( $value === '' ) {
+                continue;
+            }
+
+            if ( is_array( $filter ) && isset( $filter['apply_callback'] ) && is_callable( $filter['apply_callback'] ) ) {
+                call_user_func_array( $filter['apply_callback'], [ &$args, $value ] );
+            } else {
+                $args[ $filter_key ] = $value;
+            }
+        }
+
+        // Request count only (no pagination)
+        $args['count'] = true;
+        $args['number'] = 0;
+
+        // Try get_items callback with count flag
+        if ( isset( $this->config['callbacks']['get_items'] ) && is_callable( $this->config['callbacks']['get_items'] ) ) {
+            $result = call_user_func( $this->config['callbacks']['get_items'], $args );
+
+            // If callback returns an integer when count=true, use it
+            if ( is_int( $result ) ) {
+                return $result;
+            }
+        }
+
+        // Fallback: if we already have items, use that count as minimum
+        // This isn't accurate for pagination but prevents showing 0
+        if ( ! empty( $this->items ) ) {
+            return count( $this->items );
+        }
+
+        return 0;
     }
 
     /**
