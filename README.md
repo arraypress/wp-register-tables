@@ -57,9 +57,9 @@ register_admin_table( 'table_id', [
     'labels' => [
         'singular'         => 'order',
         'plural'           => 'orders',
-        'title'            => 'Orders',          // Auto-generated from plural if empty
-        'add_new'          => 'Add New Order',   // Auto-generated from singular if empty
-        'search'           => 'Search Orders',   // Auto-generated from plural if empty
+        'title'            => 'Orders',
+        'add_new'          => 'Add New Order',
+        'search'           => 'Search Orders',
         'not_found'        => 'No orders yet.',
         'not_found_search' => 'No orders found for your search.',
     ],
@@ -78,23 +78,28 @@ register_admin_table( 'table_id', [
     'searchable'     => true,
     'show_count'     => false,
     
+    // Header Options (Modern EDD-style header)
+    'logo'           => '',       // URL to logo image
+    'header_title'   => '',       // Override title in header
+    'show_title'     => true,     // Show/hide title
+    
     // Columns
     'columns'        => [],
     'sortable'       => [],
-    'primary_column' => '',          // Auto-detected from columns
+    'primary_column' => '',
     'hidden_columns' => [],
     'column_widths'  => [],
     
     // Actions
-    'row_actions'        => [],      // Array config or callable
+    'row_actions'        => [],
     'bulk_actions'       => [],
-    'auto_delete_action' => true,    // Auto-add delete if callback exists
+    'auto_delete_action' => true,
     
     // Filtering
     'views'           => [],
     'filters'         => [],
     'status_styles'   => [],
-    'base_query_args' => [],         // Always-applied query args
+    'base_query_args' => [],
     
     // Flyout Integration
     'flyout'              => '',
@@ -111,6 +116,20 @@ register_admin_table( 'table_id', [
     
     // Help Tabs
     'help' => [],
+] );
+```
+
+## Modern Header
+
+The library includes a modern EDD-style header with logo support:
+
+```php
+register_admin_table( 'my_orders', [
+    'logo'         => plugin_dir_url( __FILE__ ) . 'assets/logo.png',
+    'header_title' => 'Order Management',
+    'show_title'   => true,
+    'show_count'   => true,
+    // ...
 ] );
 ```
 
@@ -146,65 +165,23 @@ register_admin_table( 'table_id', [
 ],
 ```
 
-### Column Widths
-
-```php
-'column_widths' => [
-    'name'   => '30%',
-    'status' => '100px',
-],
-```
-
-### Sortable Columns
-
-```php
-// Simple - column name as orderby
-'sortable' => [ 'name', 'created_at', 'total' ],
-
-// Advanced - custom orderby field
-'sortable' => [
-    'name'       => [ 'name', false ],        // [orderby, desc_first]
-    'created_at' => [ 'date_created', true ],
-],
-```
-
-## Auto-Formatting
+### Auto-Formatting
 
 Columns are automatically formatted based on naming patterns:
 
 | Pattern | Formatting |
 |---------|------------|
 | `email`, `*_email` | Mailto link |
-| `*_at`, `date*`, `created`, `updated`, `modified`, `registered`, `last_sync` | Human time diff |
+| `*_at`, `date*`, `created`, `updated`, `modified` | Human time diff |
 | `*_total`, `*_price`, `*_amount`, `*_spent` | Currency |
 | `status`, `*_status` | Status badge |
 | `*_count`, `count*`, `*limit` | Number (∞ for -1) |
 | `*_url`, `url*` | Link (images as thumbnails) |
 | `is_*`, `test`, `active`, `enabled` | Boolean icon |
 
-### Status Badge Colors
-
-Default mappings:
-
-- **Success** (green): `active`, `completed`, `paid`, `published`, `approved`, `confirmed`, `delivered`
-- **Warning** (yellow): `pending`, `processing`, `draft`, `on-hold`, `partially_refunded`, `unpaid`, `expired`, `scheduled`
-- **Error** (red): `failed`, `cancelled`, `canceled`, `refunded`, `rejected`, `declined`, `blocked`, `revoked`, `suspended`, `terminated`
-- **Info** (blue): `new`, `updated`
-- **Default** (gray): `inactive`, `disabled`, `paused`, `archived`, `hidden`, `trashed`
-
-### Custom Status Styles
-
-```php
-'status_styles' => [
-    'vip'     => 'success',
-    'flagged' => 'error',
-    'review'  => 'warning',
-],
-```
-
 ## Row Actions
 
-### Array Configuration
+### Standard Configuration
 
 ```php
 'row_actions' => [
@@ -225,70 +202,50 @@ Default mappings:
         'label'   => __( 'Archive', 'myplugin' ),
         'url'     => fn( $item ) => admin_url( '...' ),
         'confirm' => __( 'Archive this item?', 'myplugin' ),
-        'class'   => 'archive-link',
-    ],
-    
-    // Conditional
-    'restore' => [
-        'label'     => __( 'Restore', 'myplugin' ),
-        'url'       => fn( $item ) => admin_url( '...' ),
-        'condition' => fn( $item ) => $item->get_status() === 'archived',
-    ],
-    
-    // Capability check
-    'manage' => [
-        'label'      => __( 'Manage', 'myplugin' ),
-        'url'        => '#',
-        'capability' => 'manage_options',
-    ],
-    
-    // Full custom
-    'custom' => [
-        'callback' => function( $item ) {
-            return sprintf( '<a href="%s">Custom</a>', esc_url( '...' ) );
-        },
     ],
 ],
 ```
 
-### Callable Shorthand
+### Auto-Handled Actions (NEW)
 
-For full control, pass a callable instead of an array:
+Define a `handler` callback and the action will be automatically processed:
 
 ```php
-'row_actions' => function( $item, $item_id ) {
-    $actions = [];
-    
-    if ( $item->can_edit() ) {
-        $actions['edit'] = sprintf(
-            '<a href="%s">%s</a>',
-            esc_url( get_edit_link( $item_id ) ),
-            __( 'Edit', 'myplugin' )
-        );
-    }
-    
-    if ( current_user_can( 'delete_items' ) ) {
-        $actions['delete'] = sprintf(
-            '<a href="%s" class="delete-link">%s</a>',
-            esc_url( get_delete_link( $item_id ) ),
-            __( 'Delete', 'myplugin' )
-        );
-    }
-    
-    return $actions;
-},
+'row_actions' => [
+    'toggle_status' => [
+        'label'   => fn( $item ) => $item->get_status() === 'active' 
+            ? __( 'Deactivate', 'myplugin' ) 
+            : __( 'Activate', 'myplugin' ),
+        'confirm' => fn( $item ) => $item->get_status() === 'active'
+            ? __( 'Deactivate this customer?', 'myplugin' )
+            : __( 'Activate this customer?', 'myplugin' ),
+        'handler' => function( $item_id, $config ) {
+            $customer = get_customer( $item_id );
+            if ( $customer ) {
+                $new_status = $customer->get_status() === 'active' ? 'inactive' : 'active';
+                update_customer( $item_id, [ 'status' => $new_status ] );
+            }
+            return true;
+        },
+        // Optional: custom nonce action (default: {action_key}_{singular}_{item_id})
+        'nonce_action' => 'toggle_customer_{id}',
+    ],
+],
 ```
+
+When you define a `handler`, the library automatically:
+- Generates the action link with proper nonce
+- Processes the action on form submission
+- Verifies the nonce
+- Checks capabilities (if defined)
+- Calls your handler
+- Redirects to a clean URL with success/error message
+
+No need to manually hook into `arraypress_table_single_action_{id}` anymore!
 
 ### Auto Delete Action
 
-When you provide a `delete` callback, the library automatically adds a delete row action with:
-
-- Proper nonce verification
-- Confirmation dialog
-- Capability check (if `capabilities.delete` is set)
-- Success/error admin notices
-
-To disable this behavior:
+When you provide a `delete` callback, the library automatically adds a delete row action. To disable:
 
 ```php
 'auto_delete_action' => false,
@@ -298,10 +255,6 @@ To disable this behavior:
 
 ```php
 'bulk_actions' => [
-    // Simple
-    'delete' => __( 'Delete', 'myplugin' ),
-    
-    // With callback
     'delete' => [
         'label'    => __( 'Delete', 'myplugin' ),
         'callback' => function( $ids ) {
@@ -314,21 +267,21 @@ To disable this behavior:
             return [ 'deleted' => $deleted ];
         },
     ],
-    
-    // With capability
-    'export' => [
-        'label'      => __( 'Export', 'myplugin' ),
-        'capability' => 'export',
-        'callback'   => fn( $ids ) => export_items( $ids ),
+    'activate' => [
+        'label'      => __( 'Set Active', 'myplugin' ),
+        'capability' => 'manage_options',
+        'callback'   => function( $ids ) {
+            $updated = 0;
+            foreach ( $ids as $id ) {
+                if ( update_item( $id, [ 'status' => 'active' ] ) ) {
+                    $updated++;
+                }
+            }
+            return [ 'updated' => $updated ];
+        },
     ],
 ],
 ```
-
-Callback return values:
-
-- **Array**: Passed as query args for admin notices (e.g., `['deleted' => 5]`)
-- **Integer**: Used as `updated` count
-- **Boolean**: Converts to count of items if true, 0 if false
 
 ## Views (Status Tabs)
 
@@ -340,84 +293,50 @@ Callback return values:
 ],
 ```
 
-Views automatically show counts from your `get_counts` callback. Views with zero counts are hidden. The "All" view is added automatically.
-
 ## Filters
 
 ```php
 'filters' => [
-    // Static options
     'country' => [
-        'label'   => __( 'All Countries', 'myplugin' ),
-        'options' => [
-            'us' => __( 'United States', 'myplugin' ),
-            'uk' => __( 'United Kingdom', 'myplugin' ),
-        ],
+        'label'            => __( 'All Countries', 'myplugin' ),
+        'options_callback' => fn() => get_country_options(),
     ],
-    
-    // Dynamic options
-    'category' => [
-        'label'            => __( 'All Categories', 'myplugin' ),
-        'options_callback' => fn() => get_category_options(),
-    ],
-    
-    // Custom filter application
     'date_range' => [
         'label'   => __( 'All Dates', 'myplugin' ),
         'options' => [
             'today'      => __( 'Today', 'myplugin' ),
             'this_week'  => __( 'This Week', 'myplugin' ),
-            'this_month' => __( 'This Month', 'myplugin' ),
         ],
         'apply_callback' => function( &$args, $value ) {
-            switch ( $value ) {
-                case 'today':
-                    $args['date_query'] = [ 'after' => 'today' ];
-                    break;
-                case 'this_week':
-                    $args['date_query'] = [ 'after' => '1 week ago' ];
-                    break;
+            if ( $value === 'today' ) {
+                $args['date_query'] = [ 'after' => 'today' ];
             }
         },
     ],
 ],
 ```
 
-## Base Query Args
+## Search Results Banner
 
-Default query arguments that always apply:
+When users search, a banner displays showing what they searched for with a "Clear search" link. This is automatic - no configuration needed.
 
-```php
-'base_query_args' => [
-    'status__not_in' => [ 'trash', 'deleted' ],
-    'type'           => 'subscription',
-],
-```
+## Clean URLs
+
+The library now maintains clean URLs throughout:
+- Filter submissions redirect to clean URLs (no `_wpnonce`, `_wp_http_referer`, `action` in URL)
+- Single actions redirect to clean URLs after processing
+- Bulk actions redirect to clean URLs after processing
+
+This fixes issues where bulk actions would fail after filtering due to stale URL parameters.
 
 ## Flyout Integration
 
 Integrates with [wp-register-flyouts](https://github.com/arraypress/wp-register-flyouts):
 
 ```php
-// Register flyout
-register_flyout( 'orders_edit', [
-    'title'       => 'Edit Order',
-    'admin_pages' => [ 'toplevel_page_my-orders' ],
-    'fields'      => [
-        'customer' => [ 'type' => 'text', 'label' => 'Customer' ],
-        'status'   => [
-            'type'    => 'select',
-            'label'   => 'Status',
-            'options' => [ 'pending' => 'Pending', 'completed' => 'Completed' ],
-        ],
-    ],
-    'load' => fn( $id ) => get_order( $id ),
-    'save' => fn( $id, $data ) => update_order( $id, $data ),
-] );
-
-// Register table with flyout
 register_admin_table( 'my_orders', [
-    'flyout' => 'orders_edit',
+    'flyout'     => 'orders_edit',
+    'add_flyout' => 'orders_add',
     
     'row_actions' => [
         'edit' => [
@@ -425,145 +344,7 @@ register_admin_table( 'my_orders', [
             'flyout' => true,
         ],
     ],
-    // ...
 ] );
-```
-
-### Separate Add Flyout
-
-```php
-register_admin_table( 'my_orders', [
-    'flyout'     => 'orders_edit',
-    'add_flyout' => 'orders_add',
-    // ...
-] );
-```
-
-### Custom Add Button
-
-```php
-register_admin_table( 'my_orders', [
-    'add_button_callback' => function() {
-        return sprintf(
-            '<a href="%s" class="page-title-action">%s</a>',
-            admin_url( 'admin.php?page=add-order' ),
-            __( 'Add New Order', 'myplugin' )
-        );
-    },
-    // ...
-] );
-```
-
-## Callbacks
-
-Multiple callback formats are supported:
-
-```php
-'callbacks' => [
-    // Function name
-    'get_items' => 'get_orders',
-    
-    // Namespaced function
-    'get_items' => '\\MyPlugin\\get_orders',
-    
-    // Arrow function
-    'get_items' => fn( $args ) => get_orders( $args ),
-    
-    // Static class method
-    'get_items' => [ OrderModel::class, 'get_all' ],
-    
-    // Object method
-    'get_items' => [ $repository, 'findAll' ],
-    
-    // Closure
-    'get_items' => function( $args ) {
-        return get_orders( $args );
-    },
-],
-```
-
-### get_items Callback
-
-Receives query arguments, returns array of items:
-
-```php
-'get_items' => function( $args ) {
-    // $args contains:
-    // - number: Items per page
-    // - offset: Pagination offset
-    // - orderby: Sort column
-    // - order: ASC or DESC
-    // - search: Search term (if any)
-    // - status: Current status filter (if any)
-    // - [filter_key]: Active filter values
-    // - [base_query_args]: Merged base args
-    
-    return my_query_function( $args );
-},
-```
-
-### get_counts Callback
-
-Returns array of status counts:
-
-```php
-'get_counts' => function() {
-    return [
-        'total'     => 150,
-        'active'    => 100,
-        'pending'   => 30,
-        'completed' => 20,
-    ];
-},
-```
-
-### delete Callback
-
-Receives item ID, returns boolean:
-
-```php
-'delete' => function( $id ) {
-    return delete_item( $id );
-},
-```
-
-## Help Tabs
-
-```php
-'help' => [
-    'overview' => [
-        'title'   => __( 'Overview', 'myplugin' ),
-        'content' => '<p>This screen shows all orders.</p>',
-    ],
-    'filtering' => [
-        'title'    => __( 'Filtering', 'myplugin' ),
-        'callback' => fn() => '<p>Dynamic help content.</p>',
-    ],
-    'sidebar' => '<p><strong>Need help?</strong></p><p>Contact support.</p>',
-],
-```
-
-## Admin Notices
-
-The library automatically shows admin notices after actions:
-
-- **Deleted**: Shows count of deleted items or error message
-- **Updated**: Shows count of updated items
-- **Error**: Shows error message from `error` query arg
-
-### Custom Notices
-
-```php
-add_filter( 'arraypress_table_admin_notices', function( $notices, $id, $config ) {
-    if ( isset( $_GET['exported'] ) ) {
-        $notices[] = [
-            'message'     => sprintf( '%d items exported.', absint( $_GET['exported'] ) ),
-            'type'        => 'success',
-            'dismissible' => true,
-        ];
-    }
-    return $notices;
-}, 10, 3 );
 ```
 
 ## Hooks
@@ -574,13 +355,7 @@ add_filter( 'arraypress_table_admin_notices', function( $notices, $id, $config )
 // Filter columns
 add_filter( 'arraypress_table_columns', fn( $columns, $id, $config ) => $columns, 10, 3 );
 
-// Filter hidden columns
-add_filter( 'arraypress_table_hidden_columns', fn( $hidden, $id, $config ) => $hidden, 10, 3 );
-
-// Filter sortable columns
-add_filter( 'arraypress_table_sortable_columns', fn( $sortable, $id, $config ) => $sortable, 10, 3 );
-
-// Filter query args before data fetch
+// Filter query args
 add_filter( 'arraypress_table_query_args', fn( $args, $id, $config ) => $args, 10, 3 );
 add_filter( 'arraypress_table_query_args_{table_id}', fn( $args, $config ) => $args, 10, 2 );
 
@@ -588,15 +363,8 @@ add_filter( 'arraypress_table_query_args_{table_id}', fn( $args, $config ) => $a
 add_filter( 'arraypress_table_row_actions', fn( $actions, $item, $id ) => $actions, 10, 3 );
 add_filter( 'arraypress_table_row_actions_{table_id}', fn( $actions, $item ) => $actions, 10, 2 );
 
-// Filter bulk actions
-add_filter( 'arraypress_table_bulk_actions', fn( $actions, $id ) => $actions, 10, 2 );
-
-// Filter views
-add_filter( 'arraypress_table_views', fn( $views, $id, $status ) => $views, 10, 3 );
-
 // Filter admin notices
 add_filter( 'arraypress_table_admin_notices', fn( $notices, $id, $config ) => $notices, 10, 3 );
-add_filter( 'arraypress_table_admin_notices_{table_id}', fn( $notices, $config ) => $notices, 10, 2 );
 ```
 
 ### Actions
@@ -604,60 +372,39 @@ add_filter( 'arraypress_table_admin_notices_{table_id}', fn( $notices, $config )
 ```php
 // Before/after table renders
 add_action( 'arraypress_before_render_table', fn( $id, $config ) => null, 10, 2 );
-add_action( 'arraypress_before_render_table_{table_id}', fn( $config ) => null );
 add_action( 'arraypress_after_render_table', fn( $id, $config ) => null, 10, 2 );
-add_action( 'arraypress_after_render_table_{table_id}', fn( $config ) => null );
 
 // Item deleted
 add_action( 'arraypress_table_item_deleted', fn( $item_id, $result, $id, $config ) => null, 10, 4 );
-add_action( 'arraypress_table_item_deleted_{table_id}', fn( $item_id, $result, $config ) => null, 10, 3 );
 
 // Bulk action processed
 add_action( 'arraypress_table_bulk_action', fn( $items, $action, $id ) => null, 10, 3 );
-add_action( 'arraypress_table_bulk_action_{table_id}', fn( $items, $action ) => null, 10, 2 );
-add_action( 'arraypress_table_bulk_action_{table_id}_{action}', fn( $items ) => null );
 
-// Custom single action
+// Custom single action (only needed if NOT using handler in config)
 add_action( 'arraypress_table_single_action_{table_id}', fn( $action, $item_id, $config ) => null, 10, 3 );
 ```
 
 ## Complete Example
 
 ```php
-// Register flyout
-register_flyout( 'customers_edit', [
-    'title'       => 'Edit Customer',
-    'admin_pages' => [ 'toplevel_page_my-customers' ],
-    'fields'      => [
-        'name'   => [ 'type' => 'text', 'label' => 'Name' ],
-        'email'  => [ 'type' => 'email', 'label' => 'Email' ],
-        'status' => [
-            'type'    => 'select',
-            'label'   => 'Status',
-            'options' => [ 'active' => 'Active', 'inactive' => 'Inactive' ],
-        ],
-    ],
-    'load' => fn( $id ) => get_customer( $id ),
-    'save' => fn( $id, $data ) => update_customer( $id, $data ),
-] );
-
-// Register table
 register_admin_table( 'my_customers', [
     'labels' => [
         'singular'  => __( 'customer', 'myplugin' ),
         'plural'    => __( 'customers', 'myplugin' ),
         'title'     => __( 'Customers', 'myplugin' ),
-        'not_found' => __( 'No customers yet. Add your first customer!', 'myplugin' ),
     ],
     
     'callbacks' => [
         'get_items'  => '\\MyPlugin\\get_customers',
         'get_counts' => '\\MyPlugin\\get_customer_counts',
         'delete'     => '\\MyPlugin\\delete_customer',
+        'update'     => '\\MyPlugin\\update_customer',
     ],
     
     'page'       => 'my-customers',
+    'logo'       => plugin_dir_url( __FILE__ ) . 'logo.png',
     'flyout'     => 'customers_edit',
+    'add_flyout' => 'customers_add',
     'per_page'   => 25,
     'show_count' => true,
     
@@ -671,16 +418,12 @@ register_admin_table( 'my_customers', [
             },
         ],
         'email'       => __( 'Email', 'myplugin' ),
-        'total_spent' => [
-            'label' => __( 'Total Spent', 'myplugin' ),
-            'align' => 'right',
-        ],
-        'order_count' => __( 'Orders', 'myplugin' ),
+        'total_spent' => [ 'label' => __( 'Total Spent', 'myplugin' ), 'align' => 'right' ],
         'status'      => __( 'Status', 'myplugin' ),
-        'created_at'  => __( 'Joined', 'myplugin' ),
+        'date_created' => __( 'Joined', 'myplugin' ),
     ],
     
-    'sortable'      => [ 'name', 'total_spent', 'order_count', 'created_at' ],
+    'sortable'      => [ 'name', 'total_spent', 'date_created' ],
     'column_widths' => [ 'status' => '100px' ],
     
     'row_actions' => [
@@ -688,17 +431,23 @@ register_admin_table( 'my_customers', [
             'label'  => __( 'Edit', 'myplugin' ),
             'flyout' => true,
         ],
-        'orders' => [
-            'label' => __( 'View Orders', 'myplugin' ),
-            'url'   => fn( $item ) => admin_url( 'admin.php?page=my-orders&customer=' . $item->get_id() ),
+        'toggle_status' => [
+            'label'   => fn( $item ) => $item->get_status() === 'active' ? 'Deactivate' : 'Activate',
+            'confirm' => fn( $item ) => $item->get_status() === 'active' 
+                ? 'Deactivate this customer?' 
+                : 'Activate this customer?',
+            'handler' => function( $item_id ) {
+                $customer = get_customer( $item_id );
+                $new_status = $customer->get_status() === 'active' ? 'inactive' : 'active';
+                return update_customer( $item_id, [ 'status' => $new_status ] );
+            },
         ],
     ],
     
     'bulk_actions' => [
         'delete' => [
-            'label'      => __( 'Delete', 'myplugin' ),
-            'capability' => 'delete_users',
-            'callback'   => function( $ids ) {
+            'label'    => __( 'Delete', 'myplugin' ),
+            'callback' => function( $ids ) {
                 $deleted = 0;
                 foreach ( $ids as $id ) {
                     if ( delete_customer( $id ) ) {
@@ -722,9 +471,9 @@ register_admin_table( 'my_customers', [
         ],
     ],
     
-    'capabilities' => [
-        'view'   => 'list_users',
-        'delete' => 'delete_users',
+    'status_styles' => [
+        'active'   => 'success',
+        'inactive' => 'default',
     ],
 ] );
 
@@ -733,7 +482,7 @@ add_action( 'admin_menu', function() {
     add_menu_page(
         __( 'Customers', 'myplugin' ),
         __( 'Customers', 'myplugin' ),
-        'list_users',
+        'manage_options',
         'my-customers',
         create_page_callback( 'my_customers' ),
         'dashicons-groups',
@@ -747,6 +496,7 @@ add_action( 'admin_menu', function() {
 - PHP 7.4+
 - WordPress 5.0+
 - BerlinDB-based custom tables
+- arraypress/wp-composer-assets ^2.0
 
 ## License
 

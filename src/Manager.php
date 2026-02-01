@@ -36,12 +36,12 @@ class Manager {
     private static array $tables = [];
 
     /**
-     * Whether styles have been enqueued
+     * Whether assets have been enqueued
      *
      * @since 1.0.0
      * @var bool
      */
-    private static bool $styles_enqueued = false;
+    private static bool $assets_enqueued = false;
 
     /**
      * Register an admin table
@@ -49,62 +49,7 @@ class Manager {
      * Registers a new admin table with configuration for columns, actions, and data handling.
      *
      * @param string $id     Unique table identifier
-     * @param array  $config {
-     *     Table configuration array.
-     *
-     *     @type array    $labels           {
-     *         Labels for display purposes.
-     *
-     *         @type string $singular         Singular name (e.g., 'order')
-     *         @type string $plural           Plural name (e.g., 'orders')
-     *         @type string $title            Page title (e.g., 'Orders')
-     *         @type string $add_new          Add new button label (e.g., 'Add New Order')
-     *         @type string $search           Search button label (e.g., 'Search Orders')
-     *         @type string $not_found        No items message (e.g., 'No orders found.')
-     *         @type string $not_found_search No items found in search (e.g., 'No orders found for your search.')
-     *     }
-     *     @type array    $callbacks        {
-     *         Data operation callbacks.
-     *
-     *         @type callable $get_items  Callback to get items. Receives query args.
-     *         @type callable $get_counts Callback to get status counts.
-     *         @type callable $delete     Callback to delete single item. Receives ID.
-     *         @type callable $update     Callback to update single item. Receives ID and data array.
-     *     }
-     *     @type string   $page             Admin page slug
-     *     @type string   $flyout           Flyout identifier for edit/view actions
-     *     @type string   $add_flyout       Separate flyout identifier for adding new items
-     *     @type callable $add_button_callback Custom callback to render add button
-     *     @type array    $columns          Column definitions
-     *     @type array    $sortable         Sortable column configurations
-     *     @type string   $primary_column   Primary column key
-     *     @type array    $hidden_columns   Array of column IDs to hide by default
-     *     @type array    $column_widths    Array of column widths as [column_id => width]
-     *     @type array    $row_actions      Row action definitions or callable returning actions
-     *     @type array    $bulk_actions     Bulk action definitions
-     *     @type array    $views            View/filter definitions
-     *     @type array    $filters          Additional filter dropdowns
-     *     @type array    $status_styles    Custom status badge styles as [status => class]
-     *     @type array    $base_query_args  Default query args that always apply
-     *     @type int      $per_page         Items per page (default: 30)
-     *     @type bool     $searchable       Whether to show search box (default: true)
-     *     @type array    $capabilities     {
-     *         Permission requirements.
-     *
-     *         @type string $view   Capability required to view the table
-     *         @type string $edit   Capability required to edit items
-     *         @type string $delete Capability required to delete items
-     *         @type string $bulk   Capability required for bulk actions
-     *     }
-     *     @type bool     $show_count       Show item count in title (default: false)
-     *     @type bool     $auto_delete_action Whether to auto-generate delete row action (default: true)
-     *     @type array    $help             {
-     *         Help tab configuration.
-     *
-     *         @type array  $overview Help tab with 'title' and 'content'
-     *         @type string $sidebar  Help sidebar content
-     *     }
-     * }
+     * @param array  $config Table configuration array
      *
      * @return void
      * @since 1.0.0
@@ -133,7 +78,12 @@ class Manager {
                 'capabilities'        => [],
                 'show_count'          => false,
                 'auto_delete_action'  => true,
-                'help'                => []
+                'help'                => [],
+
+            // Header options
+                'logo'                => '',
+                'header_title'        => '',
+                'show_title'          => true,
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -221,6 +171,104 @@ class Manager {
 
         // Setup screen options - needs to happen on load-{hook} which we detect
         add_action( 'admin_init', [ __CLASS__, 'setup_load_hooks' ], 999 );
+
+        // Enqueue assets
+        add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
+    }
+
+    /**
+     * Enqueue assets for admin tables
+     *
+     * @param string $hook Current admin page hook
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public static function enqueue_assets( string $hook ): void {
+        // Check if we're on one of our pages
+        $page = $_GET['page'] ?? '';
+
+        if ( empty( $page ) ) {
+            return;
+        }
+
+        foreach ( self::$tables as $id => $config ) {
+            if ( ( $config['page'] ?? '' ) === $page ) {
+                self::do_enqueue_assets( $config );
+                break;
+            }
+        }
+    }
+
+    /**
+     * Actually enqueue the assets
+     *
+     * @param array $config Table configuration
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private static function do_enqueue_assets( array $config ): void {
+        if ( self::$assets_enqueued ) {
+            return;
+        }
+
+        self::$assets_enqueued = true;
+
+        // Enqueue CSS from composer assets
+        if ( function_exists( 'wp_enqueue_composer_style' ) ) {
+            wp_enqueue_composer_style(
+                    'arraypress-admin-tables',
+                    __FILE__,
+                    'css/admin-tables.css'
+            );
+        }
+
+        // Output dynamic styles for column widths
+        self::output_dynamic_styles( $config );
+    }
+
+    /**
+     * Output dynamic styles for column widths and alignments
+     *
+     * @param array $config Table configuration
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private static function output_dynamic_styles( array $config ): void {
+        $styles = '';
+
+        // Add custom column widths
+        if ( ! empty( $config['column_widths'] ) ) {
+            foreach ( $config['column_widths'] as $column => $width ) {
+                $styles .= sprintf(
+                        ".arraypress-table-wrap .column-%s { width: %s; }\n",
+                        esc_attr( $column ),
+                        esc_attr( $width )
+                );
+            }
+        }
+
+        // Add column alignments from column config
+        if ( ! empty( $config['columns'] ) ) {
+            foreach ( $config['columns'] as $column => $col_config ) {
+                if ( is_array( $col_config ) && ! empty( $col_config['align'] ) ) {
+                    $align = in_array( $col_config['align'], [ 'left', 'center', 'right' ], true )
+                            ? $col_config['align']
+                            : 'left';
+                    $styles .= sprintf(
+                            ".arraypress-table-wrap .column-%s { text-align: %s; }\n",
+                            esc_attr( $column ),
+                            esc_attr( $align )
+                    );
+                }
+            }
+        }
+
+        if ( ! empty( $styles ) ) {
+            wp_add_inline_style( 'arraypress-admin-tables', $styles );
+        }
     }
 
     /**
@@ -249,7 +297,6 @@ class Manager {
         foreach ( self::$tables as $id => $config ) {
             if ( ( $config['page'] ?? '' ) === $page ) {
                 // We're on one of our pages - setup screen options now
-                // current_screen is available at this point
                 add_action( 'current_screen', function () use ( $config ) {
                     self::setup_screen( $config );
                     self::handle_screen_options();
@@ -276,11 +323,59 @@ class Manager {
         // Find the table for this page
         foreach ( self::$tables as $id => $config ) {
             if ( $config['page'] === $page ) {
+                // Process filter redirect (clean up URL after filter)
+                self::process_filter_redirect( $id, $config );
+
+                // Process single actions
                 self::process_single_actions( $id, $config );
+
+                // Process bulk actions
                 self::process_bulk_actions( $id, $config );
                 break;
             }
         }
+    }
+
+    /**
+     * Process filter form submission and redirect to clean URL
+     *
+     * @param string $id     Table identifier
+     * @param array  $config Table configuration
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private static function process_filter_redirect( string $id, array $config ): void {
+        // Check if this is a filter submission
+        if ( ! isset( $_GET['filter_action'] ) ) {
+            return;
+        }
+
+        // Build clean URL with only necessary params
+        $clean_args = [
+                'page' => $config['page'],
+        ];
+
+        // Preserve search
+        if ( ! empty( $_GET['s'] ) ) {
+            $clean_args['s'] = sanitize_text_field( $_GET['s'] );
+        }
+
+        // Preserve status
+        if ( ! empty( $_GET['status'] ) ) {
+            $clean_args['status'] = sanitize_key( $_GET['status'] );
+        }
+
+        // Preserve custom filters
+        foreach ( $config['filters'] as $filter_key => $filter ) {
+            if ( ! empty( $_GET[ $filter_key ] ) ) {
+                $clean_args[ $filter_key ] = sanitize_text_field( $_GET[ $filter_key ] );
+            }
+        }
+
+        // Redirect to clean URL
+        wp_safe_redirect( add_query_arg( $clean_args, admin_url( 'admin.php' ) ) );
+        exit;
     }
 
     /**
@@ -302,67 +397,59 @@ class Manager {
             return;
         }
 
+        // Skip bulk action values
+        if ( $action === '-1' ) {
+            return;
+        }
+
         $singular = $config['labels']['singular'] ?? 'item';
 
-        // Handle delete action
+        // Handle delete action (built-in)
         if ( $action === 'delete' ) {
-            if ( ! isset( $config['callbacks']['delete'] ) || ! is_callable( $config['callbacks']['delete'] ) ) {
-                return;
-            }
+            self::handle_delete_action( $id, $config, $item_id );
+            return;
+        }
 
-            // Verify nonce
-            $nonce = $_GET['_wpnonce'] ?? '';
-            if ( ! wp_verify_nonce( $nonce, "delete_{$singular}_{$item_id}" ) ) {
-                wp_die( __( 'Security check failed.', 'arraypress' ) );
-            }
+        // Check for custom action handler in row_actions config
+        if ( ! is_callable( $config['row_actions'] ) && isset( $config['row_actions'][ $action ] ) ) {
+            $action_config = $config['row_actions'][ $action ];
 
-            // Check capability if set
-            if ( ! empty( $config['capabilities']['delete'] ) ) {
-                if ( ! current_user_can( $config['capabilities']['delete'] ) ) {
-                    wp_die( __( 'You do not have permission to delete this item.', 'arraypress' ) );
+            if ( is_array( $action_config ) && isset( $action_config['handler'] ) && is_callable( $action_config['handler'] ) ) {
+                // Determine nonce action
+                $nonce_action = $action_config['nonce_action'] ?? "{$action}_{$singular}_{$item_id}";
+                $nonce_action = str_replace( '{id}', (string) $item_id, $nonce_action );
+
+                // Verify nonce
+                $nonce = $_GET['_wpnonce'] ?? '';
+                if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+                    wp_die( __( 'Security check failed.', 'arraypress' ) );
                 }
+
+                // Check capability if set
+                if ( ! empty( $action_config['capability'] ) ) {
+                    if ( ! current_user_can( $action_config['capability'] ) ) {
+                        wp_die( __( 'You do not have permission to perform this action.', 'arraypress' ) );
+                    }
+                }
+
+                // Call the handler
+                $result = call_user_func( $action_config['handler'], $item_id, $config );
+
+                // Build redirect URL
+                $redirect_url = self::get_clean_base_url( $config );
+
+                // Add result message if handler returned something
+                if ( is_array( $result ) ) {
+                    $redirect_url = add_query_arg( $result, $redirect_url );
+                } elseif ( $result === true ) {
+                    $redirect_url = add_query_arg( 'updated', 1, $redirect_url );
+                } elseif ( $result === false ) {
+                    $redirect_url = add_query_arg( 'error', 'action_failed', $redirect_url );
+                }
+
+                wp_safe_redirect( $redirect_url );
+                exit;
             }
-
-            $result = call_user_func( $config['callbacks']['delete'], $item_id );
-
-            /**
-             * Fires after a single item is deleted.
-             *
-             * @param int    $item_id Item ID that was deleted
-             * @param mixed  $result  Result from delete callback
-             * @param string $id      Table identifier
-             * @param array  $config  Table configuration
-             *
-             * @since 1.0.0
-             */
-            do_action( 'arraypress_table_item_deleted', $item_id, $result, $id, $config );
-
-            /**
-             * Fires after a single item is deleted from a specific table.
-             *
-             * The dynamic portion of the hook name, `$id`, refers to the table identifier.
-             *
-             * @param int   $item_id Item ID that was deleted
-             * @param mixed $result  Result from delete callback
-             * @param array $config  Table configuration
-             *
-             * @since 1.0.0
-             */
-            do_action( "arraypress_table_item_deleted_{$id}", $item_id, $result, $config );
-
-            // Clean up URL - remove all form submission parameters
-            $redirect_url = remove_query_arg( [
-                    'action',
-                    'action2',
-                    'item',
-                    '_wpnonce',
-                    '_wp_http_referer',
-                    'filter_action',
-            ] );
-            $redirect_url = add_query_arg( 'deleted', $result ? 1 : 0, $redirect_url );
-
-            wp_safe_redirect( $redirect_url );
-            exit;
         }
 
         /**
@@ -377,6 +464,102 @@ class Manager {
          * @since 1.0.0
          */
         do_action( "arraypress_table_single_action_{$id}", $action, $item_id, $config );
+    }
+
+    /**
+     * Handle built-in delete action
+     *
+     * @param string $id      Table identifier
+     * @param array  $config  Table configuration
+     * @param int    $item_id Item ID
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private static function handle_delete_action( string $id, array $config, int $item_id ): void {
+        if ( ! isset( $config['callbacks']['delete'] ) || ! is_callable( $config['callbacks']['delete'] ) ) {
+            return;
+        }
+
+        $singular = $config['labels']['singular'] ?? 'item';
+
+        // Verify nonce
+        $nonce = $_GET['_wpnonce'] ?? '';
+        if ( ! wp_verify_nonce( $nonce, "delete_{$singular}_{$item_id}" ) ) {
+            wp_die( __( 'Security check failed.', 'arraypress' ) );
+        }
+
+        // Check capability if set
+        if ( ! empty( $config['capabilities']['delete'] ) ) {
+            if ( ! current_user_can( $config['capabilities']['delete'] ) ) {
+                wp_die( __( 'You do not have permission to delete this item.', 'arraypress' ) );
+            }
+        }
+
+        $result = call_user_func( $config['callbacks']['delete'], $item_id );
+
+        /**
+         * Fires after a single item is deleted.
+         *
+         * @param int    $item_id Item ID that was deleted
+         * @param mixed  $result  Result from delete callback
+         * @param string $id      Table identifier
+         * @param array  $config  Table configuration
+         *
+         * @since 1.0.0
+         */
+        do_action( 'arraypress_table_item_deleted', $item_id, $result, $id, $config );
+
+        /**
+         * Fires after a single item is deleted from a specific table.
+         *
+         * @param int   $item_id Item ID that was deleted
+         * @param mixed $result  Result from delete callback
+         * @param array $config  Table configuration
+         *
+         * @since 1.0.0
+         */
+        do_action( "arraypress_table_item_deleted_{$id}", $item_id, $result, $config );
+
+        // Redirect to clean URL
+        $redirect_url = self::get_clean_base_url( $config );
+        $redirect_url = add_query_arg( 'deleted', $result ? 1 : 0, $redirect_url );
+
+        wp_safe_redirect( $redirect_url );
+        exit;
+    }
+
+    /**
+     * Get clean base URL for redirects
+     *
+     * @param array $config Table configuration
+     *
+     * @return string Clean URL
+     * @since 1.0.0
+     */
+    private static function get_clean_base_url( array $config ): string {
+        $url = add_query_arg( 'page', $config['page'], admin_url( 'admin.php' ) );
+
+        // Preserve status filter
+        if ( ! empty( $_GET['status'] ) ) {
+            $url = add_query_arg( 'status', sanitize_key( $_GET['status'] ), $url );
+        }
+
+        // Preserve search
+        if ( ! empty( $_GET['s'] ) ) {
+            $url = add_query_arg( 's', sanitize_text_field( $_GET['s'] ), $url );
+        }
+
+        // Preserve custom filters
+        if ( ! empty( $config['filters'] ) ) {
+            foreach ( $config['filters'] as $filter_key => $filter ) {
+                if ( ! empty( $_GET[ $filter_key ] ) ) {
+                    $url = add_query_arg( $filter_key, sanitize_text_field( $_GET[ $filter_key ] ), $url );
+                }
+            }
+        }
+
+        return $url;
     }
 
     /**
@@ -490,19 +673,14 @@ class Manager {
         }
 
         // Redirect with notice parameters
+        $redirect_url = self::get_clean_base_url( $config );
+
         if ( ! empty( $redirect_args ) ) {
-            $base_url = add_query_arg( 'page', $config['page'], admin_url( 'admin.php' ) );
-
-            // Preserve status filter
-            if ( ! empty( $_GET['status'] ) ) {
-                $base_url = add_query_arg( 'status', sanitize_key( $_GET['status'] ), $base_url );
-            }
-
-            $redirect_url = add_query_arg( $redirect_args, $base_url );
-
-            wp_safe_redirect( $redirect_url );
-            exit;
+            $redirect_url = add_query_arg( $redirect_args, $redirect_url );
         }
+
+        wp_safe_redirect( $redirect_url );
+        exit;
     }
 
     /**
@@ -584,8 +762,6 @@ class Manager {
         /**
          * Filters custom admin notices for a table.
          *
-         * Allows adding custom notices to be displayed on the table page.
-         *
          * @param array  $notices Array of notices, each with 'message' and 'type' keys
          * @param string $id      Table identifier
          * @param array  $config  Table configuration
@@ -596,8 +772,6 @@ class Manager {
 
         /**
          * Filters custom admin notices for a specific table.
-         *
-         * The dynamic portion of the hook name, `$id`, refers to the table identifier.
          *
          * @param array $notices Array of notices, each with 'message' and 'type' keys
          * @param array $config  Table configuration
@@ -724,9 +898,6 @@ class Manager {
             }
         }
 
-        // Enqueue styles if needed
-        self::maybe_enqueue_styles( $config );
-
         // Create table instance
         $table = new Table( $id, $config );
 
@@ -749,41 +920,11 @@ class Manager {
         // Render the page
         ?>
         <div class="wrap arraypress-table-wrap">
-            <h1 class="wp-heading-inline">
-                <?php echo esc_html( $config['labels']['title'] ); ?><?php echo $total_count; ?>
-            </h1>
-
-            <?php if ( ! empty( $config['labels']['add_new'] ) ) : ?>
-                <?php if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) : ?>
-                    <?php echo call_user_func( $config['add_button_callback'] ); ?>
-                <?php elseif ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) : ?>
-                    <?php
-                    \render_flyout_button( $config['add_flyout'], [
-                            'text'  => $config['labels']['add_new'],
-                            'class' => 'page-title-action',
-                            'icon'  => 'plus-alt',
-                    ] );
-                    ?>
-                <?php elseif ( ! empty( $config['flyout'] ) && function_exists( 'render_flyout_button' ) ) : ?>
-                    <?php
-                    \render_flyout_button( $config['flyout'], [
-                            'text'  => $config['labels']['add_new'],
-                            'class' => 'page-title-action',
-                            'icon'  => 'plus-alt',
-                    ] );
-                    ?>
-                <?php else : ?>
-                    <a href="<?php echo esc_url( add_query_arg( 'action', 'add', admin_url( 'admin.php?page=' . $config['page'] ) ) ); ?>"
-                       class="page-title-action">
-                        <span class="dashicons dashicons-plus-alt" style="vertical-align: text-top;"></span>
-                        <?php echo esc_html( $config['labels']['add_new'] ); ?>
-                    </a>
-                <?php endif; ?>
-            <?php endif; ?>
-
-            <hr class="wp-header-end">
+            <?php self::render_header( $config, $total_count ); ?>
 
             <?php self::render_admin_notices( $id, $config ); ?>
+
+            <?php self::render_search_results_banner( $config ); ?>
 
             <?php
             /**
@@ -799,8 +940,6 @@ class Manager {
             /**
              * Fires before a specific table is rendered.
              *
-             * The dynamic portion of the hook name, `$id`, refers to the table identifier.
-             *
              * @param array $config Table configuration
              *
              * @since 1.0.0
@@ -809,28 +948,23 @@ class Manager {
             ?>
 
             <form method="get">
-                <input type="hidden" name="page" value="<?php echo esc_attr( $_GET['page'] ?? $config['page'] ); ?>">
+                <input type="hidden" name="page" value="<?php echo esc_attr( $config['page'] ); ?>">
 
                 <?php
-                // Preserve other query args
-                foreach ( $_GET as $key => $value ) {
-                    if ( in_array( $key, [ 'page', 'paged', '_wpnonce', '_wp_http_referer', 'deleted', 'updated', 'error' ], true ) ) {
-                        continue;
-                    }
+                // Only preserve essential params - NOT nonce, action, etc.
+                $preserve_params = [ 'status' ];
 
-                    if ( is_array( $value ) ) {
-                        foreach ( $value as $v ) {
-                            printf(
-                                    '<input type="hidden" name="%s[]" value="%s">',
-                                    esc_attr( $key ),
-                                    esc_attr( $v )
-                            );
-                        }
-                    } else {
+                // Add filter keys
+                foreach ( $config['filters'] as $filter_key => $filter ) {
+                    $preserve_params[] = $filter_key;
+                }
+
+                foreach ( $preserve_params as $key ) {
+                    if ( isset( $_GET[ $key ] ) && $_GET[ $key ] !== '' ) {
                         printf(
                                 '<input type="hidden" name="%s" value="%s">',
                                 esc_attr( $key ),
-                                esc_attr( $value )
+                                esc_attr( sanitize_text_field( $_GET[ $key ] ) )
                         );
                     }
                 }
@@ -862,8 +996,6 @@ class Manager {
             /**
              * Fires after a specific table is rendered.
              *
-             * The dynamic portion of the hook name, `$id`, refers to the table identifier.
-             *
              * @param array $config Table configuration
              *
              * @since 1.0.0
@@ -875,153 +1007,112 @@ class Manager {
     }
 
     /**
-     * Maybe enqueue styles
+     * Render the modern header
      *
-     * Enqueues table styles if not already enqueued.
-     *
-     * @param array $config Table configuration for dynamic styles
+     * @param array  $config      Table configuration
+     * @param string $total_count Formatted total count HTML
      *
      * @return void
      * @since 1.0.0
      */
-    private static function maybe_enqueue_styles( array $config = [] ): void {
-        if ( self::$styles_enqueued ) {
-            return;
-        }
+    private static function render_header( array $config, string $total_count ): void {
+        $logo_url     = $config['logo'] ?? '';
+        $header_title = ! empty( $config['header_title'] ) ? $config['header_title'] : $config['labels']['title'];
+        $show_title   = $config['show_title'] ?? true;
 
-        self::$styles_enqueued = true;
+        ?>
+        <div class="arraypress-table-header">
+            <div class="arraypress-table-header-top">
+                <div class="arraypress-table-header-branding">
+                    <?php if ( $logo_url ) : ?>
+                        <img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="arraypress-table-header-logo">
+                    <?php endif; ?>
+                    <?php if ( $show_title ) : ?>
+                        <h1 class="arraypress-table-header-title">
+                            <?php echo esc_html( $header_title ); ?><?php echo $total_count; ?>
+                        </h1>
+                    <?php endif; ?>
+                </div>
 
-        // Output styles directly since we're called during page render
-        self::output_styles( $config );
+                <div class="arraypress-table-header-actions">
+                    <?php self::render_add_button( $config ); ?>
+                </div>
+            </div>
+        </div>
+        <hr class="wp-header-end">
+        <?php
     }
 
     /**
-     * Output table styles
+     * Render the add new button
      *
-     * @param array $config Table configuration for dynamic styles
+     * @param array $config Table configuration
      *
      * @return void
      * @since 1.0.0
      */
-    private static function output_styles( array $config = [] ): void {
+    private static function render_add_button( array $config ): void {
+        if ( empty( $config['labels']['add_new'] ) ) {
+            return;
+        }
+
+        if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) {
+            echo call_user_func( $config['add_button_callback'] );
+        } elseif ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) {
+            \render_flyout_button( $config['add_flyout'], [
+                    'text'  => $config['labels']['add_new'],
+                    'class' => 'page-title-action',
+                    'icon'  => 'plus-alt',
+            ] );
+        } elseif ( ! empty( $config['flyout'] ) && function_exists( 'render_flyout_button' ) ) {
+            \render_flyout_button( $config['flyout'], [
+                    'text'  => $config['labels']['add_new'],
+                    'class' => 'page-title-action',
+                    'icon'  => 'plus-alt',
+            ] );
+        } else {
+            printf(
+                    '<a href="%s" class="page-title-action"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
+                    esc_url( add_query_arg( 'action', 'add', admin_url( 'admin.php?page=' . $config['page'] ) ) ),
+                    esc_html( $config['labels']['add_new'] )
+            );
+        }
+    }
+
+    /**
+     * Render search results banner
+     *
+     * @param array $config Table configuration
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private static function render_search_results_banner( array $config ): void {
+        $search = sanitize_text_field( $_GET['s'] ?? '' );
+
+        if ( empty( $search ) ) {
+            return;
+        }
+
+        $clear_url = remove_query_arg( 's', self::get_clean_base_url( $config ) );
+        $plural    = $config['labels']['plural'] ?? 'items';
+
         ?>
-        <style>
-            .arraypress-table-wrap .badge {
-                display: inline-block;
-                padding: 3px 8px;
-                font-size: 12px;
-                line-height: 1.2;
-                font-weight: 600;
-                border-radius: 3px;
-                background: #dcdcde;
-                color: #2c3338;
-            }
-
-            .arraypress-table-wrap .badge-success {
-                background: #d4f4dd;
-                color: #00a32a;
-            }
-
-            .arraypress-table-wrap .badge-warning {
-                background: #fcf0e4;
-                color: #996800;
-            }
-
-            .arraypress-table-wrap .badge-error {
-                background: #facfd2;
-                color: #d63638;
-            }
-
-            .arraypress-table-wrap .badge-info {
-                background: #e5f5fa;
-                color: #0073aa;
-            }
-
-            .arraypress-table-wrap .badge-default {
-                background: #f0f0f1;
-                color: #50575e;
-            }
-
-            .arraypress-table-wrap .price {
-                font-weight: 600;
-                color: #00a32a;
-            }
-
-            .arraypress-table-wrap .recurring-badge {
-                display: inline-block;
-                padding: 2px 6px;
-                margin-left: 4px;
-                font-size: 11px;
-                font-weight: normal;
-                color: #50575e;
-                background: #f0f0f1;
-                border-radius: 2px;
-            }
-
-            .arraypress-table-wrap .text-muted {
-                color: #a7aaad;
-            }
-
-            .arraypress-table-wrap .unlimited {
-                font-size: 18px;
-                color: #0073aa;
-                font-weight: 600;
-            }
-
-            .arraypress-table-wrap .column-cb {
-                width: 2.2em;
-            }
-
-            .arraypress-table-wrap .delete-link {
-                color: #b32d2e;
-            }
-
-            .arraypress-table-wrap .delete-link:hover {
-                color: #dc3545;
-            }
-
-            /* Match WordPress native avatar styling */
-            .arraypress-table-wrap .avatar {
-                border-radius: 50%;
-                vertical-align: middle;
-                margin-right: 10px;
-            }
-
-            /* Handle primary column with avatar */
-            .arraypress-table-wrap .column-primary strong {
-                display: inline-block;
-                vertical-align: middle;
-            }
-
-            <?php
-            // Add custom column widths
-            if ( ! empty( $config['column_widths'] ) ) {
-                foreach ( $config['column_widths'] as $column => $width ) {
-                    printf(
-                        ".arraypress-table-wrap .column-%s { width: %s; }\n",
-                        esc_attr( $column ),
-                        esc_attr( $width )
-                    );
-                }
-            }
-
-            // Add column alignments from column config
-            if ( ! empty( $config['columns'] ) ) {
-                foreach ( $config['columns'] as $column => $col_config ) {
-                    if ( is_array( $col_config ) && ! empty( $col_config['align'] ) ) {
-                        $align = in_array( $col_config['align'], [ 'left', 'center', 'right' ], true )
-                            ? $col_config['align']
-                            : 'left';
-                        printf(
-                            ".arraypress-table-wrap .column-%s { text-align: %s; }\n",
-                            esc_attr( $column ),
-                            esc_attr( $align )
-                        );
-                    }
-                }
-            }
-            ?>
-        </style>
+        <div class="arraypress-table-search-results">
+            <span class="arraypress-table-search-results-text">
+                <span class="dashicons dashicons-search"></span>
+                <?php
+                printf(
+                        esc_html__( 'Search results for %s in %s', 'arraypress' ),
+                        '<strong>"' . esc_html( $search ) . '"</strong>',
+                        esc_html( $plural )
+                );
+                ?>
+            </span>
+            <a href="<?php echo esc_url( $clear_url ); ?>" class="arraypress-table-search-results-clear">
+                <?php esc_html_e( 'Clear search', 'arraypress' ); ?>
+            </a>
+        </div>
         <?php
     }
 
