@@ -162,12 +162,12 @@ class Manager {
      * Configuration is merged with sensible defaults. Labels are auto-generated
      * from singular/plural if not provided. Primary column is auto-detected.
      *
+     * @since 1.0.0
+     *
      * @param string $id     Unique table identifier. Used in hooks and internally.
      * @param array  $config Table configuration array. See class docblock for options.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     public static function register( string $id, array $config ): void {
         // Initialize hooks on first registration
@@ -248,11 +248,11 @@ class Manager {
     /**
      * Parse labels configuration with defaults
      *
+     * @since 1.0.0
+     *
      * @param array $labels User-provided labels.
      *
      * @return array Merged labels with defaults.
-     * @since 1.0.0
-     *
      */
     private static function parse_labels( array $labels ): array {
         return wp_parse_args( $labels, [
@@ -269,11 +269,11 @@ class Manager {
     /**
      * Parse callbacks configuration with defaults
      *
+     * @since 1.0.0
+     *
      * @param array $callbacks User-provided callbacks.
      *
      * @return array Merged callbacks with defaults.
-     * @since 1.0.0
-     *
      */
     private static function parse_callbacks( array $callbacks ): array {
         return wp_parse_args( $callbacks, [
@@ -287,11 +287,11 @@ class Manager {
     /**
      * Parse capabilities configuration with defaults
      *
+     * @since 1.0.0
+     *
      * @param array $capabilities User-provided capabilities.
      *
      * @return array Merged capabilities with defaults.
-     * @since 1.0.0
-     *
      */
     private static function parse_capabilities( array $capabilities ): array {
         return wp_parse_args( $capabilities, [
@@ -305,11 +305,11 @@ class Manager {
     /**
      * Auto-generate missing labels from singular/plural
      *
+     * @since 1.0.0
+     *
      * @param array $labels Parsed labels array.
      *
      * @return array Labels with auto-generated values filled in.
-     * @since 1.0.0
-     *
      */
     private static function auto_generate_labels( array $labels ): array {
         // Title from plural
@@ -342,12 +342,12 @@ class Manager {
      * Checks for explicit 'primary' flag in column config, otherwise
      * uses the first non-checkbox column.
      *
+     * @since 1.0.0
+     *
      * @param string $primary_column Configured primary column (may be empty).
      * @param array  $columns        Column definitions.
      *
      * @return string Primary column key.
-     * @since 1.0.0
-     *
      */
     private static function detect_primary_column( string $primary_column, array $columns ): string {
         if ( ! empty( $primary_column ) || empty( $columns ) ) {
@@ -382,9 +382,9 @@ class Manager {
      * and asset enqueuing. Call this once after registering all tables,
      * typically in your plugin's main file or bootstrap.
      *
-     * @return void
      * @since 1.0.0
      *
+     * @return void
      */
     public static function init(): void {
         // Only initialize once
@@ -419,11 +419,11 @@ class Manager {
      * Hooked to admin_enqueue_scripts. Checks if current page matches
      * a registered table and enqueues styles if so.
      *
+     * @since 1.0.0
+     *
      * @param string $hook Current admin page hook suffix.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     public static function enqueue_assets( string $hook ): void {
         $page = $_GET['page'] ?? '';
@@ -447,11 +447,11 @@ class Manager {
      * Enqueues the main stylesheet and outputs dynamic inline styles
      * for column widths and alignments.
      *
+     * @since 1.0.0
+     *
      * @param array $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function do_enqueue_assets( array $config ): void {
         if ( self::$assets_enqueued ) {
@@ -479,11 +479,11 @@ class Manager {
      * Generates CSS for custom column widths and text alignments
      * based on the table configuration.
      *
+     * @since 1.0.0
+     *
      * @param array $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function output_dynamic_styles( array $config ): void {
         $styles = '';
@@ -530,9 +530,9 @@ class Manager {
      * Detects when we're on one of our admin pages and sets up screen
      * options (items per page) and help tabs on the current_screen hook.
      *
-     * @return void
      * @since 1.0.0
      *
+     * @return void
      */
     public static function setup_load_hooks(): void {
         global $pagenow;
@@ -565,12 +565,12 @@ class Manager {
      *
      * Adds the "items per page" screen option and any configured help tabs.
      *
+     * @since 1.0.0
+     *
      * @param string $id     Table identifier.
      * @param array  $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function setup_screen( string $id, array $config ): void {
         $screen = get_current_screen();
@@ -583,15 +583,14 @@ class Manager {
         $option_name = $id . '_per_page';
 
         // Add per page screen option
-        $per_page_label = ! empty( $config['labels']['plural'] )
-                ? sprintf( __( '%s per page', 'arraypress' ), $config['labels']['plural'] )
-                : __( 'Items per page', 'arraypress' );
-
         $screen->add_option( 'per_page', [
-                'label'   => $per_page_label,
+                'label'   => __( 'Number of items per page:', 'arraypress' ),
                 'default' => $config['per_page'],
                 'option'  => $option_name,
         ] );
+
+        // Add column visibility options
+        self::setup_column_options( $screen, $config );
 
         // Add help tabs if configured
         if ( ! empty( $config['help'] ) ) {
@@ -600,14 +599,49 @@ class Manager {
     }
 
     /**
+     * Setup column visibility screen options
+     *
+     * Registers columns so users can show/hide them via Screen Options.
+     *
+     * @since 1.0.0
+     *
+     * @param \WP_Screen $screen Current screen object.
+     * @param array      $config Table configuration.
+     *
+     * @return void
+     */
+    private static function setup_column_options( $screen, array $config ): void {
+        if ( empty( $config['columns'] ) ) {
+            return;
+        }
+
+        // Build columns array for WP_Screen
+        $columns = [];
+        foreach ( $config['columns'] as $key => $column ) {
+            if ( $key === 'cb' ) {
+                continue; // Skip checkbox column
+            }
+
+            $label = is_array( $column ) ? ( $column['label'] ?? $key ) : $column;
+            $columns[ $key ] = $label;
+        }
+
+        // Store columns for get_column_headers()
+        // WordPress uses this to build the column toggle checkboxes
+        add_filter( 'manage_' . $screen->id . '_columns', function() use ( $columns ) {
+            return $columns;
+        } );
+    }
+
+    /**
      * Setup help tabs on the screen
+     *
+     * @since 1.0.0
      *
      * @param \WP_Screen $screen Current screen object.
      * @param array      $help   Help tab configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function setup_help_tabs( $screen, array $help ): void {
         foreach ( $help as $key => $tab ) {
@@ -640,14 +674,15 @@ class Manager {
     /**
      * Handle screen option saving
      *
-     * Adds filter to allow the per_page option to be saved.
-     * Matches any option ending in '_per_page' for our tables.
+     * Adds filters to allow per_page options to be saved.
+     * Uses both the generic filter and dynamic filters for compatibility.
      *
-     * @return void
      * @since 1.0.0
      *
+     * @return void
      */
     private static function handle_screen_options(): void {
+        // Generic filter for older WP versions
         add_filter( 'set-screen-option', function ( $status, $option, $value ) {
             // Match our table per_page options (e.g., 'ate_customers_per_page')
             if ( str_ends_with( $option, '_per_page' ) ) {
@@ -669,9 +704,9 @@ class Manager {
      * This includes filter form submissions, single item actions (delete),
      * and bulk actions.
      *
-     * @return void
      * @since 1.0.0
      *
+     * @return void
      */
     public static function process_early_actions(): void {
         $page = $_GET['page'] ?? '';
@@ -698,12 +733,12 @@ class Manager {
      * When filters are submitted, redirects to a clean URL with only
      * the necessary parameters (removes _wpnonce, filter_action, etc.).
      *
+     * @since 1.0.0
+     *
      * @param string $id     Table identifier.
      * @param array  $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function process_filter_redirect( string $id, array $config ): void {
         if ( ! isset( $_GET['filter_action'] ) ) {
@@ -741,12 +776,12 @@ class Manager {
      * Handles row actions like delete. Checks for handler-based actions
      * in the row_actions config, or falls back to the built-in delete action.
      *
+     * @since 1.0.0
+     *
      * @param string $id     Table identifier.
      * @param array  $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function process_single_actions( string $id, array $config ): void {
         $action  = sanitize_key( $_GET['action'] ?? '' );
@@ -785,12 +820,11 @@ class Manager {
          * Use this hook to handle custom row actions that don't have
          * a handler defined in the row_actions config.
          *
+         * @since 1.0.0
+         *
          * @param string $action  Action key being performed.
          * @param int    $item_id Item ID the action is performed on.
          * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         do_action( "arraypress_table_single_action_{$id}", $action, $item_id, $config );
     }
@@ -801,6 +835,8 @@ class Manager {
      * Processes a row action that has a 'handler' callback defined.
      * Verifies nonce, checks capability, calls handler, and redirects.
      *
+     * @since 1.0.0
+     *
      * @param string $id            Table identifier.
      * @param array  $config        Table configuration.
      * @param string $action        Action key.
@@ -808,8 +844,6 @@ class Manager {
      * @param int    $item_id       Item ID.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function handle_custom_action(
             string $id,
@@ -861,13 +895,13 @@ class Manager {
      * Processes delete requests using the configured delete callback.
      * Verifies nonce, checks capability, calls callback, and redirects.
      *
+     * @since 1.0.0
+     *
      * @param string $id      Table identifier.
      * @param array  $config  Table configuration.
      * @param int    $item_id Item ID to delete.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function handle_delete_action( string $id, array $config, int $item_id ): void {
         // Ensure delete callback exists
@@ -896,25 +930,23 @@ class Manager {
         /**
          * Fires after a single item is deleted
          *
+         * @since 1.0.0
+         *
          * @param int    $item_id Item ID that was deleted.
          * @param mixed  $result  Result from delete callback.
          * @param string $id      Table identifier.
          * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         do_action( 'arraypress_table_item_deleted', $item_id, $result, $id, $config );
 
         /**
          * Fires after a single item is deleted from a specific table
          *
+         * @since 1.0.0
+         *
          * @param int   $item_id Item ID that was deleted.
          * @param mixed $result  Result from delete callback.
          * @param array $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         do_action( "arraypress_table_item_deleted_{$id}", $item_id, $result, $config );
 
@@ -932,12 +964,12 @@ class Manager {
      * Handles bulk action form submissions. Verifies nonce, checks capability,
      * executes callback (if defined), fires hooks, and redirects.
      *
+     * @since 1.0.0
+     *
      * @param string $id     Table identifier.
      * @param array  $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function process_bulk_actions( string $id, array $config ): void {
         // Determine which bulk action was selected
@@ -991,33 +1023,30 @@ class Manager {
         /**
          * Fires when a bulk action is processed
          *
+         * @since 1.0.0
+         *
          * @param array  $items  Selected item IDs.
          * @param string $action Bulk action key.
          * @param string $id     Table identifier.
-         *
-         * @since 1.0.0
-         *
          */
         do_action( 'arraypress_table_bulk_action', $items, $action, $id );
 
         /**
          * Fires when a bulk action is processed on a specific table
          *
-         * @param array  $items  Selected item IDs.
-         * @param string $action Bulk action key.
-         *
          * @since 1.0.0
          *
+         * @param array  $items  Selected item IDs.
+         * @param string $action Bulk action key.
          */
         do_action( "arraypress_table_bulk_action_{$id}", $items, $action );
 
         /**
          * Fires for a specific bulk action on a specific table
          *
-         * @param array $items Selected item IDs.
-         *
          * @since 1.0.0
          *
+         * @param array $items Selected item IDs.
          */
         do_action( "arraypress_table_bulk_action_{$id}_{$action}", $items );
 
@@ -1061,11 +1090,11 @@ class Manager {
      * Outputs the complete admin page including header, notices, search banner,
      * views, search box, and the table itself. Call this in your admin page callback.
      *
+     * @since 1.0.0
+     *
      * @param string $id Table identifier (as passed to register()).
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     public static function render_table( string $id ): void {
         if ( ! isset( self::$tables[ $id ] ) ) {
@@ -1112,21 +1141,19 @@ class Manager {
             /**
              * Fires before the table is rendered
              *
-             * @param string $id     Table identifier.
-             * @param array  $config Table configuration.
-             *
              * @since 1.0.0
              *
+             * @param string $id     Table identifier.
+             * @param array  $config Table configuration.
              */
             do_action( 'arraypress_before_render_table', $id, $config );
 
             /**
              * Fires before a specific table is rendered
              *
-             * @param array $config Table configuration.
-             *
              * @since 1.0.0
              *
+             * @param array $config Table configuration.
              */
             do_action( "arraypress_before_render_table_{$id}", $config );
             ?>
@@ -1171,21 +1198,19 @@ class Manager {
             /**
              * Fires after the table is rendered
              *
-             * @param string $id     Table identifier.
-             * @param array  $config Table configuration.
-             *
              * @since 1.0.0
              *
+             * @param string $id     Table identifier.
+             * @param array  $config Table configuration.
              */
             do_action( 'arraypress_after_render_table', $id, $config );
 
             /**
              * Fires after a specific table is rendered
              *
-             * @param array $config Table configuration.
-             *
              * @since 1.0.0
              *
+             * @param array $config Table configuration.
              */
             do_action( "arraypress_after_render_table_{$id}", $config );
             ?>
@@ -1199,12 +1224,12 @@ class Manager {
      * Outputs the EDD-style header with optional logo, title, and add button.
      * Placed outside .wrap for proper WordPress admin styling.
      *
+     * @since 1.0.0
+     *
      * @param array  $config      Table configuration.
      * @param string $total_count Formatted total count HTML (or empty).
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function render_header( array $config, string $total_count ): void {
         $logo_url     = $config['logo'] ?? '';
@@ -1247,11 +1272,11 @@ class Manager {
      * 2. Flyout button (add_flyout)
      * 3. Link button (add_url)
      *
+     * @since 1.0.0
+     *
      * @param array $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function render_add_button( array $config ): void {
         if ( empty( $config['labels']['add_new'] ) ) {
@@ -1296,11 +1321,11 @@ class Manager {
      * Shows a banner when search results are being displayed,
      * with a link to clear the search.
      *
+     * @since 1.0.0
+     *
      * @param array $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function render_search_results_banner( array $config ): void {
         $search = sanitize_text_field( $_GET['s'] ?? '' );
@@ -1338,12 +1363,12 @@ class Manager {
      * Displays success/error messages based on URL parameters
      * from action processing (deleted, updated, error).
      *
+     * @since 1.0.0
+     *
      * @param string $id     Table identifier.
      * @param array  $config Table configuration.
      *
      * @return void
-     * @since 1.0.0
-     *
      */
     private static function render_admin_notices( string $id, array $config ): void {
         $singular = $config['labels']['singular'] ?? 'item';
@@ -1413,26 +1438,24 @@ class Manager {
         /**
          * Filter custom admin notices for a table
          *
+         * @since 1.0.0
+         *
          * @param array  $notices Array of notices. Each notice should have:
          *                        - 'message' (string) Notice text
          *                        - 'type' (string) Notice type: success, error, warning, info
          *                        - 'dismissible' (bool) Whether notice is dismissible (default true)
          * @param string $id      Table identifier.
          * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
          */
         $custom_notices = apply_filters( 'arraypress_table_admin_notices', [], $id, $config );
 
         /**
          * Filter custom admin notices for a specific table
          *
-         * @param array $notices Array of notices (see above for format).
-         * @param array $config  Table configuration.
-         *
          * @since 1.0.0
          *
+         * @param array $notices Array of notices (see above for format).
+         * @param array $config  Table configuration.
          */
         $custom_notices = apply_filters( "arraypress_table_admin_notices_{$id}", $custom_notices, $config );
 
@@ -1467,11 +1490,11 @@ class Manager {
      * Builds a URL with the page parameter and preserves status, search,
      * and custom filter parameters. Used for post-action redirects.
      *
+     * @since 1.0.0
+     *
      * @param array $config Table configuration.
      *
      * @return string Clean admin URL.
-     * @since 1.0.0
-     *
      */
     private static function get_clean_base_url( array $config ): string {
         $url = add_query_arg( 'page', $config['page'], admin_url( 'admin.php' ) );
@@ -1511,11 +1534,11 @@ class Manager {
      * - `admin-table-{$id}` - Table-specific class
      * - Custom class from `body_class` config option
      *
+     * @since 1.0.0
+     *
      * @param string $classes Space-separated list of body classes.
      *
      * @return string Modified classes string.
-     * @since 1.0.0
-     *
      */
     public static function add_body_class( string $classes ): string {
         $page = $_GET['page'] ?? '';
@@ -1552,11 +1575,11 @@ class Manager {
     /**
      * Get a registered table configuration
      *
+     * @since 1.0.0
+     *
      * @param string $id Table identifier.
      *
      * @return array|null Table configuration or null if not found.
-     * @since 1.0.0
-     *
      */
     public static function get_table( string $id ): ?array {
         return self::$tables[ $id ] ?? null;
@@ -1565,11 +1588,11 @@ class Manager {
     /**
      * Check if a table is registered
      *
+     * @since 1.0.0
+     *
      * @param string $id Table identifier.
      *
      * @return bool True if registered.
-     * @since 1.0.0
-     *
      */
     public static function has_table( string $id ): bool {
         return isset( self::$tables[ $id ] );
@@ -1580,11 +1603,11 @@ class Manager {
      *
      * Removes a table from the registry. Useful for conditional table removal.
      *
+     * @since 1.0.0
+     *
      * @param string $id Table identifier.
      *
      * @return bool True if removed, false if not found.
-     * @since 1.0.0
-     *
      */
     public static function unregister( string $id ): bool {
         if ( isset( self::$tables[ $id ] ) ) {
@@ -1599,9 +1622,9 @@ class Manager {
     /**
      * Get all registered tables
      *
-     * @return array All registered table configurations.
      * @since 1.0.0
      *
+     * @return array All registered table configurations.
      */
     public static function get_all_tables(): array {
         return self::$tables;

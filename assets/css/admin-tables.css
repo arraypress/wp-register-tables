@@ -5,19 +5,6 @@
  */
 
 /* ==========================================================================
-   Table Tweaks
-   ========================================================================== */
-
-.admin-table .metabox-prefs {
-    margin: 0 0 0 -20px !important;
-}
-
-.admin-table .notice {
-    margin-top: 12px;
-    margin-left: 0;
-}
-
-/* ==========================================================================
    List Table Header (outside .wrap, sibling to it)
    Matches EDD pattern - sits in #wpcontent, uses negative margin to stretch
    ========================================================================== */
@@ -234,7 +221,44 @@
 }
 
 .wp-list-table .avatar {
-    border-radius: 4px;
+    border-radius: 20%;
+}
+
+/* ==========================================================================
+   Column Value Formatting
+   ========================================================================== */
+
+/* Code/ID - monospace styling */
+.wp-list-table code.code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    color: #1d2327;
+}
+
+/* Percentage */
+.wp-list-table .percentage {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Duration */
+.wp-list-table .duration {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* File size */
+.wp-list-table .file-size {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Price - already styled, ensure tabular nums */
+.wp-list-table .price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -259,4 +283,19 @@
         align-items: flex-start;
         gap: 8px;
     }
+}
+
+/* ==========================================================================
+   Row Actions - Enforce Hover Behavior
+   WordPress may override this when columns are manageable, so we enforce it
+   ========================================================================== */
+
+.wp-list-table .row-actions {
+    visibility: hidden;
+}
+
+.wp-list-table tr:hover .row-actions,
+.wp-list-table tr:focus-within .row-actions,
+.wp-list-table .row-actions.visible {
+    visibility: visible;
 }

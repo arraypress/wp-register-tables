@@ -213,6 +213,16 @@ class Table extends WP_List_Table {
      * @return array Column keys to hide by default.
      */
     public function get_hidden_columns(): array {
+        // Check user's saved column preferences first
+        $screen = get_current_screen();
+        if ( $screen ) {
+            $hidden = get_user_option( 'manage' . $screen->id . 'columnshidden' );
+            if ( is_array( $hidden ) ) {
+                return $hidden;
+            }
+        }
+
+        // Fall back to config defaults
         $hidden = $this->config['hidden_columns'] ?? [];
 
         /**
