@@ -287,6 +287,26 @@ class Table extends WP_List_Table {
         return $this->config['primary_column'] ?? parent::get_primary_column_name();
     }
 
+    /**
+     * Get CSS classes for the table element
+     *
+     * Removes 'table-view-excerpt' class which WordPress adds when columns
+     * are manageable via screen options. This class causes row actions to
+     * be always visible instead of on hover.
+     *
+     * @since 1.0.0
+     *
+     * @return array Array of CSS class names.
+     */
+    protected function get_table_classes(): array {
+        $classes = parent::get_table_classes();
+
+        // Remove excerpt view class to keep row actions hover behavior
+        $classes = array_diff( $classes, [ 'table-view-excerpt' ] );
+
+        return array_values( $classes );
+    }
+
     /* =========================================================================
      * DATA RETRIEVAL
      * ========================================================================= */
