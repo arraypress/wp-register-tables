@@ -163,7 +163,7 @@ class Columns {
 			'country' => self::format_country( $value ),
 			'date' => Dates::render_date( $value ) ?? self::render_empty(),
 			'duration' => Dates::render_duration( $value ) ?? self::render_empty(),
-			'price' => self::format_price( $value, $item ),
+			'price' => Currency::render( $value, $item ) ?? self::render_empty(),
 			'status' => self::format_status( $value, $status_styles ),
 			'count' => self::format_count( $value ),
 			'url' => self::format_url( $value, $column_name ),
@@ -311,37 +311,6 @@ class Columns {
 	 */
 	public static function format_email( string $email ): string {
 		return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
-	}
-
-	/**
-	 * Format price value (smallest unit to currency)
-	 *
-	 * Converts amount stored in smallest unit (cents, pence, etc.) to
-	 * formatted currency string with proper symbol and decimals.
-	 *
-	 * @param mixed  $value    Amount in smallest unit (e.g., cents).
-	 * @param object $item     Data object (checked for currency property/method).
-	 * @param string $currency Optional currency code override (default: USD).
-	 *
-	 * @return string Formatted price HTML.
-	 */
-	public static function format_price( $value, $item, string $currency = '' ): string {
-		$amount = is_numeric( $value ) ? intval( $value ) : 0;
-
-		// Get currency from item if not provided
-		if ( empty( $currency ) ) {
-			if ( method_exists( $item, 'get_currency' ) ) {
-				$currency = $item->get_currency();
-			} elseif ( is_object( $item ) && property_exists( $item, 'currency' ) && ! empty( $item->currency ) ) {
-				$currency = $item->currency;
-			} else {
-				$currency = 'USD';
-			}
-		}
-
-		$formatted = Currency::format( $amount, $currency );
-
-		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
 	/**
