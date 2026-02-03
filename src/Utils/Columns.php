@@ -161,7 +161,8 @@ class Columns {
 		return match ( $type ) {
 			'email' => self::format_email( $value ),
 			'country' => self::format_country( $value ),
-			'date' => self::format_date( $value ),
+			'date' => Dates::render_date( $value ) ?? self::render_empty(),
+			'duration' => Dates::render_duration( $value ) ?? self::render_empty(),
 			'price' => self::format_price( $value, $item ),
 			'status' => self::format_status( $value, $status_styles ),
 			'count' => self::format_count( $value ),
@@ -170,7 +171,6 @@ class Columns {
 			'code' => self::format_code( $value ),
 			'percentage' => self::format_percentage( $value ),
 			'rate' => self::format_rate( $value, $item, $column_name ),
-			'duration' => self::format_duration( $value ),
 			'file_size' => self::format_file_size( $value ),
 			default => esc_html( (string) $value ),
 		};
@@ -311,28 +311,6 @@ class Columns {
 	 */
 	public static function format_email( string $email ): string {
 		return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
-	}
-
-	/**
-	 * Format date value (UTC to local with human diff)
-	 *
-	 * @param string $utc_datetime UTC datetime from database.
-	 *
-	 * @return string Formatted date HTML with title.
-	 */
-	public static function format_date( string $utc_datetime ): string {
-		if ( Dates::is_zero( $utc_datetime ) ) {
-			return self::render_empty();
-		}
-
-		$human     = Dates::human_diff( $utc_datetime );
-		$formatted = Dates::format( $utc_datetime );
-
-		return sprintf(
-			'<span title="%s">%s</span>',
-			esc_attr( $formatted ),
-			esc_html( $human )
-		);
 	}
 
 	/**
@@ -588,26 +566,6 @@ class Columns {
 		}
 
 		return null;
-	}
-
-	/**
-	 * Format duration value
-	 *
-	 * Converts seconds into human-readable duration format using DateUtils.
-	 *
-	 * @param mixed  $value  Duration in seconds.
-	 * @param string $format Format style: 'short' (2h 15m), 'long' (2 hours, 15 minutes), 'compact' (2:15:00).
-	 *
-	 * @return string Formatted duration HTML.
-	 */
-	public static function format_duration( $value, string $format = 'short' ): string {
-		if ( ! is_numeric( $value ) || $value < 0 ) {
-			return self::render_empty();
-		}
-
-		$formatted = Dates::format_duration( (int) $value, $format );
-
-		return sprintf( '<span class="duration">%s</span>', esc_html( $formatted ) );
 	}
 
 	/**
