@@ -290,12 +290,29 @@
    WordPress may override this when columns are manageable, so we enforce it
    ========================================================================== */
 
-.wp-list-table .row-actions {
+.admin-table .wp-list-table .row-actions,
+.admin-table .wp-list-table .row-actions.visible {
     visibility: hidden;
 }
 
-.wp-list-table tr:hover .row-actions,
-.wp-list-table tr:focus-within .row-actions,
-.wp-list-table .row-actions.visible {
+.admin-table .wp-list-table tr:hover .row-actions,
+.admin-table .wp-list-table tr:focus-within .row-actions {
     visibility: visible;
+}
+
+/* ==========================================================================
+   Table Tweaks
+   ========================================================================== */
+
+.admin-table div.metabox-prefs {
+    margin: 0 0 0 -20px !important;
+}
+
+.admin-table fieldset.metabox-prefs {
+    margin-left: 0 !important;
+}
+
+.admin-table .notice {
+    margin-top: 12px;
+    margin-left: 0;
 }
