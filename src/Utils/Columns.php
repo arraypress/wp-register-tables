@@ -33,6 +33,14 @@ defined( 'ABSPATH' ) || exit;
 class Columns {
 
 	/**
+	 * Cached StatusBadge instances keyed by their config hash
+	 *
+	 * @since 1.0.0
+	 * @var array<string, StatusBadge>
+	 */
+	private static array $badges = [];
+
+	/**
 	 * Column type registry
 	 *
 	 * Maps column types to their detection rules. Each type has one or more
@@ -128,10 +136,11 @@ class Columns {
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string      $column_name Column name.
-	 * @param mixed       $value       Column value.
-	 * @param object      $item        Data object.
-	 * @param StatusBadge $badge       StatusBadge instance for status rendering.
+	 * @param string $column_name   Column name.
+	 * @param mixed  $value         Column value.
+	 * @param object $item          Data object.
+	 * @param array  $status_styles Custom status => badge type mappings (e.g., ['active' => 'success']).
+	 * @param array  $views         View/label mappings for statuses (e.g., ['active' => 'Active']).
 	 *
 	 * @return string Formatted HTML.
 	 */
@@ -139,7 +148,8 @@ class Columns {
 		string $column_name,
 		$value,
 		$item,
-		StatusBadge $badge
+		array $status_styles = [],
+		array $views = []
 	): string {
 		// Handle empty values
 		if ( self::is_empty( $value ) ) {
@@ -153,10 +163,10 @@ class Columns {
 			'country' => self::format_country( $value ),
 			'date' => self::format_date( $value ),
 			'price' => self::format_price( $value, $item ),
-			'status' => $badge->render( $value ),
+			'status' => self::format_status( $value, $status_styles ),
 			'count' => self::format_count( $value ),
 			'url' => self::format_url( $value, $column_name ),
-			'boolean' => self::format_boolean( $value, $column_name, $badge ),
+			'boolean' => self::format_boolean( $value, $column_name, $status_styles ),
 			'code' => self::format_code( $value ),
 			'percentage' => self::format_percentage( $value ),
 			'rate' => self::format_rate( $value, $item, $column_name ),
@@ -164,6 +174,41 @@ class Columns {
 			'file_size' => self::format_file_size( $value ),
 			default => esc_html( (string) $value ),
 		};
+	}
+
+	/* ========================================================================
+	 * STATUS BADGE
+	 * ======================================================================== */
+
+	/**
+	 * Get or create a StatusBadge instance for the given styles
+	 *
+	 * Caches instances so the same config doesn't create duplicate objects.
+	 *
+	 * @param array $custom_styles Custom status => badge type mappings.
+	 *
+	 * @return StatusBadge
+	 */
+	private static function get_badge( array $custom_styles = [] ): StatusBadge {
+		$key = empty( $custom_styles ) ? '_default' : md5( serialize( $custom_styles ) );
+
+		if ( ! isset( self::$badges[ $key ] ) ) {
+			self::$badges[ $key ] = new StatusBadge( $custom_styles );
+		}
+
+		return self::$badges[ $key ];
+	}
+
+	/**
+	 * Format a status value as a badge
+	 *
+	 * @param string $value         Status string.
+	 * @param array  $custom_styles Custom status => badge type mappings.
+	 *
+	 * @return string Badge HTML.
+	 */
+	public static function format_status( string $value, array $custom_styles = [] ): string {
+		return self::get_badge( $custom_styles )->render( $value );
 	}
 
 	/* ========================================================================
@@ -376,18 +421,18 @@ class Columns {
 	/**
 	 * Format boolean value
 	 *
-	 * @param mixed       $value       Boolean value.
-	 * @param string      $column_name Column name (for special handling).
-	 * @param StatusBadge $badge       StatusBadge instance.
+	 * @param mixed  $value         Boolean value.
+	 * @param string $column_name   Column name (for special handling).
+	 * @param array  $custom_styles Custom status => badge type mappings.
 	 *
 	 * @return string Formatted boolean HTML.
 	 */
-	public static function format_boolean( $value, string $column_name = '', ?StatusBadge $badge = null ): string {
+	public static function format_boolean( $value, string $column_name = '', array $custom_styles = [] ): string {
 		$is_true = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 
 		// Special handling for test/live mode
 		if ( $column_name === 'is_test' || $column_name === 'test_mode' ) {
-			$badge = $badge ?? new StatusBadge();
+			$badge = self::get_badge( $custom_styles );
 
 			return $is_true
 				? $badge->render( 'test', StatusBadge::WARNING, __( 'Test', 'arraypress' ) )

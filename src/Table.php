@@ -45,7 +45,7 @@ use WP_List_Table;
  * - `columns`          (array)    Column definitions with labels and optional callbacks
  * - `sortable`         (array)    List of sortable columns
  * - `hidden_columns`   (array)    Columns hidden by default
- * - `primary_column`   (string)   Column to show row actions on
+ * - `primary_column`   (string)   Column for row actions
  * - `bulk_actions`     (array)    Bulk action definitions
  * - `row_actions`      (array|callable) Row action definitions or callback
  * - `views`            (array)    Status view definitions
@@ -1349,7 +1349,7 @@ class Table extends WP_List_Table {
                         $plural
                 );
             } elseif ( ! empty( $this->status ) ) {
-                $status_label = Utils\StatusBadge::get_label( $this->status, $this->config['views'] ?? [] );
+                $status_label = \ArrayPress\StatusBadge\StatusBadge::format_label( $this->status );
                 $message      = sprintf(
                 /* translators: 1: status label, 2: plural item label */
                         __( 'No %1$s %2$s found.', 'arraypress' ),
