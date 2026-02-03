@@ -120,51 +120,51 @@
    Status Badges (EDD-inspired)
    ========================================================================== */
 
-.badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 2px 8px;
-    font-size: 12px;
-    line-height: 1.4;
-    font-weight: 500;
-    border-radius: 4px;
-    background: #ececec;
-    color: #50575e;
-}
+/*.badge {*/
+/*    display: inline-flex;*/
+/*    align-items: center;*/
+/*    gap: 3px;*/
+/*    padding: 2px 8px;*/
+/*    font-size: 12px;*/
+/*    line-height: 1.4;*/
+/*    font-weight: 500;*/
+/*    border-radius: 4px;*/
+/*    background: #ececec;*/
+/*    color: #50575e;*/
+/*}*/
 
-.badge .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-    line-height: 14px;
-    opacity: 0.85;
-}
+/*.badge .dashicons {*/
+/*    font-size: 14px;*/
+/*    width: 14px;*/
+/*    height: 14px;*/
+/*    line-height: 14px;*/
+/*    opacity: 0.85;*/
+/*}*/
 
-.badge-success {
-    background: #e5f5f0;
-    color: #017d5c;
-}
+/*.badge-success {*/
+/*    background: #e5f5f0;*/
+/*    color: #017d5c;*/
+/*}*/
 
-.badge-warning {
-    background: #f5f2e5;
-    color: #996800;
-}
+/*.badge-warning {*/
+/*    background: #f5f2e5;*/
+/*    color: #996800;*/
+/*}*/
 
-.badge-error {
-    background: #ffd6d6;
-    color: #ac3d3d;
-}
+/*.badge-error {*/
+/*    background: #ffd6d6;*/
+/*    color: #ac3d3d;*/
+/*}*/
 
-.badge-info {
-    background: #e5f1f5;
-    color: #016087;
-}
+/*.badge-info {*/
+/*    background: #e5f1f5;*/
+/*    color: #016087;*/
+/*}*/
 
-.badge-default {
-    background: #ececec;
-    color: #50575e;
-}
+/*.badge-default {*/
+/*    background: #ececec;*/
+/*    color: #50575e;*/
+/*}*/
 
 /* ==========================================================================
    Price & Currency
