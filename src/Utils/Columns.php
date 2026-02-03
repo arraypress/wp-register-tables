@@ -18,6 +18,7 @@ namespace ArrayPress\RegisterTables\Utils;
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
 use ArrayPress\DateUtils\Dates;
+use ArrayPress\StatusBadge\StatusBadge;
 
 // Exit if accessed directly
 defined( 'ABSPATH' ) || exit;
@@ -32,170 +33,214 @@ defined( 'ABSPATH' ) || exit;
 class Columns {
 
 	/**
-	 * Column names that should be formatted as dates
+	 * Column type registry
 	 *
-	 * @var array
-	 */
-	private static array $date_columns = [
-		'created',
-		'updated',
-		'modified',
-		'registered',
-		'last_sync',
-		'last_login',
-		'expires',
-		'expiration',
-		'published',
-		'deleted',
-	];
-
-	/**
-	 * Column name patterns that indicate date columns
+	 * Maps column types to their detection rules. Each type has one or more
+	 * match strategies: exact, prefix, suffix, contains.
 	 *
-	 * @var array
+	 * @var array<string, array<string, string[]>>
 	 */
-	private static array $date_patterns = [
-		'_at',
-		'date',
-		'_date',
-	];
-
-	/**
-	 * Column name patterns that indicate price/money columns
-	 *
-	 * @var array
-	 */
-	private static array $price_patterns = [
-		'price',
-		'total',
-		'amount',
-		'_spent',
-		'subtotal',
-		'discount',
-		'tax',
-		'fee',
-		'cost',
-		'revenue',
-		'balance',
-	];
-
-	/**
-	 * Column name patterns that indicate count columns
-	 *
-	 * @var array
-	 */
-	private static array $count_patterns = [
-		'_count',
-		'count',
-		'limit',
-		'quantity',
-		'qty',
-	];
-
-	/**
-	 * Column names that should be formatted as booleans
-	 *
-	 * @var array
-	 */
-	private static array $boolean_columns = [
-		'test',
-		'active',
-		'enabled',
-		'verified',
-		'featured',
-		'published',
+	private static array $column_types = [
+		'email'      => [
+			'contains' => [ 'email' ],
+		],
+		'country'    => [
+			'exact'  => [ 'country', 'country_code' ],
+			'suffix' => [ '_country' ],
+		],
+		'date'       => [
+			'exact'    => [
+				'created',
+				'updated',
+				'modified',
+				'registered',
+				'last_sync',
+				'last_login',
+				'expires',
+				'expiration',
+				'published',
+				'deleted',
+			],
+			'contains' => [ '_at', 'date' ],
+		],
+		'price'      => [
+			'contains' => [
+				'price',
+				'total',
+				'amount',
+				'_spent',
+				'subtotal',
+				'discount',
+				'tax',
+				'fee',
+				'cost',
+				'revenue',
+				'balance',
+			],
+		],
+		'status'     => [
+			'exact'    => [ 'status' ],
+			'contains' => [ '_status' ],
+		],
+		'count'      => [
+			'exact'    => [ 'count', 'limit', 'quantity', 'qty' ],
+			'contains' => [ '_count' ],
+		],
+		'url'        => [
+			'exact'    => [ 'url', 'website', 'link' ],
+			'contains' => [ '_url', 'website', 'link' ],
+		],
+		'boolean'    => [
+			'exact'  => [
+				'test',
+				'active',
+				'enabled',
+				'verified',
+				'featured',
+				'published',
+			],
+			'prefix' => [ 'is_', 'has_', 'can_' ],
+		],
+		'code'       => [
+			'exact'  => [ 'code', 'sku', 'uuid', 'guid', 'hash', 'key', 'token', 'reference' ],
+			'suffix' => [ '_code', '_id', '_key', '_token' ],
+		],
+		'percentage' => [
+			'contains' => [ 'percent' ],
+			'suffix'   => [ '_pct' ],
+		],
+		'rate'       => [
+			'exact'  => [ 'rate', 'discount', 'commission', 'markup' ],
+			'suffix' => [ '_rate' ],
+		],
+		'duration'   => [
+			'exact'    => [ 'elapsed', 'runtime', 'length' ],
+			'contains' => [ 'duration' ],
+			'suffix'   => [ '_seconds', '_time' ],
+		],
+		'file_size'  => [
+			'exact'    => [ 'size', 'bytes' ],
+			'contains' => [ 'filesize', 'file_size' ],
+			'suffix'   => [ '_size', '_bytes' ],
+		],
 	];
 
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string $column_name   Column name
-	 * @param mixed  $value         Column value
-	 * @param object $item          Data object
-	 * @param array  $status_styles Custom status styles
-	 * @param array  $views         Views configuration (for status labels)
+	 * @param string      $column_name Column name.
+	 * @param mixed       $value       Column value.
+	 * @param object      $item        Data object.
+	 * @param StatusBadge $badge       StatusBadge instance for status rendering.
 	 *
-	 * @return string Formatted HTML
+	 * @return string Formatted HTML.
 	 */
 	public static function auto_format(
 		string $column_name,
 		$value,
 		$item,
-		array $status_styles = [],
-		array $views = []
+		StatusBadge $badge
 	): string {
 		// Handle empty values
 		if ( self::is_empty( $value ) ) {
 			return self::render_empty();
 		}
 
-		// Email columns
-		if ( self::is_email_column( $column_name ) ) {
-			return self::format_email( $value );
+		$type = self::detect_type( $column_name );
+
+		return match ( $type ) {
+			'email' => self::format_email( $value ),
+			'country' => self::format_country( $value ),
+			'date' => self::format_date( $value ),
+			'price' => self::format_price( $value, $item ),
+			'status' => $badge->render( $value ),
+			'count' => self::format_count( $value ),
+			'url' => self::format_url( $value, $column_name ),
+			'boolean' => self::format_boolean( $value, $column_name, $badge ),
+			'code' => self::format_code( $value ),
+			'percentage' => self::format_percentage( $value ),
+			'rate' => self::format_rate( $value, $item, $column_name ),
+			'duration' => self::format_duration( $value ),
+			'file_size' => self::format_file_size( $value ),
+			default => esc_html( (string) $value ),
+		};
+	}
+
+	/* ========================================================================
+	 * COLUMN TYPE DETECTION
+	 * ======================================================================== */
+
+	/**
+	 * Detect the column type from its name
+	 *
+	 * Checks the column name against the registry of type rules and returns
+	 * the first matching type, or null if no match is found.
+	 *
+	 * @param string $column_name Column name.
+	 *
+	 * @return string|null Column type or null.
+	 */
+	public static function detect_type( string $column_name ): ?string {
+		foreach ( self::$column_types as $type => $rules ) {
+			if ( self::matches_rules( $column_name, $rules ) ) {
+				return $type;
+			}
 		}
 
-		// Country columns
-		if ( self::is_country_column( $column_name ) ) {
-			return self::format_country( $value );
+		return null;
+	}
+
+	/**
+	 * Check if a column name matches a set of rules
+	 *
+	 * @param string $name  Column name.
+	 * @param array  $rules Match rules (exact, prefix, suffix, contains).
+	 *
+	 * @return bool
+	 */
+	private static function matches_rules( string $name, array $rules ): bool {
+		foreach ( $rules as $match_type => $values ) {
+			foreach ( $values as $value ) {
+				$matched = match ( $match_type ) {
+					'exact' => $name === $value,
+					'prefix' => str_starts_with( $name, $value ),
+					'suffix' => str_ends_with( $name, $value ),
+					'contains' => str_contains( $name, $value ),
+					default => false,
+				};
+
+				if ( $matched ) {
+					return true;
+				}
+			}
 		}
 
-		// Date columns
-		if ( self::is_date_column( $column_name ) ) {
-			return self::format_date( $value );
-		}
+		return false;
+	}
 
-		// Price/money columns
-		if ( self::is_price_column( $column_name ) ) {
-			return self::format_price( $value, $item );
-		}
+	/**
+	 * Check if a column is a specific type
+	 *
+	 * Convenience method for checking column types externally.
+	 *
+	 * @param string $column_name Column name.
+	 * @param string $type        Type to check against.
+	 *
+	 * @return bool
+	 */
+	public static function is_type( string $column_name, string $type ): bool {
+		return self::detect_type( $column_name ) === $type;
+	}
 
-		// Status columns
-		if ( self::is_status_column( $column_name ) ) {
-			return StatusBadge::render( $value, $status_styles, $views );
-		}
-
-		// Count columns
-		if ( self::is_count_column( $column_name ) ) {
-			return self::format_count( $value );
-		}
-
-		// URL columns
-		if ( self::is_url_column( $column_name ) ) {
-			return self::format_url( $value, $column_name );
-		}
-
-		// Boolean columns
-		if ( self::is_boolean_column( $column_name ) ) {
-			return self::format_boolean( $value, $column_name );
-		}
-
-		// Code/ID columns
-		if ( self::is_code_column( $column_name ) ) {
-			return self::format_code( $value );
-		}
-
-		// Percentage columns
-		if ( self::is_percentage_column( $column_name ) ) {
-			return self::format_percentage( $value );
-		}
-
-		// Rate columns (percentage or flat amount)
-		if ( self::is_rate_column( $column_name ) ) {
-			return self::format_rate( $value, $item, $column_name );
-		}
-
-		// Duration columns
-		if ( self::is_duration_column( $column_name ) ) {
-			return self::format_duration( $value );
-		}
-
-		// File size columns
-		if ( self::is_file_size_column( $column_name ) ) {
-			return self::format_file_size( $value );
-		}
-
-		// Default: escape and return
-		return esc_html( (string) $value );
+	/**
+	 * Check if value is empty
+	 *
+	 * @param mixed $value Value to check.
+	 *
+	 * @return bool
+	 */
+	public static function is_empty( $value ): bool {
+		return $value === null || $value === '' || $value === false;
 	}
 
 	/* ========================================================================
@@ -205,7 +250,7 @@ class Columns {
 	/**
 	 * Format empty value
 	 *
-	 * @return string Empty placeholder HTML
+	 * @return string Empty placeholder HTML.
 	 */
 	public static function render_empty(): string {
 		return '<span aria-hidden="true">—</span><span class="screen-reader-text">' .
@@ -215,9 +260,9 @@ class Columns {
 	/**
 	 * Format email value
 	 *
-	 * @param string $email Email address
+	 * @param string $email Email address.
 	 *
-	 * @return string Email link HTML
+	 * @return string Email link HTML.
 	 */
 	public static function format_email( string $email ): string {
 		return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
@@ -229,8 +274,6 @@ class Columns {
 	 * @param string $utc_datetime UTC datetime from database.
 	 *
 	 * @return string Formatted date HTML with title.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_date( string $utc_datetime ): string {
 		if ( Dates::is_zero( $utc_datetime ) ) {
@@ -258,8 +301,6 @@ class Columns {
 	 * @param string $currency Optional currency code override (default: USD).
 	 *
 	 * @return string Formatted price HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_price( $value, $item, string $currency = '' ): string {
 		$amount = is_numeric( $value ) ? intval( $value ) : 0;
@@ -283,9 +324,9 @@ class Columns {
 	/**
 	 * Format count value
 	 *
-	 * @param mixed $value Count value
+	 * @param mixed $value Count value.
 	 *
-	 * @return string Formatted count HTML
+	 * @return string Formatted count HTML.
 	 */
 	public static function format_count( $value ): string {
 		$count = is_numeric( $value ) ? intval( $value ) : 0;
@@ -307,10 +348,10 @@ class Columns {
 	/**
 	 * Format URL value
 	 *
-	 * @param string $url         URL value
-	 * @param string $column_name Column name (to detect image URLs)
+	 * @param string $url         URL value.
+	 * @param string $column_name Column name (to detect image URLs).
 	 *
-	 * @return string Formatted URL HTML
+	 * @return string Formatted URL HTML.
 	 */
 	public static function format_url( string $url, string $column_name = '' ): string {
 		// Image URL — show thumbnail
@@ -335,19 +376,22 @@ class Columns {
 	/**
 	 * Format boolean value
 	 *
-	 * @param mixed  $value       Boolean value
-	 * @param string $column_name Column name (for special handling)
+	 * @param mixed       $value       Boolean value.
+	 * @param string      $column_name Column name (for special handling).
+	 * @param StatusBadge $badge       StatusBadge instance.
 	 *
-	 * @return string Formatted boolean HTML
+	 * @return string Formatted boolean HTML.
 	 */
-	public static function format_boolean( $value, string $column_name = '' ): string {
+	public static function format_boolean( $value, string $column_name = '', ?StatusBadge $badge = null ): string {
 		$is_true = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 
 		// Special handling for test/live mode
 		if ( $column_name === 'is_test' || $column_name === 'test_mode' ) {
+			$badge = $badge ?? new StatusBadge();
+
 			return $is_true
-				? StatusBadge::render( 'test', [ 'test' => 'warning' ], [ 'test' => __( 'Test', 'arraypress' ) ] )
-				: StatusBadge::render( 'live', [ 'live' => 'success' ], [ 'live' => __( 'Live', 'arraypress' ) ] );
+				? $badge->render( 'test', StatusBadge::WARNING, __( 'Test', 'arraypress' ) )
+				: $badge->render( 'live', StatusBadge::SUCCESS, __( 'Live', 'arraypress' ) );
 		}
 
 		// Standard boolean icons
@@ -366,8 +410,6 @@ class Columns {
 	 * @param bool   $include_name Include country name (default true).
 	 *
 	 * @return string Formatted country HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_country( string $code, bool $include_flag = true, bool $include_name = true ): string {
 		if ( empty( $code ) ) {
@@ -396,8 +438,6 @@ class Columns {
 	 * @param string $value Code value.
 	 *
 	 * @return string Formatted code HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_code( string $value ): string {
 		if ( empty( $value ) ) {
@@ -417,8 +457,6 @@ class Columns {
 	 * @param int   $decimals Number of decimal places (default 0).
 	 *
 	 * @return string Formatted percentage HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_percentage( $value, int $decimals = 0 ): string {
 		if ( ! is_numeric( $value ) ) {
@@ -445,8 +483,6 @@ class Columns {
 	 * @param string $column_name Column name (used to find {column}_type property).
 	 *
 	 * @return string Formatted rate HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_rate( $value, $item, string $column_name = 'rate' ): string {
 		if ( ! is_numeric( $value ) ) {
@@ -484,8 +520,6 @@ class Columns {
 	 * @param string $column_name Column name.
 	 *
 	 * @return string|null Rate type or null if not found.
-	 * @since 1.0.0
-	 *
 	 */
 	private static function get_rate_type( $item, string $column_name ): ?string {
 		// Check for {column}_type property (e.g., rate_type, discount_type)
@@ -520,8 +554,6 @@ class Columns {
 	 * @param string $format Format style: 'short' (2h 15m), 'long' (2 hours, 15 minutes), 'compact' (2:15:00).
 	 *
 	 * @return string Formatted duration HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_duration( $value, string $format = 'short' ): string {
 		if ( ! is_numeric( $value ) || $value < 0 ) {
@@ -542,8 +574,6 @@ class Columns {
 	 * @param int   $decimals Number of decimal places (default 1).
 	 *
 	 * @return string Formatted file size HTML.
-	 * @since 1.0.0
-	 *
 	 */
 	public static function format_file_size( $value, int $decimals = 1 ): string {
 		if ( ! is_numeric( $value ) || $value < 0 ) {
@@ -553,234 +583,6 @@ class Columns {
 		$formatted = size_format( (int) $value, $decimals );
 
 		return sprintf( '<span class="file-size">%s</span>', esc_html( $formatted ) );
-	}
-
-	/* ========================================================================
-	 * COLUMN TYPE DETECTION
-	 * ======================================================================== */
-
-	/**
-	 * Check if value is empty
-	 *
-	 * @param mixed $value Value to check
-	 *
-	 * @return bool
-	 */
-	public static function is_empty( $value ): bool {
-		return $value === null || $value === '' || $value === false;
-	}
-
-	/**
-	 * Check if column is an email column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_email_column( string $column_name ): bool {
-		return str_contains( $column_name, 'email' );
-	}
-
-	/**
-	 * Check if column is a country column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_country_column( string $column_name ): bool {
-		return $column_name === 'country' ||
-		       $column_name === 'country_code' ||
-		       str_ends_with( $column_name, '_country' );
-	}
-
-	/**
-	 * Check if column is a date column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_date_column( string $column_name ): bool {
-		// Check exact matches
-		if ( in_array( $column_name, self::$date_columns, true ) ) {
-			return true;
-		}
-
-		// Check patterns
-		foreach ( self::$date_patterns as $pattern ) {
-			if ( str_contains( $column_name, $pattern ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if column is a price/money column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_price_column( string $column_name ): bool {
-		foreach ( self::$price_patterns as $pattern ) {
-			if ( str_contains( $column_name, $pattern ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if column is a status column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_status_column( string $column_name ): bool {
-		return $column_name === 'status' || str_contains( $column_name, '_status' );
-	}
-
-	/**
-	 * Check if column is a count column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_count_column( string $column_name ): bool {
-		foreach ( self::$count_patterns as $pattern ) {
-			if ( str_contains( $column_name, $pattern ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if column is a URL column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_url_column( string $column_name ): bool {
-		return str_contains( $column_name, '_url' ) || str_contains( $column_name, 'url' ) ||
-		       str_contains( $column_name, 'website' ) || str_contains( $column_name, 'link' );
-	}
-
-	/**
-	 * Check if column is a boolean column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 */
-	public static function is_boolean_column( string $column_name ): bool {
-		// Check prefix
-		if ( str_starts_with( $column_name, 'is_' ) || str_starts_with( $column_name, 'has_' ) ||
-		     str_starts_with( $column_name, 'can_' ) ) {
-			return true;
-		}
-
-		// Check exact matches
-		return in_array( $column_name, self::$boolean_columns, true );
-	}
-
-	/**
-	 * Check if column is a code/ID column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 * @since 1.0.0
-	 *
-	 */
-	public static function is_code_column( string $column_name ): bool {
-		return str_ends_with( $column_name, '_code' ) ||
-		       str_ends_with( $column_name, '_id' ) ||
-		       str_ends_with( $column_name, '_key' ) ||
-		       str_ends_with( $column_name, '_token' ) ||
-		       $column_name === 'code' ||
-		       $column_name === 'sku' ||
-		       $column_name === 'uuid' ||
-		       $column_name === 'guid' ||
-		       $column_name === 'hash' ||
-		       $column_name === 'key' ||
-		       $column_name === 'token' ||
-		       $column_name === 'reference';
-	}
-
-	/**
-	 * Check if column is a percentage column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 * @since 1.0.0
-	 *
-	 */
-	public static function is_percentage_column( string $column_name ): bool {
-		return str_contains( $column_name, 'percent' ) ||
-		       str_ends_with( $column_name, '_pct' );
-	}
-
-	/**
-	 * Check if column is a rate column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 * @since 1.0.0
-	 *
-	 */
-	public static function is_rate_column( string $column_name ): bool {
-		return $column_name === 'rate' ||
-		       str_ends_with( $column_name, '_rate' ) ||
-		       $column_name === 'discount' ||
-		       $column_name === 'commission' ||
-		       $column_name === 'markup';
-	}
-
-	/**
-	 * Check if column is a duration column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 * @since 1.0.0
-	 *
-	 */
-	public static function is_duration_column( string $column_name ): bool {
-		return str_contains( $column_name, 'duration' ) ||
-		       str_ends_with( $column_name, '_seconds' ) ||
-		       str_ends_with( $column_name, '_time' ) ||
-		       $column_name === 'elapsed' ||
-		       $column_name === 'runtime' ||
-		       $column_name === 'length';
-	}
-
-	/**
-	 * Check if column is a file size column
-	 *
-	 * @param string $column_name Column name
-	 *
-	 * @return bool
-	 * @since 1.0.0
-	 *
-	 */
-	public static function is_file_size_column( string $column_name ): bool {
-		return str_contains( $column_name, 'filesize' ) ||
-		       str_contains( $column_name, 'file_size' ) ||
-		       str_ends_with( $column_name, '_size' ) ||
-		       str_ends_with( $column_name, '_bytes' ) ||
-		       $column_name === 'size' ||
-		       $column_name === 'bytes';
 	}
 
 }
