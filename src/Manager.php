@@ -176,53 +176,53 @@ class Manager {
         // Default configuration values
         $defaults = [
             // Core settings
-                'labels'              => [],
-                'callbacks'           => [],
-                'page'                => '',
+            'labels'              => [],
+            'callbacks'           => [],
+            'page'                => '',
 
             // Flyout integration
-                'flyout'              => '',
-                'view_flyout'         => '',
-                'add_flyout'          => '',
-                'add_url'             => '',
-                'add_button_callback' => null,
+            'flyout'              => '',
+            'view_flyout'         => '',
+            'add_flyout'          => '',
+            'add_url'             => '',
+            'add_button_callback' => null,
 
             // Column configuration
-                'columns'             => [],
-                'sortable'            => [],
-                'primary_column'      => '',
-                'hidden_columns'      => [],
-                'column_widths'       => [],
+            'columns'             => [],
+            'sortable'            => [],
+            'primary_column'      => '',
+            'hidden_columns'      => [],
+            'column_widths'       => [],
 
             // Actions
-                'row_actions'         => [],
-                'bulk_actions'        => [],
+            'row_actions'         => [],
+            'bulk_actions'        => [],
 
             // Filtering & views
-                'views'               => [],
-                'filters'             => [],
-                'status_styles'       => [],
-                'base_query_args'     => [],
+            'views'               => [],
+            'filters'             => [],
+            'status_styles'       => [],
+            'base_query_args'     => [],
 
             // Display options
-                'per_page'            => 30,
-                'searchable'          => true,
-                'show_count'          => false,
-                'auto_delete_action'  => true,
+            'per_page'            => 30,
+            'searchable'          => true,
+            'show_count'          => false,
+            'auto_delete_action'  => true,
 
             // Security
-                'capabilities'        => [],
+            'capabilities'        => [],
 
             // Help
-                'help'                => [],
+            'help'                => [],
 
             // Header options
-                'logo'                => '',
-                'header_title'        => '',
-                'show_title'          => true,
+            'logo'                => '',
+            'header_title'        => '',
+            'show_title'          => true,
 
             // Body class
-                'body_class'          => '',
+            'body_class'          => '',
         ];
 
         $config = wp_parse_args( $config, $defaults );
