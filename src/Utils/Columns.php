@@ -313,7 +313,7 @@ class Columns {
 	 * @return string Formatted URL HTML
 	 */
 	public static function format_url( string $url, string $column_name = '' ): string {
-		// Image URL - show thumbnail
+		// Image URL — show thumbnail
 		if ( str_contains( $column_name, 'image' ) || str_contains( $column_name, 'avatar' ) ||
 		     str_contains( $column_name, 'thumbnail' ) || str_contains( $column_name, 'logo' ) ) {
 			return sprintf(
@@ -322,7 +322,7 @@ class Columns {
 			);
 		}
 
-		// Regular URL - show domain
+		// Regular URL — show domain
 		$display_url = wp_parse_url( $url, PHP_URL_HOST ) ?: $url;
 
 		return sprintf(
@@ -461,13 +461,12 @@ class Columns {
 			return self::format_percentage( $value );
 		}
 
-		// Flat/fixed amount types - treat as currency
+		// Flat/fixed amount types — treat as currency
 		if ( in_array( $type, [ 'flat', 'fixed', 'amount' ], true ) ) {
 			return self::format_price( $value, $item );
 		}
 
 		// Default: try to guess based on value
-		// If value is small (< 100) and has no currency, assume percentage
 		if ( $value <= 100 && $value >= 0 ) {
 			return self::format_percentage( $value );
 		}

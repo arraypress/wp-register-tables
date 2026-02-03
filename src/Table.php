@@ -10,7 +10,7 @@
  * @package     ArrayPress\WP\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
- * @version     1.0.0
+ * @version     2.0.0
  * @author      David Sherlock
  */
 
@@ -54,8 +54,9 @@ use WP_List_Table;
  * - `labels`           (array)    UI labels (singular, plural, etc.)
  * - `per_page`         (int)      Items per page default
  * - `status_styles`    (array)    Custom status => CSS class mappings
- * - `capabilities`     (array)    Required capabilities for actions
- * - `auto_delete_action` (bool)   Auto-add delete row action if delete callback exists
+ * - `capability`       (string)   Single capability for all actions
+ * - `capabilities`     (array)    Per-action capabilities (overrides capability)
+ * - `flyouts`          (array)    Flyout IDs ['edit' => '', 'view' => '']
  *
  * ## Filters
  *
@@ -241,7 +242,8 @@ class Table extends WP_List_Table {
      * Get sortable columns
      *
      * Returns array defining which columns are sortable and their
-     * default sort direction.
+     * default sort direction. Supports both simple array format
+     * and explicit key => [orderby, desc_default] format.
      *
      * @since 1.0.0
      *
@@ -322,11 +324,7 @@ class Table extends WP_List_Table {
      * @return array Array of item objects to display.
      */
     public function get_data(): array {
-        // Start with base query args
         $args = [];
-        if ( ! empty( $this->config['base_query_args'] ) ) {
-            $args = $this->config['base_query_args'];
-        }
 
         // Add pagination and sorting
         $args = array_merge( $args, $this->parse_pagination_args() );
@@ -356,28 +354,6 @@ class Table extends WP_List_Table {
 
             // Check for custom apply callback
             if ( is_array( $filter ) && isset( $filter['apply_callback'] ) && is_callable( $filter['apply_callback'] ) ) {
-                /**
-                 * Custom filter application callback
-                 *
-                 * Allows complex query modifications that can't be expressed as
-                 * simple key => value pairs. The callback receives the args array
-                 * by reference and the filter value.
-                 *
-                 * Example usage:
-                 * ```php
-                 * 'date_range' => [
-                 *     'label' => 'All Dates',
-                 *     'options' => ['today' => 'Today', 'this_week' => 'This Week'],
-                 *     'apply_callback' => function(&$args, $value) {
-                 *         $range = Dates::get_range($value);
-                 *         $args['date_query'] = [
-                 *             'after'  => $range['start'],
-                 *             'before' => $range['end'],
-                 *         ];
-                 *     },
-                 * ]
-                 * ```
-                 */
                 call_user_func_array( $filter['apply_callback'], [ &$args, $value ] );
             } else {
                 // Simple assignment
@@ -468,12 +444,12 @@ class Table extends WP_List_Table {
             $column_config = $this->config['columns'][ $column_name ];
 
             if ( is_array( $column_config ) ) {
-                // New structured format with before/title/after/link
+                // Structured format with before/title/after/link
                 if ( isset( $column_config['title'] ) ) {
                     return $this->render_structured_column( $column_config, $item );
                 }
 
-                // Legacy callback format
+                // Legacy callback format (still supported)
                 if ( isset( $column_config['callback'] ) && is_callable( $column_config['callback'] ) ) {
                     return call_user_func( $column_config['callback'], $item );
                 }
@@ -573,13 +549,14 @@ class Table extends WP_List_Table {
         $link    = $config['link'];
         $item_id = $this->get_item_id( $item );
 
-        // Flyout links need special handling with data attributes
-        if ( $link === 'view_flyout' && ! empty( $this->config['view_flyout'] ) ) {
-            return $this->build_flyout_title_link( $this->config['view_flyout'], $item_id, $title );
+        // View flyout link
+        if ( $link === 'view_flyout' && ! empty( $this->config['flyouts']['view'] ) ) {
+            return $this->build_flyout_title_link( $this->config['flyouts']['view'], $item_id, $title );
         }
 
-        if ( $link === 'edit_flyout' && ! empty( $this->config['flyout'] ) ) {
-            return $this->build_flyout_title_link( $this->config['flyout'], $item_id, $title );
+        // Edit flyout link
+        if ( $link === 'edit_flyout' && ! empty( $this->config['flyouts']['edit'] ) ) {
+            return $this->build_flyout_title_link( $this->config['flyouts']['edit'], $item_id, $title );
         }
 
         // Callable returns URL
@@ -622,8 +599,6 @@ class Table extends WP_List_Table {
     private function build_flyout_title_link( string $flyout_id, int $item_id, string $title ): string {
         // Use the flyout library's link function if available
         if ( function_exists( 'get_flyout_link' ) ) {
-            // get_flyout_link returns: <a class="wp-flyout-trigger" data-*...>Text</a>
-            // We need to wrap the title in <strong> - replace the text content
             $link = \get_flyout_link( $flyout_id, [
                     'id'   => $item_id,
                     'text' => $title,
@@ -631,7 +606,6 @@ class Table extends WP_List_Table {
 
             if ( ! empty( $link ) ) {
                 // Wrap the text in <strong> tags
-                // Replace >Text</a> with ><strong>Text</strong></a>
                 return preg_replace(
                         '/>([^<]+)<\/a>$/',
                         '><strong>$1</strong></a>',
@@ -640,7 +614,7 @@ class Table extends WP_List_Table {
             }
         }
 
-        // Fallback: plain link (won't trigger flyout properly but shows something)
+        // Fallback: plain text (won't trigger flyout properly but shows something)
         return '<strong>' . esc_html( $title ) . '</strong>';
     }
 
@@ -723,7 +697,7 @@ class Table extends WP_List_Table {
             $actions = $this->build_row_actions( $item, $item_id );
         }
 
-        // Auto-add delete action if configured
+        // Auto-add delete action if delete callback exists and no explicit delete action
         if ( $this->should_add_auto_delete_action( $actions ) ) {
             $actions['delete'] = $this->build_delete_action( $item_id );
         }
@@ -814,15 +788,15 @@ class Table extends WP_List_Table {
      * @return string Action link HTML.
      */
     private function build_single_action( array $action, $item, int $item_id, string $key ): string {
-        // Custom callback - full control over output
+        // Custom callback — full control over output
         if ( isset( $action['callback'] ) && is_callable( $action['callback'] ) ) {
             return call_user_func( $action['callback'], $item );
         }
 
-        // Flyout action - opens edit/view flyout panel
-        if ( isset( $action['flyout'] ) && $action['flyout'] === true && ! empty( $this->config['flyout'] ) ) {
+        // Flyout action — opens edit flyout panel
+        if ( isset( $action['flyout'] ) && $action['flyout'] === true && ! empty( $this->config['flyouts']['edit'] ) ) {
             if ( function_exists( 'get_flyout_link' ) ) {
-                return \get_flyout_link( $this->config['flyout'], [
+                return \get_flyout_link( $this->config['flyouts']['edit'], [
                         'id'   => $item_id,
                         'text' => $action['label'] ?? ucfirst( $key ),
                 ] );
@@ -831,7 +805,7 @@ class Table extends WP_List_Table {
             return sprintf( '<a href="#">%s</a>', esc_html( $action['label'] ?? ucfirst( $key ) ) );
         }
 
-        // Handler-based action - processed by Manager::process_single_action()
+        // Handler-based action — processed by Manager::process_single_action()
         if ( isset( $action['handler'] ) && is_callable( $action['handler'] ) ) {
             $singular     = $this->config['labels']['singular'] ?? 'item';
             $nonce_action = $action['nonce_action'] ?? "{$key}_{$singular}_{$item_id}";
@@ -856,7 +830,7 @@ class Table extends WP_List_Table {
                 $confirm_msg = is_callable( $action['confirm'] )
                         ? call_user_func( $action['confirm'], $item )
                         : $action['confirm'];
-                $attrs       .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
+                $attrs .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
             }
 
             // Dynamic label
@@ -874,7 +848,7 @@ class Table extends WP_List_Table {
             );
         }
 
-        // URL-based action - simple link
+        // URL-based action — simple link
         if ( isset( $action['url'] ) ) {
             $url = is_callable( $action['url'] )
                     ? call_user_func( $action['url'], $item )
@@ -888,7 +862,7 @@ class Table extends WP_List_Table {
                 $confirm_msg = is_string( $action['confirm'] )
                         ? $action['confirm']
                         : __( 'Are you sure?', 'arraypress' );
-                $attrs       .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
+                $attrs .= sprintf( ' onclick="return confirm(\'%s\')"', esc_js( $confirm_msg ) );
             }
 
             return sprintf(
@@ -906,11 +880,10 @@ class Table extends WP_List_Table {
     /**
      * Check if auto delete action should be added
      *
-     * Determines whether to automatically add a delete row action based on:
-     * - auto_delete_action config is enabled
-     * - No delete action already exists
-     * - A delete callback is configured
-     * - User has delete capability (if configured)
+     * Automatically adds a delete row action when a delete callback exists
+     * and no explicit delete action is already defined. To prevent the auto
+     * delete action, define your own 'delete' row action or omit the delete
+     * callback from the callbacks configuration.
      *
      * @since 1.0.0
      *
@@ -919,18 +892,17 @@ class Table extends WP_List_Table {
      * @return bool True if auto delete should be added.
      */
     private function should_add_auto_delete_action( array $actions ): bool {
-        if ( ! $this->config['auto_delete_action'] ) {
-            return false;
-        }
-
+        // Don't add if an explicit delete action already exists
         if ( isset( $actions['delete'] ) ) {
             return false;
         }
 
+        // Don't add if no delete callback configured
         if ( ! isset( $this->config['callbacks']['delete'] ) || ! is_callable( $this->config['callbacks']['delete'] ) ) {
             return false;
         }
 
+        // Don't add if user lacks delete capability
         if ( ! empty( $this->config['capabilities']['delete'] ) ) {
             if ( ! current_user_can( $this->config['capabilities']['delete'] ) ) {
                 return false;
@@ -1029,7 +1001,7 @@ class Table extends WP_List_Table {
     /**
      * Process bulk actions
      *
-     * Stub method - actual processing is handled by Manager::process_bulk_actions().
+     * Stub method — actual processing is handled by Manager::process_bulk_actions().
      *
      * @since 1.0.0
      */
@@ -1055,7 +1027,7 @@ class Table extends WP_List_Table {
         $views   = [];
         $current = $this->status;
 
-        // Build clean base URL - just the page, no search/filters/status
+        // Build clean base URL — just the page, no search/filters/status
         $base_url = add_query_arg( 'page', $this->config['page'], admin_url( 'admin.php' ) );
 
         // Ensure counts are loaded
@@ -1071,7 +1043,7 @@ class Table extends WP_List_Table {
         );
 
         // Status-specific views
-        foreach ( $this->config['views'] as $key => $view ) {
+        foreach ( $this->config['views'] as $key => $label ) {
             if ( $key === 'all' ) {
                 continue;
             }
@@ -1081,8 +1053,7 @@ class Table extends WP_List_Table {
                 continue;
             }
 
-            $label = is_array( $view ) ? ( $view['label'] ?? $key ) : $view;
-            $url   = add_query_arg( 'status', $key, $base_url );
+            $url = add_query_arg( 'status', $key, $base_url );
 
             $views[ $key ] = sprintf(
                     '<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
@@ -1138,7 +1109,7 @@ class Table extends WP_List_Table {
             // Filter submit button
             submit_button( __( 'Filter', 'arraypress' ), '', 'filter_action', false );
 
-            // Clear filters link - resets to base page
+            // Clear filters link — resets to base page
             $has_filters = false;
             foreach ( $this->config['filters'] as $key => $filter ) {
                 if ( ! empty( $_GET[ $key ] ) ) {
@@ -1233,7 +1204,6 @@ class Table extends WP_List_Table {
         $this->items = $this->get_data();
 
         // Determine total for pagination
-        // If filters are active (search or custom filters), count filtered results
         $total = $this->get_filtered_total();
 
         // Set pagination
@@ -1264,10 +1234,11 @@ class Table extends WP_List_Table {
             if ( ! empty( $this->status ) && isset( $this->counts[ $this->status ] ) ) {
                 return (int) $this->counts[ $this->status ];
             }
+
             return (int) ( $this->counts['total'] ?? 0 );
         }
 
-        // Filters are active - get count from callback or count items
+        // Filters are active — get count from callback or count items
         return $this->get_filtered_count();
     }
 
@@ -1284,6 +1255,7 @@ class Table extends WP_List_Table {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -1298,11 +1270,7 @@ class Table extends WP_List_Table {
      * @return int Filtered item count.
      */
     private function get_filtered_count(): int {
-        // Build the same query args as get_data() but for counting
         $args = [];
-        if ( ! empty( $this->config['base_query_args'] ) ) {
-            $args = $this->config['base_query_args'];
-        }
 
         // Add search
         $search = $this->get_search();
@@ -1335,7 +1303,7 @@ class Table extends WP_List_Table {
         }
 
         // Request count only (no pagination)
-        $args['count'] = true;
+        $args['count']  = true;
         $args['number'] = 0;
 
         // Try get_items callback with count flag
@@ -1349,7 +1317,6 @@ class Table extends WP_List_Table {
         }
 
         // Fallback: if we already have items, use that count as minimum
-        // This isn't accurate for pagination but prevents showing 0
         if ( ! empty( $this->items ) ) {
             return count( $this->items );
         }

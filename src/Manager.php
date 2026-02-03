@@ -17,7 +17,7 @@
  * @package     ArrayPress\WP\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
- * @version     1.0.0
+ * @version     2.0.0
  * @author      David Sherlock
  */
 
@@ -63,32 +63,30 @@ defined( 'ABSPATH' ) || exit;
  *
  * ## Configuration Options
  *
- * | Option              | Type           | Description                                      |
- * |---------------------|----------------|--------------------------------------------------|
- * | page                | string         | Admin page slug (required)                       |
- * | labels              | array          | UI labels (singular, plural, title, etc.)        |
- * | columns             | array          | Column definitions                               |
- * | sortable            | array          | Sortable column keys                             |
- * | primary_column      | string         | Column for row actions                           |
- * | hidden_columns      | array          | Columns hidden by default                        |
- * | column_widths       | array          | Custom column widths                             |
- * | row_actions         | array|callable | Row action definitions                           |
- * | bulk_actions        | array          | Bulk action definitions                          |
- * | views               | array          | Status view definitions                          |
- * | filters             | array          | Dropdown filter definitions                      |
- * | callbacks           | array          | Data callbacks (get_items, get_counts, delete)   |
- * | status_styles       | array          | Custom status => CSS class mappings              |
- * | capabilities        | array          | Required capabilities                            |
- * | per_page            | int            | Items per page default (30)                      |
- * | searchable          | bool           | Enable search box (true)                         |
- * | show_count          | bool           | Show total count in header (false)               |
- * | auto_delete_action  | bool           | Auto-add delete row action (true)                |
- * | logo                | string         | Header logo URL                                  |
- * | header_title        | string         | Custom header title                              |
- * | flyout              | string         | Edit flyout ID                                   |
- * | add_flyout          | string         | Add new flyout ID                                |
- * | add_url             | string|callable| Add new URL                                      |
- * | help                | array          | Help tab definitions                             |
+ * | Option              | Type              | Description                                      |
+ * |---------------------|-------------------|--------------------------------------------------|
+ * | page                | string            | Admin page slug (required)                       |
+ * | labels              | array             | UI labels (singular, plural, title, etc.)        |
+ * | columns             | array             | Column definitions                               |
+ * | sortable            | array             | Sortable column keys                             |
+ * | primary_column      | string            | Column for row actions                           |
+ * | hidden_columns      | array             | Columns hidden by default                        |
+ * | row_actions         | array|callable    | Row action definitions                           |
+ * | bulk_actions        | array             | Bulk action definitions                          |
+ * | views               | array             | Status view definitions                          |
+ * | filters             | array             | Dropdown filter definitions                      |
+ * | callbacks           | array             | Data callbacks (get_items, get_counts, delete)   |
+ * | status_styles       | array             | Custom status => CSS class mappings              |
+ * | capability          | string            | Single capability for all actions                |
+ * | capabilities        | array             | Per-action capabilities (overrides capability)   |
+ * | per_page            | int               | Items per page default (30)                      |
+ * | searchable          | bool              | Enable search box (true)                         |
+ * | show_count          | bool              | Show total count in header (false)               |
+ * | logo                | string            | Header logo URL                                  |
+ * | header_title        | string            | Custom header title                              |
+ * | flyouts             | array             | Flyout IDs ['edit' => '', 'view' => '']          |
+ * | add_button          | string|callable   | Add button: flyout ID, URL, or callback          |
+ * | help                | array             | Help tab definitions                             |
  *
  * ## Action Hooks
  *
@@ -176,53 +174,47 @@ class Manager {
         // Default configuration values
         $defaults = [
             // Core settings
-            'labels'              => [],
-            'callbacks'           => [],
-            'page'                => '',
+                'labels'         => [],
+                'callbacks'      => [],
+                'page'           => '',
 
             // Flyout integration
-            'flyout'              => '',
-            'view_flyout'         => '',
-            'add_flyout'          => '',
-            'add_url'             => '',
-            'add_button_callback' => null,
+                'flyouts'        => [],
+                'add_button'     => '',
 
             // Column configuration
-            'columns'             => [],
-            'sortable'            => [],
-            'primary_column'      => '',
-            'hidden_columns'      => [],
-            'column_widths'       => [],
+                'columns'        => [],
+                'sortable'       => [],
+                'primary_column' => '',
+                'hidden_columns' => [],
 
             // Actions
-            'row_actions'         => [],
-            'bulk_actions'        => [],
+                'row_actions'    => [],
+                'bulk_actions'   => [],
 
             // Filtering & views
-            'views'               => [],
-            'filters'             => [],
-            'status_styles'       => [],
-            'base_query_args'     => [],
+                'views'          => [],
+                'filters'        => [],
+                'status_styles'  => [],
 
             // Display options
-            'per_page'            => 30,
-            'searchable'          => true,
-            'show_count'          => false,
-            'auto_delete_action'  => true,
+                'per_page'       => 30,
+                'searchable'     => true,
+                'show_count'     => false,
 
             // Security
-            'capabilities'        => [],
+                'capability'     => '',
+                'capabilities'   => [],
 
             // Help
-            'help'                => [],
+                'help'           => [],
 
             // Header options
-            'logo'                => '',
-            'header_title'        => '',
-            'show_title'          => true,
+                'logo'           => '',
+                'header_title'   => '',
 
             // Body class
-            'body_class'          => '',
+                'body_class'     => '',
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -230,7 +222,9 @@ class Manager {
         // Parse nested arrays with defaults
         $config['labels']       = self::parse_labels( $config['labels'] );
         $config['callbacks']    = self::parse_callbacks( $config['callbacks'] );
-        $config['capabilities'] = self::parse_capabilities( $config['capabilities'] );
+        $config['capabilities'] = self::parse_capabilities( $config['capability'], $config['capabilities'] );
+        $config['flyouts']      = self::parse_flyouts( $config['flyouts'] );
+        $config['views']        = self::parse_views( $config['views'] );
 
         // Auto-generate missing labels
         $config['labels'] = self::auto_generate_labels( $config['labels'] );
@@ -285,21 +279,77 @@ class Manager {
     }
 
     /**
-     * Parse capabilities configuration with defaults
+     * Parse capabilities configuration
      *
-     * @since 1.0.0
+     * Supports both a single capability string (applied to all actions)
+     * and a granular per-action array. The single string is used as the
+     * default for any action not explicitly defined in the array.
      *
-     * @param array $capabilities User-provided capabilities.
+     * @since 2.0.0
      *
-     * @return array Merged capabilities with defaults.
+     * @param string $capability   Single capability for all actions.
+     * @param array  $capabilities Per-action capability overrides.
+     *
+     * @return array Normalized capabilities array.
      */
-    private static function parse_capabilities( array $capabilities ): array {
-        return wp_parse_args( $capabilities, [
-                'view'   => '',
-                'edit'   => '',
-                'delete' => '',
-                'bulk'   => '',
+    private static function parse_capabilities( string $capability, array $capabilities ): array {
+        $defaults = [
+                'view'   => $capability,
+                'edit'   => $capability,
+                'delete' => $capability,
+                'bulk'   => $capability,
+        ];
+
+        return wp_parse_args( $capabilities, $defaults );
+    }
+
+    /**
+     * Parse flyouts configuration with defaults
+     *
+     * @since 2.0.0
+     *
+     * @param array $flyouts User-provided flyouts.
+     *
+     * @return array Normalized flyouts array.
+     */
+    private static function parse_flyouts( array $flyouts ): array {
+        return wp_parse_args( $flyouts, [
+                'edit' => '',
+                'view' => '',
         ] );
+    }
+
+    /**
+     * Parse views configuration
+     *
+     * Supports both simple array format (auto-generates labels from keys)
+     * and explicit key => label format. Can be mixed.
+     *
+     * Examples:
+     * - Simple: ['active', 'pending', 'not_active']
+     * - Explicit: ['active' => 'Currently Active', 'pending' => 'Awaiting Review']
+     * - Mixed: ['active', 'pending' => 'Awaiting Review', 'inactive']
+     *
+     * @since 2.0.0
+     *
+     * @param array $views User-provided views.
+     *
+     * @return array Normalized views as key => label pairs.
+     */
+    private static function parse_views( array $views ): array {
+        $parsed = [];
+
+        foreach ( $views as $key => $value ) {
+            if ( is_numeric( $key ) ) {
+                // Simple format: ['active', 'pending'] — auto-label from value
+                $parsed[ $value ] = ucwords( str_replace( [ '_', '-' ], ' ', $value ) );
+            } else {
+                // Explicit format: ['active' => 'Custom Label']
+                $parsed[ $key ] = $value;
+            }
+        }
+
+        return $parsed;
     }
 
     /**
@@ -477,9 +527,9 @@ class Manager {
      * Output dynamic inline styles
      *
      * Generates CSS for custom column widths and text alignments
-     * based on the table configuration.
+     * based on the column configuration.
      *
-     * @since 1.0.0
+     * @since 2.0.0
      *
      * @param array $config Table configuration.
      *
@@ -488,21 +538,23 @@ class Manager {
     private static function output_dynamic_styles( array $config ): void {
         $styles = '';
 
-        // Custom column widths
-        if ( ! empty( $config['column_widths'] ) ) {
-            foreach ( $config['column_widths'] as $column => $width ) {
-                $styles .= sprintf(
-                        ".wp-list-table .column-%s { width: %s; }\n",
-                        esc_attr( $column ),
-                        esc_attr( $width )
-                );
-            }
-        }
-
-        // Column alignments from column config
         if ( ! empty( $config['columns'] ) ) {
             foreach ( $config['columns'] as $column => $col_config ) {
-                if ( is_array( $col_config ) && ! empty( $col_config['align'] ) ) {
+                if ( ! is_array( $col_config ) ) {
+                    continue;
+                }
+
+                // Column width
+                if ( ! empty( $col_config['width'] ) ) {
+                    $styles .= sprintf(
+                            ".wp-list-table .column-%s { width: %s; }\n",
+                            esc_attr( $column ),
+                            esc_attr( $col_config['width'] )
+                    );
+                }
+
+                // Column alignment
+                if ( ! empty( $col_config['align'] ) ) {
                     $align  = in_array( $col_config['align'], [ 'left', 'center', 'right' ], true )
                             ? $col_config['align']
                             : 'left';
@@ -622,13 +674,13 @@ class Manager {
                 continue; // Skip checkbox column
             }
 
-            $label = is_array( $column ) ? ( $column['label'] ?? $key ) : $column;
+            $label           = is_array( $column ) ? ( $column['label'] ?? $key ) : $column;
             $columns[ $key ] = $label;
         }
 
         // Store columns for get_column_headers()
         // WordPress uses this to build the column toggle checkboxes
-        add_filter( 'manage_' . $screen->id . '_columns', function() use ( $columns ) {
+        add_filter( 'manage_' . $screen->id . '_columns', function () use ( $columns ) {
             return $columns;
         } );
     }
@@ -877,6 +929,9 @@ class Manager {
         // Build redirect URL with result
         $redirect_url = self::get_clean_base_url( $config );
 
+        // Add action key for notice lookup
+        $redirect_url = add_query_arg( '_row_action', $action, $redirect_url );
+
         if ( is_array( $result ) ) {
             $redirect_url = add_query_arg( $result, $redirect_url );
         } elseif ( $result === true ) {
@@ -1065,9 +1120,12 @@ class Manager {
                 $redirect_args = [ 'updated' => $result ? count( $items ) : 0 ];
             }
         } else {
-            // No callback - assume success
+            // No callback — assume success
             $redirect_args = [ 'updated' => count( $items ) ];
         }
+
+        // Add bulk action key for notice lookup
+        $redirect_args['_bulk_action'] = $action;
 
         // Redirect with results
         $redirect_url = self::get_clean_base_url( $config );
@@ -1129,7 +1187,7 @@ class Manager {
         }
 
         // Render header outside .wrap (EDD pattern)
-        self::render_header( $config, $total_count );
+        self::render_header( $id, $config, $total_count );
 
         // Start WordPress wrap
         ?>
@@ -1222,21 +1280,22 @@ class Manager {
      * Render the modern header
      *
      * Outputs the EDD-style header with optional logo, title, and add button.
-     * Placed outside .wrap for proper WordPress admin styling.
+     * Placed outside .wrap for proper WordPress admin styling. Title is only
+     * rendered if header_title is set or labels title is non-empty.
      *
      * @since 1.0.0
      *
+     * @param string $id          Table identifier.
      * @param array  $config      Table configuration.
      * @param string $total_count Formatted total count HTML (or empty).
      *
      * @return void
      */
-    private static function render_header( array $config, string $total_count ): void {
+    private static function render_header( string $id, array $config, string $total_count ): void {
         $logo_url     = $config['logo'] ?? '';
         $header_title = ! empty( $config['header_title'] )
                 ? $config['header_title']
-                : $config['labels']['title'];
-        $show_title   = $config['show_title'] ?? true;
+                : ( $config['labels']['title'] ?? '' );
 
         ?>
         <div class="list-table-header">
@@ -1244,11 +1303,11 @@ class Manager {
                 <div class="list-table-header__branding">
                     <?php if ( $logo_url ) : ?>
                         <img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="list-table-header__logo">
-                        <?php if ( $show_title ) : ?>
+                        <?php if ( ! empty( $header_title ) ) : ?>
                             <span class="list-table-header__separator">/</span>
                         <?php endif; ?>
                     <?php endif; ?>
-                    <?php if ( $show_title ) : ?>
+                    <?php if ( ! empty( $header_title ) ) : ?>
                         <h1 class="list-table-header__title">
                             <?php echo esc_html( $header_title ); ?><?php echo $total_count; ?>
                         </h1>
@@ -1267,51 +1326,50 @@ class Manager {
     /**
      * Render the add new button
      *
-     * Outputs the "Add New" button using the configured method:
-     * 1. Custom callback (add_button_callback)
-     * 2. Flyout button (add_flyout)
-     * 3. Link button (add_url)
+     * Outputs the "Add New" button using the configured method. The add_button
+     * config supports three formats:
+     * 1. Callable — full control over button output
+     * 2. URL string — renders a link button
+     * 3. String — assumed to be a flyout ID
      *
-     * @since 1.0.0
+     * @since 2.0.0
      *
      * @param array $config Table configuration.
      *
      * @return void
      */
     private static function render_add_button( array $config ): void {
-        if ( empty( $config['labels']['add_new'] ) ) {
+        if ( empty( $config['labels']['add_new'] ) || empty( $config['add_button'] ) ) {
             return;
         }
 
-        // Custom callback takes priority
-        if ( isset( $config['add_button_callback'] ) && is_callable( $config['add_button_callback'] ) ) {
-            echo call_user_func( $config['add_button_callback'] );
+        $add_button = $config['add_button'];
+
+        // Callable — full control over output
+        if ( is_callable( $add_button ) ) {
+            echo call_user_func( $add_button );
 
             return;
         }
 
-        // Flyout button
-        if ( ! empty( $config['add_flyout'] ) && function_exists( 'render_flyout_button' ) ) {
-            \render_flyout_button( $config['add_flyout'], [
+        // URL string — render as link
+        if ( is_string( $add_button ) && filter_var( $add_button, FILTER_VALIDATE_URL ) ) {
+            printf(
+                    '<a href="%s" class="page-title-action"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
+                    esc_url( $add_button ),
+                    esc_html( $config['labels']['add_new'] )
+            );
+
+            return;
+        }
+
+        // String — assume flyout ID
+        if ( is_string( $add_button ) && function_exists( 'render_flyout_button' ) ) {
+            \render_flyout_button( $add_button, [
                     'text'  => $config['labels']['add_new'],
                     'class' => 'page-title-action',
                     'icon'  => 'plus-alt',
             ] );
-
-            return;
-        }
-
-        // URL button
-        if ( ! empty( $config['add_url'] ) ) {
-            $url = is_callable( $config['add_url'] )
-                    ? call_user_func( $config['add_url'] )
-                    : $config['add_url'];
-
-            printf(
-                    '<a href="%s" class="page-title-action"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
-                    esc_url( $url ),
-                    esc_html( $config['labels']['add_new'] )
-            );
         }
     }
 
@@ -1339,9 +1397,9 @@ class Manager {
 
         ?>
         <div class="list-table-search-banner">
-            <span class="list-table-search-banner__text">
-                <span class="dashicons dashicons-search"></span>
-                <?php
+			<span class="list-table-search-banner__text">
+				<span class="dashicons dashicons-search"></span>
+				<?php
                 printf(
                 /* translators: 1: search term, 2: plural item name */
                         esc_html__( 'Search results for %1$s in %2$s', 'arraypress' ),
@@ -1349,7 +1407,7 @@ class Manager {
                         esc_html( $plural )
                 );
                 ?>
-            </span>
+			</span>
             <a href="<?php echo esc_url( $clear_url ); ?>" class="list-table-search-banner__clear">
                 <?php esc_html_e( 'Clear search', 'arraypress' ); ?>
             </a>
@@ -1360,8 +1418,9 @@ class Manager {
     /**
      * Render admin notices
      *
-     * Displays success/error messages based on URL parameters
-     * from action processing (deleted, updated, error).
+     * Displays success/error messages based on URL parameters from action
+     * processing. Supports custom notices defined in row_actions and
+     * bulk_actions via the 'notice' configuration key.
      *
      * @since 1.0.0
      *
@@ -1374,60 +1433,101 @@ class Manager {
         $singular = $config['labels']['singular'] ?? 'item';
         $plural   = $config['labels']['plural'] ?? 'items';
 
-        // Deleted notice
-        if ( isset( $_GET['deleted'] ) ) {
-            $count = absint( $_GET['deleted'] );
+        // Row action notices (custom handler results)
+        $row_action = sanitize_key( $_GET['_row_action'] ?? '' );
+        if ( ! empty( $row_action ) && isset( $config['row_actions'][ $row_action ]['notice'] ) ) {
+            self::render_action_notice( $config['row_actions'][ $row_action ]['notice'] );
+        } elseif ( empty( $row_action ) ) {
+            // Only show generic notices when no row action is specified
+            // to avoid double notices
 
-            if ( $count > 0 ) {
-                $message = sprintf(
-                        _n(
-                                '%s ' . $singular . ' deleted successfully.',
-                                '%s ' . $plural . ' deleted successfully.',
-                                $count,
-                                'arraypress'
-                        ),
-                        number_format_i18n( $count )
-                );
-                $type    = 'success';
-            } else {
-                $message = __( 'Delete failed. Please try again.', 'arraypress' );
-                $type    = 'error';
-            }
+            // Deleted notice
+            if ( isset( $_GET['deleted'] ) ) {
+                $count = absint( $_GET['deleted'] );
 
-            printf(
-                    '<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
-                    esc_attr( $type ),
-                    esc_html( $message )
-            );
-        }
-
-        // Updated notice
-        if ( isset( $_GET['updated'] ) ) {
-            $count = absint( $_GET['updated'] );
-
-            if ( $count > 0 ) {
-                $message = sprintf(
-                        _n(
-                                '%s ' . $singular . ' updated successfully.',
-                                '%s ' . $plural . ' updated successfully.',
-                                $count,
-                                'arraypress'
-                        ),
-                        number_format_i18n( $count )
-                );
+                if ( $count > 0 ) {
+                    $message = sprintf(
+                            _n(
+                                    '%s ' . $singular . ' deleted successfully.',
+                                    '%s ' . $plural . ' deleted successfully.',
+                                    $count,
+                                    'arraypress'
+                            ),
+                            number_format_i18n( $count )
+                    );
+                    $type = 'success';
+                } else {
+                    $message = __( 'Delete failed. Please try again.', 'arraypress' );
+                    $type    = 'error';
+                }
 
                 printf(
-                        '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                        '<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+                        esc_attr( $type ),
                         esc_html( $message )
                 );
             }
+
+            // Updated notice (generic, when no action-specific notice exists)
+            if ( isset( $_GET['updated'] ) && empty( $_GET['_bulk_action'] ) ) {
+                $count = absint( $_GET['updated'] );
+
+                if ( $count > 0 ) {
+                    $message = sprintf(
+                            _n(
+                                    '%s ' . $singular . ' updated successfully.',
+                                    '%s ' . $plural . ' updated successfully.',
+                                    $count,
+                                    'arraypress'
+                            ),
+                            number_format_i18n( $count )
+                    );
+
+                    printf(
+                            '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                            esc_html( $message )
+                    );
+                }
+            }
         }
 
-        // Error notice
-        if ( isset( $_GET['error'] ) ) {
+        // Bulk action notices
+        $bulk_action = sanitize_key( $_GET['_bulk_action'] ?? '' );
+        if ( ! empty( $bulk_action ) && isset( $config['bulk_actions'][ $bulk_action ] ) ) {
+            $bulk_config = $config['bulk_actions'][ $bulk_action ];
+
+            if ( is_array( $bulk_config ) && isset( $bulk_config['notice'] ) ) {
+                // Get count from redirect args
+                $count = absint( $_GET['updated'] ?? $_GET['deleted'] ?? 0 );
+                self::render_action_notice( $bulk_config['notice'], $count );
+            } elseif ( isset( $_GET['updated'] ) || isset( $_GET['deleted'] ) ) {
+                // Fallback to generic notice for bulk actions without custom notice
+                $count = absint( $_GET['updated'] ?? $_GET['deleted'] ?? 0 );
+
+                if ( $count > 0 ) {
+                    $message = sprintf(
+                            _n(
+                                    '%s ' . $singular . ' updated successfully.',
+                                    '%s ' . $plural . ' updated successfully.',
+                                    $count,
+                                    'arraypress'
+                            ),
+                            number_format_i18n( $count )
+                    );
+
+                    printf(
+                            '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                            esc_html( $message )
+                    );
+                }
+            }
+        }
+
+        // Error notice (always show, not action-specific)
+        if ( isset( $_GET['error'] ) && $_GET['error'] !== 'action_failed' || ( isset( $_GET['error'] ) && empty( $row_action ) ) ) {
             $error = sanitize_text_field( $_GET['error'] );
 
-            if ( ! empty( $error ) ) {
+            if ( ! empty( $error ) && $error !== 'action_failed' ) {
                 printf(
                         '<div class="notice notice-error is-dismissible"><p>%s</p></div>',
                         esc_html( $error )
@@ -1476,6 +1576,75 @@ class Manager {
                     '<div class="%s"><p>%s</p></div>',
                     esc_attr( $class ),
                     esc_html( $notice['message'] )
+            );
+        }
+    }
+
+    /**
+     * Render a notice from action configuration
+     *
+     * Handles the 'notice' key from row_actions and bulk_actions config.
+     * Supports both simple array format and callable format.
+     *
+     * Simple format:
+     * 'notice' => [
+     *     'success' => 'Customer status updated.',
+     *     'error'   => 'Failed to update status.',
+     * ]
+     *
+     * With count placeholder (for bulk actions):
+     * 'notice' => [
+     *     'success' => '%d customers activated.',
+     *     'error'   => 'Failed to activate customers.',
+     * ]
+     *
+     * @since 2.0.0
+     *
+     * @param array|callable $notice_config Notice configuration.
+     * @param int            $count         Optional count for bulk action notices.
+     *
+     * @return void
+     */
+    private static function render_action_notice( $notice_config, int $count = 0 ): void {
+        // Callable format — let the callback determine the notice
+        if ( is_callable( $notice_config ) ) {
+            $notice = call_user_func( $notice_config, $_GET );
+            if ( is_array( $notice ) && ! empty( $notice['message'] ) ) {
+                $type = $notice['type'] ?? 'success';
+                printf(
+                        '<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+                        esc_attr( $type ),
+                        esc_html( $notice['message'] )
+                );
+            }
+
+            return;
+        }
+
+        // Array format with success/error keys
+        if ( ! is_array( $notice_config ) ) {
+            return;
+        }
+
+        // Determine success or error based on URL params
+        $is_error = isset( $_GET['error'] ) || ( isset( $_GET['updated'] ) && absint( $_GET['updated'] ) === 0 );
+
+        if ( $is_error && ! empty( $notice_config['error'] ) ) {
+            printf(
+                    '<div class="notice notice-error is-dismissible"><p>%s</p></div>',
+                    esc_html( $notice_config['error'] )
+            );
+        } elseif ( ! $is_error && ! empty( $notice_config['success'] ) ) {
+            $message = $notice_config['success'];
+
+            // Replace %d placeholder with count if present
+            if ( $count > 0 && str_contains( $message, '%d' ) ) {
+                $message = sprintf( $message, $count );
+            }
+
+            printf(
+                    '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                    esc_html( $message )
             );
         }
     }
