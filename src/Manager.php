@@ -511,13 +511,11 @@ class Manager {
         self::$assets_enqueued = true;
 
         // Enqueue CSS from composer assets package
-        if ( function_exists( 'wp_enqueue_composer_style' ) ) {
-            wp_enqueue_composer_style(
-                    'list-table-styles',
-                    __FILE__,
-                    'css/admin-tables.css'
-            );
-        }
+        wp_enqueue_composer_style(
+                'list-table-styles',
+                __FILE__,
+                'css/admin-tables.css'
+        );
 
         // Output dynamic styles for this table's configuration
         self::output_dynamic_styles( $config );
