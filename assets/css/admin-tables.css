@@ -28,6 +28,7 @@
     --at-accent-alt: #0073aa;
 
     /* Status */
+    --at-success: #46b450;
     --at-danger: #b32d2e;
     --at-danger-hover: #dc3545;
 
@@ -248,6 +249,15 @@
     height: auto;
     border-radius: var(--at-thumb-radius);
     vertical-align: middle;
+}
+
+/* Boolean */
+.wp-list-table .column-boolean-yes {
+    color: var(--at-success);
+}
+
+.wp-list-table .column-boolean-no {
+    color: var(--at-text-muted);
 }
 
 /* ==========================================================================

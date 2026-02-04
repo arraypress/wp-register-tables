@@ -13,7 +13,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\RegisterTables;
+namespace ArrayPress\RegisterTables\Utils;
 
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
@@ -141,10 +141,10 @@ class Columns {
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string $column_name  Column name.
-	 * @param mixed  $value        Column value.
-	 * @param object $item         Data object.
-	 * @param array  $config       Column config from registration. Supports:
+	 * @param string $column_name Column name.
+	 * @param mixed  $value       Column value.
+	 * @param object $item        Data object.
+	 * @param array  $config      Column config from registration. Supports:
 	 *                             - 'styles'   (array)        Status => badge type mappings.
 	 *                             - 'size'     (string|array) Image size name or [w, h] array.
 	 *                             - 'decimals' (int)          Decimal places for file_size.
@@ -422,8 +422,8 @@ class Columns {
 
 		// Standard boolean icons
 		return $is_true
-			? '<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span><span class="screen-reader-text">' . esc_html__( 'Yes', 'arraypress' ) . '</span>'
-			: '<span class="dashicons dashicons-minus" style="color: #a7aaad;"></span><span class="screen-reader-text">' . esc_html__( 'No', 'arraypress' ) . '</span>';
+			? '<span class="dashicons dashicons-yes-alt column-boolean-yes"></span><span class="screen-reader-text">' . esc_html__( 'Yes', 'arraypress' ) . '</span>'
+			: '<span class="dashicons dashicons-minus column-boolean-no"></span><span class="screen-reader-text">' . esc_html__( 'No', 'arraypress' ) . '</span>';
 	}
 
 	/**
@@ -448,8 +448,8 @@ class Columns {
 	 *
 	 * Converts bytes into human-readable file size format using WordPress's size_format().
 	 *
-	 * @param mixed    $value    Size in bytes.
-	 * @param null|int $decimals Number of decimal places (default 1).
+	 * @param mixed $value    Size in bytes.
+	 * @param int   $decimals Number of decimal places (default 1).
 	 *
 	 * @return string Formatted file size HTML.
 	 */
