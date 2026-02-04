@@ -18,6 +18,7 @@ namespace ArrayPress\RegisterTables\Utils;
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
 use ArrayPress\DateUtils\Dates;
+use ArrayPress\RateFormat\Rate;
 use ArrayPress\StatusBadge\StatusBadge;
 
 // Exit if accessed directly
@@ -94,6 +95,10 @@ class Columns {
 			'exact'    => [ 'count', 'limit', 'quantity', 'qty' ],
 			'contains' => [ '_count' ],
 		],
+		'image'      => [
+			'exact'    => [ 'image', 'avatar', 'thumbnail', 'logo', 'photo', 'icon' ],
+			'contains' => [ '_image', '_avatar', '_thumbnail', '_logo', '_photo' ],
+		],
 		'url'        => [
 			'exact'    => [ 'url', 'website', 'link' ],
 			'contains' => [ '_url', 'website', 'link' ],
@@ -160,17 +165,18 @@ class Columns {
 
 		return match ( $type ) {
 			'email' => self::format_email( $value ),
-			'country' => self::format_country( $value ),
+			'country' => Countries::render( $value ) ?? self::render_empty(),
 			'date' => Dates::render_date( $value ) ?? self::render_empty(),
 			'duration' => Dates::render_duration( $value ) ?? self::render_empty(),
 			'price' => Currency::render( $value, $item ) ?? self::render_empty(),
+			'rate' => Rate::render( $value, $item, $column_name ) ?? self::render_empty(),
+			'percentage' => Rate::render_percentage( $value ) ?? self::render_empty(),
 			'status' => self::format_status( $value, $status_styles ),
 			'count' => self::format_count( $value ),
-			'url' => self::format_url( $value, $column_name ),
+			'image' => self::format_image( $value ),
+			'url' => self::format_url( $value ),
 			'boolean' => self::format_boolean( $value, $column_name, $status_styles ),
 			'code' => self::format_code( $value ),
-			'percentage' => self::format_percentage( $value ),
-			'rate' => self::format_rate( $value, $item, $column_name ),
 			'file_size' => self::format_file_size( $value ),
 			default => esc_html( (string) $value ),
 		};
@@ -340,28 +346,52 @@ class Columns {
 	/**
 	 * Format URL value
 	 *
-	 * @param string $url         URL value.
-	 * @param string $column_name Column name (to detect image URLs).
+	 * @param string $url URL value.
 	 *
 	 * @return string Formatted URL HTML.
 	 */
-	public static function format_url( string $url, string $column_name = '' ): string {
-		// Image URL — show thumbnail
-		if ( str_contains( $column_name, 'image' ) || str_contains( $column_name, 'avatar' ) ||
-		     str_contains( $column_name, 'thumbnail' ) || str_contains( $column_name, 'logo' ) ) {
-			return sprintf(
-				'<a href="%1$s" target="_blank"><img src="%1$s" style="max-width: 50px; height: auto;" alt="" loading="lazy" /></a>',
-				esc_url( $url )
-			);
-		}
-
-		// Regular URL — show domain
+	public static function format_url( string $url ): string {
 		$display_url = wp_parse_url( $url, PHP_URL_HOST ) ?: $url;
 
 		return sprintf(
 			'<a href="%s" target="_blank">%s</a>',
 			esc_url( $url ),
 			esc_html( $display_url )
+		);
+	}
+
+	/**
+	 * Format image value as a thumbnail
+	 *
+	 * Accepts either a WordPress attachment ID or a raw URL. Attachment IDs
+	 * use wp_get_attachment_image() for proper srcset and responsive handling.
+	 *
+	 * @param mixed $value Attachment ID (int) or image URL (string).
+	 *
+	 * @return string Formatted image HTML.
+	 */
+	public static function format_image( $value ): string {
+		if ( is_numeric( $value ) ) {
+			$image = wp_get_attachment_image( (int) $value, 'thumbnail', false, [
+				'class'   => 'column-thumbnail',
+				'loading' => 'lazy',
+			] );
+
+			if ( $image ) {
+				$full_url = wp_get_attachment_url( (int) $value );
+
+				return $full_url
+					? sprintf( '<a href="%s" target="_blank">%s</a>', esc_url( $full_url ), $image )
+					: $image;
+			}
+
+			return self::render_empty();
+		}
+
+		// Raw URL fallback
+		return sprintf(
+			'<img src="%s" class="column-thumbnail" alt="" loading="lazy" />',
+			esc_url( (string) $value )
 		);
 	}
 
@@ -393,36 +423,6 @@ class Columns {
 	}
 
 	/**
-	 * Format country code with flag and name
-	 *
-	 * Displays a country code as "🇺🇸 United States" format.
-	 *
-	 * @param string $code         Country code (ISO 3166-1 alpha-2, e.g., 'US', 'GB').
-	 * @param bool   $include_flag Include emoji flag (default true).
-	 * @param bool   $include_name Include country name (default true).
-	 *
-	 * @return string Formatted country HTML.
-	 */
-	public static function format_country( string $code, bool $include_flag = true, bool $include_name = true ): string {
-		if ( empty( $code ) ) {
-			return self::render_empty();
-		}
-
-		$code = strtoupper( trim( $code ) );
-		$flag = $include_flag ? Countries::get_flag( $code ) : '';
-		$name = $include_name ? Countries::get_name( $code ) : '';
-
-		// If name came back as the code itself, the country wasn't found
-		if ( $name === $code && ! Countries::exists( $code ) ) {
-			return esc_html( $code );
-		}
-
-		$parts = array_filter( [ $flag, $name ] );
-
-		return esc_html( implode( ' ', $parts ) );
-	}
-
-	/**
 	 * Format code/ID value in monospace
 	 *
 	 * Displays codes, IDs, UUIDs, SKUs etc. in a monospace font for readability.
@@ -437,104 +437,6 @@ class Columns {
 		}
 
 		return sprintf( '<code class="code">%s</code>', esc_html( $value ) );
-	}
-
-	/**
-	 * Format percentage value
-	 *
-	 * Displays a numeric value as a percentage. Assumes value is stored
-	 * as a whole number (e.g., 15 for 15%, not 0.15).
-	 *
-	 * @param mixed $value    Percentage value (e.g., 15 for 15%).
-	 * @param int   $decimals Number of decimal places (default 0).
-	 *
-	 * @return string Formatted percentage HTML.
-	 */
-	public static function format_percentage( $value, int $decimals = 0 ): string {
-		if ( ! is_numeric( $value ) ) {
-			return self::render_empty();
-		}
-
-		$formatted = number_format_i18n( (float) $value, $decimals );
-
-		return sprintf( '<span class="percentage">%s%%</span>', esc_html( $formatted ) );
-	}
-
-	/**
-	 * Format rate value (percentage or flat amount)
-	 *
-	 * Intelligently formats a rate based on its type. Checks for a corresponding
-	 * `{column}_type` or `type` property on the item to determine format.
-	 *
-	 * Types:
-	 * - 'percent', 'percentage', '%' → Shows as percentage (e.g., "15%")
-	 * - 'flat', 'fixed', 'amount' → Shows as currency (e.g., "$15.00")
-	 *
-	 * @param mixed  $value       Rate value (in smallest unit for currency, whole number for percent).
-	 * @param object $item        Data object (checked for type and currency properties).
-	 * @param string $column_name Column name (used to find {column}_type property).
-	 *
-	 * @return string Formatted rate HTML.
-	 */
-	public static function format_rate( $value, $item, string $column_name = 'rate' ): string {
-		if ( ! is_numeric( $value ) ) {
-			return self::render_empty();
-		}
-
-		// Determine rate type from item
-		$type = self::get_rate_type( $item, $column_name );
-
-		// Percentage types
-		if ( in_array( $type, [ 'percent', 'percentage', '%' ], true ) ) {
-			return self::format_percentage( $value );
-		}
-
-		// Flat/fixed amount types — treat as currency
-		if ( in_array( $type, [ 'flat', 'fixed', 'amount' ], true ) ) {
-			return self::format_price( $value, $item );
-		}
-
-		// Default: try to guess based on value
-		if ( $value <= 100 && $value >= 0 ) {
-			return self::format_percentage( $value );
-		}
-
-		// Otherwise treat as currency
-		return self::format_price( $value, $item );
-	}
-
-	/**
-	 * Get rate type from item object
-	 *
-	 * Checks multiple property patterns to find the rate type.
-	 *
-	 * @param object $item        Data object.
-	 * @param string $column_name Column name.
-	 *
-	 * @return string|null Rate type or null if not found.
-	 */
-	private static function get_rate_type( $item, string $column_name ): ?string {
-		// Check for {column}_type property (e.g., rate_type, discount_type)
-		$type_property = $column_name . '_type';
-
-		if ( method_exists( $item, 'get_' . $type_property ) ) {
-			return call_user_func( [ $item, 'get_' . $type_property ] );
-		}
-
-		if ( is_object( $item ) && property_exists( $item, $type_property ) ) {
-			return $item->$type_property;
-		}
-
-		// Check for generic 'type' property
-		if ( method_exists( $item, 'get_type' ) ) {
-			return $item->get_type();
-		}
-
-		if ( is_object( $item ) && property_exists( $item, 'type' ) ) {
-			return $item->type;
-		}
-
-		return null;
 	}
 
 	/**

@@ -17,7 +17,8 @@
     "arraypress/wp-date-utils": "dev-main",
     "arraypress/wp-countries": "dev-main",
     "arraypress/wp-currencies": "dev-main",
-    "arraypress/wp-status-badge": "dev-main"
+    "arraypress/wp-status-badge": "dev-main",
+    "arraypress/wp-rate-format": "dev-main"
   },
   "autoload": {
     "psr-4": {
