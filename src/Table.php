@@ -627,24 +627,24 @@ class Table extends WP_List_Table {
     /**
      * Auto-format column value based on naming patterns
      *
-     * Delegates to Utils\Columns for intelligent formatting based on
-     * column name patterns (dates, prices, statuses, etc.).
+     * Passes the column config directly to the Columns utility, which
+     * extracts what it needs (styles, size, decimals, etc.).
      *
      * @param string $column_name Column identifier.
      * @param mixed  $value       Raw column value.
-     * @param object $item        Data object for context (e.g., getting currency).
+     * @param object $item        Data object for context.
      *
      * @return string Formatted HTML content.
      * @since 1.0.0
-     *
      */
     private function auto_format_column( string $column_name, $value, $item ): string {
+        $config = $this->config['columns'][ $column_name ] ?? [];
+
         return Columns::auto_format(
                 $column_name,
                 $value,
                 $item,
-                $this->config['status_styles'] ?? [],
-                $this->config['views'] ?? []
+                is_array( $config ) ? $config : []
         );
     }
 

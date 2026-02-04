@@ -13,7 +13,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\RegisterTables;
+namespace ArrayPress\RegisterTables\Utils;
 
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
@@ -141,11 +141,13 @@ class Columns {
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string $column_name   Column name.
-	 * @param mixed  $value         Column value.
-	 * @param object $item          Data object.
-	 * @param array  $status_styles Custom status => badge type mappings (e.g., ['active' => 'success']).
-	 * @param array  $views         View/label mappings for statuses (e.g., ['active' => 'Active']).
+	 * @param string $column_name Column name.
+	 * @param mixed  $value       Column value.
+	 * @param object $item        Data object.
+	 * @param array  $config      Column config from registration. Supports:
+	 *                             - 'styles'   (array)        Status => badge type mappings.
+	 *                             - 'size'     (string|array) Image size name or [w, h] array.
+	 *                             - 'decimals' (int)          Decimal places for file_size.
 	 *
 	 * @return string Formatted HTML.
 	 */
@@ -153,15 +155,15 @@ class Columns {
 		string $column_name,
 		$value,
 		$item,
-		array $status_styles = [],
-		array $views = []
+		array $config = []
 	): string {
 		// Handle empty values
 		if ( self::is_empty( $value ) ) {
 			return self::render_empty();
 		}
 
-		$type = self::detect_type( $column_name );
+		$type   = self::detect_type( $column_name );
+		$styles = $config['styles'] ?? [];
 
 		return match ( $type ) {
 			'email' => self::format_email( $value ),
@@ -171,13 +173,13 @@ class Columns {
 			'price' => Currency::render( $value, $item ) ?? self::render_empty(),
 			'rate' => Rate::render( $value, $item, $column_name ) ?? self::render_empty(),
 			'percentage' => Rate::render_percentage( $value ) ?? self::render_empty(),
-			'status' => self::format_status( $value, $status_styles ),
+			'status' => self::format_status( $value, $styles ),
 			'count' => self::format_count( $value ),
-			'image' => self::format_image( $value ),
+			'image' => self::format_image( $value, $config['size'] ?? 'thumbnail' ),
 			'url' => self::format_url( $value ),
-			'boolean' => self::format_boolean( $value, $column_name, $status_styles ),
+			'boolean' => self::format_boolean( $value, $column_name, $styles ),
 			'code' => self::format_code( $value ),
-			'file_size' => self::format_file_size( $value ),
+			'file_size' => self::format_file_size( $value, $config['decimals'] ?? 1 ),
 			default => esc_html( (string) $value ),
 		};
 	}
@@ -191,15 +193,15 @@ class Columns {
 	 *
 	 * Caches instances so the same config doesn't create duplicate objects.
 	 *
-	 * @param array $custom_styles Custom status => badge type mappings.
+	 * @param array $styles Custom status => badge type mappings.
 	 *
 	 * @return StatusBadge
 	 */
-	private static function get_badge( array $custom_styles = [] ): StatusBadge {
-		$key = empty( $custom_styles ) ? '_default' : md5( serialize( $custom_styles ) );
+	private static function get_badge( array $styles = [] ): StatusBadge {
+		$key = empty( $styles ) ? '_default' : md5( serialize( $styles ) );
 
 		if ( ! isset( self::$badges[ $key ] ) ) {
-			self::$badges[ $key ] = new StatusBadge( $custom_styles );
+			self::$badges[ $key ] = new StatusBadge( $styles );
 		}
 
 		return self::$badges[ $key ];
@@ -208,13 +210,13 @@ class Columns {
 	/**
 	 * Format a status value as a badge
 	 *
-	 * @param string $value         Status string.
-	 * @param array  $custom_styles Custom status => badge type mappings.
+	 * @param string $value  Status string.
+	 * @param array  $styles Custom status => badge type mappings.
 	 *
 	 * @return string Badge HTML.
 	 */
-	public static function format_status( string $value, array $custom_styles = [] ): string {
-		return self::get_badge( $custom_styles )->render( $value );
+	public static function format_status( string $value, array $styles = [] ): string {
+		return self::get_badge( $styles )->render( $value );
 	}
 
 	/* ========================================================================
@@ -366,13 +368,14 @@ class Columns {
 	 * Accepts either a WordPress attachment ID or a raw URL. Attachment IDs
 	 * use wp_get_attachment_image() for proper srcset and responsive handling.
 	 *
-	 * @param mixed $value Attachment ID (int) or image URL (string).
+	 * @param mixed        $value Attachment ID (int) or image URL (string).
+	 * @param string|array $size  WordPress image size name or [width, height] array.
 	 *
 	 * @return string Formatted image HTML.
 	 */
-	public static function format_image( $value ): string {
+	public static function format_image( $value, $size = 'thumbnail' ): string {
 		if ( is_numeric( $value ) ) {
-			$image = wp_get_attachment_image( (int) $value, 'thumbnail', false, [
+			$image = wp_get_attachment_image( (int) $value, $size, false, [
 				'class'   => 'column-thumbnail',
 				'loading' => 'lazy',
 			] );
@@ -398,18 +401,18 @@ class Columns {
 	/**
 	 * Format boolean value
 	 *
-	 * @param mixed  $value         Boolean value.
-	 * @param string $column_name   Column name (for special handling).
-	 * @param array  $custom_styles Custom status => badge type mappings.
+	 * @param mixed  $value       Boolean value.
+	 * @param string $column_name Column name (for special handling).
+	 * @param array  $styles      Custom status => badge type mappings.
 	 *
 	 * @return string Formatted boolean HTML.
 	 */
-	public static function format_boolean( $value, string $column_name = '', array $custom_styles = [] ): string {
+	public static function format_boolean( $value, string $column_name = '', array $styles = [] ): string {
 		$is_true = filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 
 		// Special handling for test/live mode
 		if ( $column_name === 'is_test' || $column_name === 'test_mode' ) {
-			$badge = self::get_badge( $custom_styles );
+			$badge = self::get_badge( $styles );
 
 			return $is_true
 				? $badge->render( 'test', StatusBadge::WARNING, __( 'Test', 'arraypress' ) )
