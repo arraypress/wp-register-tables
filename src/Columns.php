@@ -13,7 +13,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\RegisterTables\Utils;
+namespace ArrayPress\RegisterTables;
 
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
