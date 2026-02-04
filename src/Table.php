@@ -323,6 +323,12 @@ class Table extends WP_List_Table {
      * Retrieves items for display by calling the configured get_items callback.
      * Applies pagination, sorting, search, status filter, and custom filters.
      *
+     * When a search_callback is configured, it receives the search term and
+     * can return an array of query args (e.g., ['customer_id' => 42]) which
+     * are merged into the query. If the callback returns a non-empty array,
+     * the raw search term is not passed to the query. If the callback returns
+     * an empty array, the default search behavior is used as a fallback.
+     *
      * @return array Array of item objects to display.
      * @since 1.0.0
      *
@@ -333,11 +339,8 @@ class Table extends WP_List_Table {
         // Add pagination and sorting
         $args = array_merge( $args, $this->parse_pagination_args() );
 
-        // Add search
-        $search = $this->get_search();
-        if ( ! empty( $search ) ) {
-            $args['search'] = $search;
-        }
+        // Add search (with optional callback resolution)
+        $args = array_merge( $args, $this->resolve_search( $this->get_search() ) );
 
         // Add status filter
         if ( ! empty( $this->status ) ) {
@@ -1284,11 +1287,8 @@ class Table extends WP_List_Table {
     private function get_filtered_count(): int {
         $args = [];
 
-        // Add search
-        $search = $this->get_search();
-        if ( ! empty( $search ) ) {
-            $args['search'] = $search;
-        }
+        // Add search (with optional callback resolution)
+        $args = array_merge( $args, $this->resolve_search( $this->get_search() ) );
 
         // Add status filter
         if ( ! empty( $this->status ) ) {
@@ -1322,7 +1322,6 @@ class Table extends WP_List_Table {
         if ( isset( $this->config['callbacks']['get_items'] ) && is_callable( $this->config['callbacks']['get_items'] ) ) {
             $result = call_user_func( $this->config['callbacks']['get_items'], $args );
 
-            // If callback returns an integer when count=true, use it
             if ( is_int( $result ) ) {
                 return $result;
             }
@@ -1519,6 +1518,40 @@ class Table extends WP_List_Table {
         }
 
         return $url;
+    }
+
+    /**
+     * Resolve search term into query arguments
+     *
+     * If a search_callback is configured, calls it with the search term.
+     * The callback can return an array of query args (e.g., ['customer_id' => 42])
+     * which replace the raw search term. If the callback returns an empty array,
+     * the raw search term is used as a fallback.
+     *
+     * @param string $search Search term from the request.
+     *
+     * @return array Query arguments to merge. Contains either resolved args
+     *               from the callback or ['search' => $term] as fallback.
+     * @since 1.0.0
+     *
+     */
+    private function resolve_search( string $search ): array {
+        if ( empty( $search ) ) {
+            return [];
+        }
+
+        // Try the search callback first
+        if ( isset( $this->config['callbacks']['search_callback'] )
+             && is_callable( $this->config['callbacks']['search_callback'] ) ) {
+            $resolved = call_user_func( $this->config['callbacks']['search_callback'], $search );
+
+            if ( ! empty( $resolved ) && is_array( $resolved ) ) {
+                return $resolved;
+            }
+        }
+
+        // Fallback to raw search
+        return [ 'search' => $search ];
     }
 
 }
