@@ -13,7 +13,7 @@
 
 declare( strict_types=1 );
 
-namespace ArrayPress\RegisterTables\Utils;
+namespace ArrayPress\RegisterTables;
 
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
@@ -141,10 +141,10 @@ class Columns {
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string $column_name Column name.
-	 * @param mixed  $value       Column value.
-	 * @param object $item        Data object.
-	 * @param array  $config      Column config from registration. Supports:
+	 * @param string $column_name  Column name.
+	 * @param mixed  $value        Column value.
+	 * @param object $item         Data object.
+	 * @param array  $config       Column config from registration. Supports:
 	 *                             - 'styles'   (array)        Status => badge type mappings.
 	 *                             - 'size'     (string|array) Image size name or [w, h] array.
 	 *                             - 'decimals' (int)          Decimal places for file_size.
