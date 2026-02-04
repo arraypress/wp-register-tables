@@ -162,8 +162,7 @@ class Columns {
 			return self::render_empty();
 		}
 
-		$type   = self::detect_type( $column_name );
-		$styles = $config['styles'] ?? [];
+		$type = self::detect_type( $column_name );
 
 		return match ( $type ) {
 			'email' => self::format_email( $value ),
@@ -173,13 +172,13 @@ class Columns {
 			'price' => Currency::render( $value, $item ) ?? self::render_empty(),
 			'rate' => Rate::render( $value, $item, $column_name ) ?? self::render_empty(),
 			'percentage' => Rate::render_percentage( $value ) ?? self::render_empty(),
-			'status' => self::format_status( $value, $styles ),
+			'status' => self::format_status( $value, $config['styles'] ?? [] ),
 			'count' => self::format_count( $value ),
-			'image' => self::format_image( $value, $config['size'] ?? 'thumbnail' ),
+			'image' => self::format_image( $value, $config['size'] ?? null ),
 			'url' => self::format_url( $value ),
-			'boolean' => self::format_boolean( $value, $column_name, $styles ),
+			'boolean' => self::format_boolean( $value, $column_name, $config['styles'] ?? [] ),
 			'code' => self::format_code( $value ),
-			'file_size' => self::format_file_size( $value, $config['decimals'] ?? 1 ),
+			'file_size' => self::format_file_size( $value, $config['decimals'] ?? null ),
 			default => esc_html( (string) $value ),
 		};
 	}
@@ -373,7 +372,9 @@ class Columns {
 	 *
 	 * @return string Formatted image HTML.
 	 */
-	public static function format_image( $value, $size = 'thumbnail' ): string {
+	public static function format_image( $value, $size = null ): string {
+		$size = $size ?? 'thumbnail';
+
 		if ( is_numeric( $value ) ) {
 			$image = wp_get_attachment_image( (int) $value, $size, false, [
 				'class'   => 'column-thumbnail',
@@ -447,12 +448,14 @@ class Columns {
 	 *
 	 * Converts bytes into human-readable file size format using WordPress's size_format().
 	 *
-	 * @param mixed $value    Size in bytes.
-	 * @param int   $decimals Number of decimal places (default 1).
+	 * @param mixed    $value    Size in bytes.
+	 * @param null|int $decimals Number of decimal places (default 1).
 	 *
 	 * @return string Formatted file size HTML.
 	 */
-	public static function format_file_size( $value, int $decimals = 1 ): string {
+	public static function format_file_size( $value, ?int $decimals = null ): string {
+		$decimals = $decimals ?? 1;
+
 		if ( ! is_numeric( $value ) || $value < 0 ) {
 			return self::render_empty();
 		}
