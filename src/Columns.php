@@ -20,6 +20,7 @@ use ArrayPress\Currencies\Currency;
 use ArrayPress\DateUtils\Dates;
 use ArrayPress\RateFormat\Rate;
 use ArrayPress\StatusBadge\StatusBadge;
+use WP_Term;
 
 // Exit if accessed directly
 defined( 'ABSPATH' ) || exit;
@@ -52,6 +53,10 @@ class Columns {
 	private static array $column_types = [
 		'email'      => [
 			'contains' => [ 'email' ],
+		],
+		'phone'      => [
+			'exact'    => [ 'phone', 'mobile', 'cell', 'fax', 'telephone' ],
+			'contains' => [ 'phone' ],
 		],
 		'country'    => [
 			'exact'  => [ 'country', 'country_code' ],
@@ -95,9 +100,25 @@ class Columns {
 			'exact'    => [ 'count', 'limit', 'quantity', 'qty' ],
 			'contains' => [ '_count' ],
 		],
+		'items'      => [
+			'exact'  => [ 'items', 'order_items', 'line_items', 'products' ],
+			'suffix' => [ '_items' ],
+		],
+		'user'       => [
+			'exact'  => [ 'user', 'author', 'customer', 'owner', 'assignee' ],
+			'suffix' => [ '_user', '_author' ],
+		],
+		'taxonomy'   => [
+			'exact'  => [ 'terms', 'tags', 'categories', 'taxonomy' ],
+			'suffix' => [ '_terms', '_tags', '_categories' ],
+		],
 		'image'      => [
 			'exact'    => [ 'image', 'avatar', 'thumbnail', 'logo', 'photo', 'icon' ],
 			'contains' => [ '_image', '_avatar', '_thumbnail', '_logo', '_photo' ],
+		],
+		'color'      => [
+			'exact'  => [ 'color', 'colour' ],
+			'suffix' => [ '_color', '_colour' ],
 		],
 		'url'        => [
 			'exact'    => [ 'url', 'website', 'link' ],
@@ -148,6 +169,10 @@ class Columns {
 	 *                             - 'styles'   (array)        Status => badge type mappings.
 	 *                             - 'size'     (string|array) Image size name or [w, h] array.
 	 *                             - 'decimals' (int)          Decimal places for file_size.
+	 *                             - 'singular' (string)       Singular label for items type.
+	 *                             - 'plural'   (string)       Plural label for items type.
+	 *                             - 'taxonomy' (string)       Taxonomy slug for term links.
+	 *                             - 'avatar'   (int)          Avatar size in pixels for user type.
 	 *
 	 * @return string Formatted HTML.
 	 */
@@ -157,15 +182,16 @@ class Columns {
 		$item,
 		array $config = []
 	): string {
-		// Handle empty values
-		if ( self::is_empty( $value ) ) {
+		// Handle empty values (but not for items which can be an empty array)
+		$type = self::detect_type( $column_name );
+
+		if ( $type !== 'items' && self::is_empty( $value ) ) {
 			return self::render_empty();
 		}
 
-		$type = self::detect_type( $column_name );
-
 		return match ( $type ) {
 			'email' => self::format_email( $value ),
+			'phone' => self::format_phone( $value ),
 			'country' => Countries::render( $value ) ?? self::render_empty(),
 			'date' => Dates::render_date( $value ) ?? self::render_empty(),
 			'duration' => Dates::render_duration( $value ) ?? self::render_empty(),
@@ -174,7 +200,11 @@ class Columns {
 			'percentage' => Rate::render_percentage( $value ) ?? self::render_empty(),
 			'status' => self::format_status( $value, $config['styles'] ?? [] ),
 			'count' => self::format_count( $value ),
+			'items' => self::format_items( $value, $config['singular'] ?? null, $config['plural'] ?? null ),
+			'user' => self::format_user( $value, $config['avatar'] ?? null ),
+			'taxonomy' => self::format_taxonomy( $value, $config['taxonomy'] ?? null ),
 			'image' => self::format_image( $value, $config['size'] ?? null ),
+			'color' => self::format_color( $value ),
 			'url' => self::format_url( $value ),
 			'boolean' => self::format_boolean( $value, $column_name, $config['styles'] ?? [] ),
 			'code' => self::format_code( $value ),
@@ -321,6 +351,26 @@ class Columns {
 	}
 
 	/**
+	 * Format phone number value
+	 *
+	 * Renders a clickable tel: link. Strips non-numeric characters (except leading +)
+	 * for the href while preserving the original format for display.
+	 *
+	 * @param string $phone Phone number.
+	 *
+	 * @return string Phone link HTML.
+	 */
+	public static function format_phone( string $phone ): string {
+		$tel = preg_replace( '/[^\d+]/', '', $phone );
+
+		return sprintf(
+			'<a href="tel:%s">%s</a>',
+			esc_attr( $tel ),
+			esc_html( $phone )
+		);
+	}
+
+	/**
 	 * Format count value
 	 *
 	 * @param mixed $value Count value.
@@ -342,6 +392,182 @@ class Columns {
 		}
 
 		return number_format_i18n( $count );
+	}
+
+	/**
+	 * Format items summary
+	 *
+	 * Accepts an array of item names or a numeric count. Arrays render as:
+	 * - 1 item:  "Item Name"
+	 * - 2 items: "Item Name and 1 other item"
+	 * - 3+ items: "Item Name and 2 other items"
+	 *
+	 * Numeric values render as "4 items".
+	 *
+	 * @param mixed       $value    Array of item names/objects or numeric count.
+	 * @param string|null $singular Singular label (default: "item").
+	 * @param string|null $plural   Plural label (default: "items").
+	 *
+	 * @return string Formatted items HTML.
+	 */
+	public static function format_items( $value, ?string $singular = null, ?string $plural = null ): string {
+		$singular = $singular ?? __( 'item', 'arraypress' );
+		$plural   = $plural ?? __( 'items', 'arraypress' );
+
+		// Numeric count
+		if ( is_numeric( $value ) ) {
+			$count = (int) $value;
+
+			if ( $count === 0 ) {
+				return self::render_empty();
+			}
+
+			return sprintf(
+				'<span class="column-items">%s %s</span>',
+				esc_html( number_format_i18n( $count ) ),
+				esc_html( $count === 1 ? $singular : $plural )
+			);
+		}
+
+		// Array of items
+		if ( ! is_array( $value ) ) {
+			return self::render_empty();
+		}
+
+		// Normalize: extract name from objects if needed
+		$names = array_map( function ( $item ) {
+			if ( is_object( $item ) && isset( $item->name ) ) {
+				return $item->name;
+			}
+
+			return (string) $item;
+		}, $value );
+
+		$names = array_filter( $names );
+		$count = count( $names );
+
+		if ( $count === 0 ) {
+			return self::render_empty();
+		}
+
+		$first = esc_html( $names[0] );
+		$rest  = $count - 1;
+
+		if ( $rest === 0 ) {
+			return sprintf( '<span class="column-items">%s</span>', $first );
+		}
+
+		return sprintf(
+			'<span class="column-items">%s <span class="column-items-rest">%s %s %s</span></span>',
+			$first,
+			esc_html__( 'and', 'arraypress' ),
+			esc_html( number_format_i18n( $rest ) ),
+			esc_html( sprintf(
+			/* translators: %s: singular or plural item label */
+				_n( 'other %s', 'other %s', $rest, 'arraypress' ),
+				$rest === 1 ? $singular : $plural
+			) )
+		);
+	}
+
+	/**
+	 * Format user/author value
+	 *
+	 * Accepts a user ID and renders an avatar with display name linked to the
+	 * user's profile edit screen.
+	 *
+	 * @param mixed    $value  User ID.
+	 * @param int|null $avatar Avatar size in pixels (default: 32).
+	 *
+	 * @return string Formatted user HTML.
+	 */
+	public static function format_user( $value, ?int $avatar = null ): string {
+		$avatar_size = $avatar ?? 32;
+		$user_id     = (int) $value;
+
+		if ( $user_id < 1 ) {
+			return self::render_empty();
+		}
+
+		$user = get_userdata( $user_id );
+
+		if ( ! $user ) {
+			return self::render_empty();
+		}
+
+		$name       = esc_html( $user->display_name );
+		$avatar_img = get_avatar( $user_id, $avatar_size );
+		$edit_url   = get_edit_user_link( $user_id );
+
+		$name_html = $edit_url
+			? sprintf( '<a href="%s">%s</a>', esc_url( $edit_url ), $name )
+			: $name;
+
+		return sprintf(
+			'<span class="column-user">%s %s</span>',
+			$avatar_img,
+			$name_html
+		);
+	}
+
+	/**
+	 * Format taxonomy terms
+	 *
+	 * Accepts an array of term names, term objects, or WP_Term objects.
+	 * When a taxonomy slug is provided, term names link to their admin edit screens.
+	 *
+	 * @param mixed       $value    Array of term names, term objects, or WP_Term objects.
+	 * @param string|null $taxonomy Taxonomy slug for generating admin links.
+	 *
+	 * @return string Formatted terms HTML.
+	 */
+	public static function format_taxonomy( $value, ?string $taxonomy = null ): string {
+		if ( ! is_array( $value ) ) {
+			return self::render_empty();
+		}
+
+		$terms = [];
+
+		foreach ( $value as $term ) {
+			$name    = null;
+			$term_id = null;
+
+			if ( $term instanceof WP_Term ) {
+				$name    = $term->name;
+				$term_id = $term->term_id;
+			} elseif ( is_object( $term ) && isset( $term->name ) ) {
+				$name    = $term->name;
+				$term_id = $term->term_id ?? null;
+			} elseif ( is_string( $term ) ) {
+				$name = $term;
+			}
+
+			if ( empty( $name ) ) {
+				continue;
+			}
+
+			// Link to term admin page if taxonomy is known and we have an ID
+			if ( $taxonomy && $term_id ) {
+				$edit_url = get_edit_term_link( $term_id, $taxonomy );
+
+				if ( $edit_url ) {
+					$terms[] = sprintf(
+						'<a href="%s" class="column-term">%s</a>',
+						esc_url( $edit_url ),
+						esc_html( $name )
+					);
+					continue;
+				}
+			}
+
+			$terms[] = sprintf( '<span class="column-term">%s</span>', esc_html( $name ) );
+		}
+
+		if ( empty( $terms ) ) {
+			return self::render_empty();
+		}
+
+		return sprintf( '<span class="column-taxonomy">%s</span>', implode( ', ', $terms ) );
 	}
 
 	/**
@@ -367,8 +593,8 @@ class Columns {
 	 * Accepts either a WordPress attachment ID or a raw URL. Attachment IDs
 	 * use wp_get_attachment_image() for proper srcset and responsive handling.
 	 *
-	 * @param mixed        $value Attachment ID (int) or image URL (string).
-	 * @param string|array $size  WordPress image size name or [width, height] array.
+	 * @param mixed             $value Attachment ID (int) or image URL (string).
+	 * @param string|array|null $size  WordPress image size name or [width, height] array.
 	 *
 	 * @return string Formatted image HTML.
 	 */
@@ -396,6 +622,27 @@ class Columns {
 		return sprintf(
 			'<img src="%s" class="column-thumbnail" alt="" loading="lazy" />',
 			esc_url( (string) $value )
+		);
+	}
+
+	/**
+	 * Format color value
+	 *
+	 * Renders a small color swatch alongside the hex/rgb value.
+	 *
+	 * @param string $value Color value (hex, rgb, or any valid CSS color).
+	 *
+	 * @return string Formatted color HTML.
+	 */
+	public static function format_color( string $value ): string {
+		if ( empty( $value ) ) {
+			return self::render_empty();
+		}
+
+		return sprintf(
+			'<span class="column-color"><span class="column-color-swatch" style="background-color:%s;"></span><code class="code">%s</code></span>',
+			esc_attr( $value ),
+			esc_html( $value )
 		);
 	}
 
@@ -448,8 +695,8 @@ class Columns {
 	 *
 	 * Converts bytes into human-readable file size format using WordPress's size_format().
 	 *
-	 * @param mixed $value    Size in bytes.
-	 * @param int   $decimals Number of decimal places (default 1).
+	 * @param mixed    $value    Size in bytes.
+	 * @param int|null $decimals Number of decimal places.
 	 *
 	 * @return string Formatted file size HTML.
 	 */
