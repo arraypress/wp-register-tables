@@ -4,6 +4,7 @@
  *
  * Central manager class for registering and rendering WordPress admin list tables.
  * Provides a configuration-driven approach to creating admin tables with support for:
+ * - Automatic menu page registration
  * - Column definitions with automatic formatting
  * - Row actions (edit, delete, custom)
  * - Bulk actions with callbacks
@@ -38,36 +39,40 @@ defined( 'ABSPATH' ) || exit;
  * ## Basic Usage
  *
  * ```php
- * // Register a table
+ * // Register a table (menu page is created automatically)
  * Manager::register( 'my_customers', [
- *     'page'     => 'my-plugin-customers',
- *     'labels'   => [
+ *     'page_title'  => 'Customers',
+ *     'menu_title'  => 'Customers',
+ *     'menu_slug'   => 'my-plugin-customers',
+ *     'parent_slug' => 'my-plugin',
+ *     'capability'  => 'manage_options',
+ *     'labels'      => [
  *         'singular' => 'customer',
  *         'plural'   => 'customers',
  *     ],
- *     'columns'  => [
+ *     'columns'     => [
  *         'name'   => 'Name',
  *         'email'  => 'Email',
  *         'status' => 'Status',
  *     ],
- *     'callbacks' => [
+ *     'callbacks'   => [
  *         'get_items'  => [ Customers::class, 'query' ],
  *         'get_counts' => [ Customers::class, 'get_counts' ],
  *     ],
  * ] );
- *
- * // Initialize (call once, typically in plugin bootstrap)
- * Manager::init();
- *
- * // Render in your admin page callback
- * Manager::render_table( 'my_customers' );
  * ```
  *
  * ## Configuration Options
  *
  * | Option              | Type              | Description                                      |
  * |---------------------|-------------------|--------------------------------------------------|
- * | page                | string            | Admin page slug (required)                       |
+ * | page_title          | string            | Page title tag text                              |
+ * | menu_title          | string            | Menu item text                                   |
+ * | menu_slug           | string            | Admin page slug (required)                       |
+ * | parent_slug         | string            | Parent menu slug (for submenu pages)             |
+ * | capability          | string            | Capability required to view page                 |
+ * | icon                | string            | Dashicon or icon URL (top-level only)            |
+ * | position            | int|null          | Menu position (top-level only)                   |
  * | labels              | array             | UI labels (singular, plural, title, etc.)        |
  * | columns             | array             | Column definitions                               |
  * | sortable            | array             | Sortable column keys                             |
@@ -79,7 +84,6 @@ defined( 'ABSPATH' ) || exit;
  * | filters             | array             | Dropdown filter definitions                      |
  * | callbacks           | array             | Data callbacks (get_items, get_counts, delete)   |
  * | status_styles       | array             | Custom status => CSS class mappings              |
- * | capability          | string            | Single capability for all actions                |
  * | capabilities        | array             | Per-action capabilities (overrides capability)   |
  * | per_page            | int               | Items per page default (30)                      |
  * | searchable          | bool              | Enable search box (true)                         |
@@ -89,6 +93,7 @@ defined( 'ABSPATH' ) || exit;
  * | flyouts             | array             | Flyout IDs ['edit' => '', 'view' => '']          |
  * | add_button          | string|callable   | Add button: flyout ID, URL, or callback          |
  * | help                | array             | Help tab definitions                             |
+ * | body_class          | string            | Additional CSS class for admin body               |
  *
  * ## Action Hooks
  *
@@ -128,6 +133,17 @@ class Manager {
     private static array $tables = [];
 
     /**
+     * Hook suffixes for registered menu pages
+     *
+     * Maps table ID => hook suffix returned by add_menu_page/add_submenu_page.
+     * Used for targeting screen options and help tabs.
+     *
+     * @since 2.0.0
+     * @var array<string, string>
+     */
+    private static array $hook_suffixes = [];
+
+    /**
      * Asset enqueue flag
      *
      * Prevents duplicate asset enqueuing when multiple tables
@@ -156,8 +172,9 @@ class Manager {
     /**
      * Register an admin table
      *
-     * Registers a new admin table with the given configuration. The table
-     * will be available for rendering via render_table() after init() is called.
+     * Registers a new admin table with the given configuration. The table's
+     * admin menu page is automatically created — no manual add_menu_page()
+     * or add_submenu_page() calls are needed.
      *
      * Configuration is merged with sensible defaults. Labels are auto-generated
      * from singular/plural if not provided. Primary column is auto-detected.
@@ -175,10 +192,17 @@ class Manager {
 
         // Default configuration values
         $defaults = [
+            // Menu registration
+                'page_title'     => '',
+                'menu_title'     => '',
+                'menu_slug'      => '',
+                'parent_slug'    => '',
+                'icon'           => 'dashicons-admin-generic',
+                'position'       => null,
+
             // Core settings
                 'labels'         => [],
                 'callbacks'      => [],
-                'page'           => '',
 
             // Flyout integration
                 'flyouts'        => [],
@@ -205,7 +229,7 @@ class Manager {
                 'show_count'     => false,
 
             // Security
-                'capability'     => '',
+                'capability'     => 'manage_options',
                 'capabilities'   => [],
 
             // Help
@@ -221,6 +245,16 @@ class Manager {
 
         $config = wp_parse_args( $config, $defaults );
 
+        // Support legacy 'page' key — map to 'menu_slug'
+        if ( ! empty( $config['page'] ) && empty( $config['menu_slug'] ) ) {
+            $config['menu_slug'] = $config['page'];
+        }
+
+        // Ensure menu_slug is set
+        if ( empty( $config['menu_slug'] ) ) {
+            $config['menu_slug'] = sanitize_key( $id );
+        }
+
         // Parse nested arrays with defaults
         $config['labels']       = self::parse_labels( $config['labels'] );
         $config['callbacks']    = self::parse_callbacks( $config['callbacks'] );
@@ -230,6 +264,14 @@ class Manager {
 
         // Auto-generate missing labels
         $config['labels'] = self::auto_generate_labels( $config['labels'] );
+
+        // Auto-generate menu titles from labels if not provided
+        if ( empty( $config['page_title'] ) ) {
+            $config['page_title'] = $config['labels']['title'] ?? ucfirst( $id );
+        }
+        if ( empty( $config['menu_title'] ) ) {
+            $config['menu_title'] = $config['page_title'];
+        }
 
         // Auto-detect primary column
         $config['primary_column'] = self::detect_primary_column(
@@ -430,9 +472,9 @@ class Manager {
     /**
      * Initialize the manager
      *
-     * Hooks into WordPress admin to enable action processing, screen options,
-     * and asset enqueuing. Call this once after registering all tables,
-     * typically in your plugin's main file or bootstrap.
+     * Hooks into WordPress admin to enable menu registration, action processing,
+     * screen options, and asset enqueuing. Called automatically on first
+     * register() call.
      *
      * @return void
      * @since 1.0.0
@@ -448,6 +490,9 @@ class Manager {
         // Handle screen option saves (must be early, before WP processes the form)
         self::handle_screen_options();
 
+        // Register admin menu pages
+        add_action( 'admin_menu', [ __CLASS__, 'register_menus' ] );
+
         // Process actions early (before output) to enable redirects
         add_action( 'admin_init', [ __CLASS__, 'process_early_actions' ], 20 );
 
@@ -459,6 +504,131 @@ class Manager {
 
         // Add body classes for table pages
         add_filter( 'admin_body_class', [ __CLASS__, 'add_body_class' ] );
+
+        // Fix menu highlight for submenu pages
+        add_filter( 'parent_file', [ __CLASS__, 'fix_parent_menu_highlight' ] );
+        add_filter( 'submenu_file', [ __CLASS__, 'fix_submenu_highlight' ] );
+    }
+
+    /* =========================================================================
+     * MENU REGISTRATION
+     * ========================================================================= */
+
+    /**
+     * Register admin menu pages for all tables
+     *
+     * Hooks into admin_menu to create menu/submenu pages for each registered
+     * table. Tables with a parent_slug are registered as submenu pages,
+     * otherwise as top-level menu pages.
+     *
+     * @return void
+     * @since 2.0.0
+     *
+     */
+    public static function register_menus(): void {
+        foreach ( self::$tables as $id => $config ) {
+            self::register_menu( $id, $config );
+        }
+    }
+
+    /**
+     * Register a single admin menu page
+     *
+     * Creates either a top-level menu page or submenu page based on the
+     * presence of parent_slug in the configuration.
+     *
+     * @param string $id     Table identifier.
+     * @param array  $config Table configuration.
+     *
+     * @return void
+     * @since 2.0.0
+     *
+     */
+    private static function register_menu( string $id, array $config ): void {
+        $render_callback = function () use ( $id ) {
+            self::render_table( $id );
+        };
+
+        if ( ! empty( $config['parent_slug'] ) ) {
+            $hook_suffix = add_submenu_page(
+                    $config['parent_slug'],
+                    $config['page_title'],
+                    $config['menu_title'],
+                    $config['capability'],
+                    $config['menu_slug'],
+                    $render_callback
+            );
+        } else {
+            $hook_suffix = add_menu_page(
+                    $config['page_title'],
+                    $config['menu_title'],
+                    $config['capability'],
+                    $config['menu_slug'],
+                    $render_callback,
+                    $config['icon'],
+                    $config['position']
+            );
+        }
+
+        if ( $hook_suffix ) {
+            self::$hook_suffixes[ $id ] = $hook_suffix;
+        }
+    }
+
+    /**
+     * Fix parent menu highlight for submenu table pages
+     *
+     * Ensures the correct parent menu item is highlighted when viewing
+     * a table registered as a submenu page.
+     *
+     * @param string $parent_file The parent file.
+     *
+     * @return string
+     * @since 2.0.0
+     *
+     */
+    public static function fix_parent_menu_highlight( string $parent_file ): string {
+        global $plugin_page;
+
+        foreach ( self::$tables as $id => $config ) {
+            if ( empty( $config['parent_slug'] ) ) {
+                continue;
+            }
+
+            if ( $plugin_page === $config['menu_slug'] ) {
+                return $config['parent_slug'];
+            }
+        }
+
+        return $parent_file;
+    }
+
+    /**
+     * Fix submenu highlight for table pages
+     *
+     * Ensures the correct submenu item is highlighted when viewing
+     * a table registered as a submenu page.
+     *
+     * @param string|null $submenu_file The submenu file.
+     *
+     * @return string|null
+     * @since 2.0.0
+     *
+     */
+    public static function fix_submenu_highlight( ?string $submenu_file ): ?string {
+        global $plugin_page;
+
+        foreach ( self::$tables as $id => $config ) {
+            if ( empty( $config['parent_slug'] ) ) {
+                continue;
+            }
+
+            if ( $plugin_page === $config['menu_slug'] ) {
+                return $config['menu_slug'];
+            }
+        }
+
+        return $submenu_file;
     }
 
     /* =========================================================================
@@ -486,7 +656,7 @@ class Manager {
 
         // Find matching table config
         foreach ( self::$tables as $config ) {
-            if ( ( $config['page'] ?? '' ) === $page ) {
+            if ( ( $config['menu_slug'] ?? '' ) === $page ) {
                 self::do_enqueue_assets( $config );
                 break;
             }
@@ -602,7 +772,7 @@ class Manager {
 
         // Find matching table config
         foreach ( self::$tables as $id => $config ) {
-            if ( ( $config['page'] ?? '' ) === $page ) {
+            if ( ( $config['menu_slug'] ?? '' ) === $page ) {
                 // Setup screen options on current_screen hook
                 add_action( 'current_screen', function () use ( $id, $config ) {
                     self::setup_screen( $id, $config );
@@ -769,7 +939,7 @@ class Manager {
 
         // Find matching table config
         foreach ( self::$tables as $id => $config ) {
-            if ( $config['page'] === $page ) {
+            if ( $config['menu_slug'] === $page ) {
                 // Process in order of priority
                 self::process_filter_redirect( $id, $config );
                 self::process_single_actions( $id, $config );
@@ -798,7 +968,7 @@ class Manager {
         }
 
         $clean_args = [
-                'page' => $config['page'],
+                'page' => $config['menu_slug'],
         ];
 
         // Preserve search
@@ -1152,7 +1322,8 @@ class Manager {
      * Render a registered table
      *
      * Outputs the complete admin page including header, notices, search banner,
-     * views, search box, and the table itself. Call this in your admin page callback.
+     * views, search box, and the table itself. Called automatically by the
+     * menu page callback, or can be called manually via get_table_renderer().
      *
      * @param string $id Table identifier (as passed to register()).
      *
@@ -1225,7 +1396,7 @@ class Manager {
             ?>
 
             <form method="get">
-                <input type="hidden" name="page" value="<?php echo esc_attr( $config['page'] ); ?>">
+                <input type="hidden" name="page" value="<?php echo esc_attr( $config['menu_slug'] ); ?>">
 
                 <?php
                 // Preserve essential params (not nonce, action, etc.)
@@ -1678,7 +1849,7 @@ class Manager {
      *
      */
     private static function get_clean_base_url( array $config ): string {
-        $url = add_query_arg( 'page', $config['page'], admin_url( 'admin.php' ) );
+        $url = add_query_arg( 'page', $config['menu_slug'], admin_url( 'admin.php' ) );
 
         // Preserve status filter
         if ( ! empty( $_GET['status'] ) ) {
@@ -1730,7 +1901,7 @@ class Manager {
 
         // Find matching table config
         foreach ( self::$tables as $id => $config ) {
-            if ( $config['page'] === $page ) {
+            if ( $config['menu_slug'] === $page ) {
                 // Add generic table class
                 $classes .= ' admin-table';
 
@@ -1809,6 +1980,22 @@ class Manager {
      */
     public static function get_all_tables(): array {
         return self::$tables;
+    }
+
+    /**
+     * Get the hook suffix for a registered table
+     *
+     * Returns the hook suffix from add_menu_page/add_submenu_page,
+     * useful for targeting specific admin pages.
+     *
+     * @param string $id Table identifier.
+     *
+     * @return string|null Hook suffix or null if not found.
+     * @since 2.0.0
+     *
+     */
+    public static function get_hook_suffix( string $id ): ?string {
+        return self::$hook_suffixes[ $id ] ?? null;
     }
 
 }

@@ -12,21 +12,29 @@ composer require arraypress/wp-register-tables
 ## Quick Start
 
 ```php
-// Register your table
 register_admin_table( 'my_orders', [
+    // Menu registration
+    'page_title'  => __( 'Orders', 'myplugin' ),
+    'menu_title'  => __( 'Orders', 'myplugin' ),
+    'menu_slug'   => 'my-orders',
+    'capability'  => 'manage_options',
+    'icon'        => 'dashicons-cart',
+    'position'    => 30,
+    
+    // Labels
     'labels' => [
         'singular' => __( 'order', 'myplugin' ),
         'plural'   => __( 'orders', 'myplugin' ),
-        'title'    => __( 'Orders', 'myplugin' ),
     ],
     
+    // Data
     'callbacks' => [
         'get_items'  => '\\MyPlugin\\get_orders',
         'get_counts' => '\\MyPlugin\\get_order_counts',
         'delete'     => '\\MyPlugin\\delete_order',
     ],
     
-    'page'    => 'my-orders',
+    // Columns
     'columns' => [
         'order_number' => __( 'Order', 'myplugin' ),
         'customer'     => __( 'Customer', 'myplugin' ),
@@ -37,23 +45,23 @@ register_admin_table( 'my_orders', [
     
     'sortable' => [ 'order_number', 'total', 'created_at' ],
 ] );
-
-// Register WordPress admin menu
-add_action( 'admin_menu', function() {
-    add_menu_page(
-        'Orders',
-        'Orders',
-        'manage_options',
-        'my-orders',
-        get_table_renderer( 'my_orders' )
-    );
-} );
 ```
+
+That's it — the menu page, rendering, screen options, and all admin hooks are handled automatically.
 
 ## Configuration Reference
 
 ```php
 register_admin_table( 'table_id', [
+    // Menu Registration
+    'page_title'  => 'Orders',            // Page title tag text (auto-generated from labels.title)
+    'menu_title'  => 'Orders',            // Menu item text (falls back to page_title)
+    'menu_slug'   => 'my-orders',         // Admin page slug (falls back to table ID)
+    'parent_slug' => '',                  // Parent menu slug (empty = top-level page)
+    'capability'  => 'manage_options',    // Capability required to view page
+    'icon'        => 'dashicons-admin-generic', // Dashicon or URL (top-level only)
+    'position'    => null,                // Menu position (top-level only)
+    
     // Labels
     'labels' => [
         'singular'         => 'order',          // Used in nonces, notices, no-items text
@@ -74,8 +82,7 @@ register_admin_table( 'table_id', [
         'search_callback' => callable,  // Optional: Custom search term resolution
     ],
     
-    // Page & Display
-    'page'       => 'my-orders',   // Admin page slug (required, must match menu registration)
+    // Display
     'per_page'   => 30,            // Default items per page
     'searchable' => true,          // Show search box
     'show_count' => false,         // Show total count in header title
@@ -107,8 +114,7 @@ register_admin_table( 'table_id', [
     'add_button' => '',            // Add button: flyout ID, URL string, or callable
     
     // Permissions
-    'capability'  => '',           // Single capability applied to all actions
-    'capabilities' => [            // Per-action overrides (takes precedence)
+    'capabilities' => [            // Per-action overrides (capability used as default)
         'view'   => '',
         'edit'   => '',
         'delete' => '',
@@ -120,6 +126,67 @@ register_admin_table( 'table_id', [
     
     // Styling
     'body_class' => '',            // Additional CSS class added to admin body
+] );
+```
+
+## Menu Registration
+
+The library automatically registers admin menu pages. No manual `add_menu_page()` or `add_submenu_page()` calls are
+needed.
+
+### Top-Level Menu Page
+
+```php
+register_admin_table( 'my_orders', [
+    'page_title' => __( 'Orders', 'myplugin' ),
+    'menu_title' => __( 'Orders', 'myplugin' ),
+    'menu_slug'  => 'my-orders',
+    'capability' => 'manage_options',
+    'icon'       => 'dashicons-cart',
+    'position'   => 30,
+    // ...
+] );
+```
+
+### Submenu Page
+
+```php
+register_admin_table( 'my_orders', [
+    'page_title'  => __( 'Orders', 'myplugin' ),
+    'menu_title'  => __( 'Orders', 'myplugin' ),
+    'menu_slug'   => 'my-orders',
+    'parent_slug' => 'my-plugin',
+    'capability'  => 'manage_options',
+    // ...
+] );
+```
+
+### Auto-Generated Defaults
+
+Many menu fields are auto-generated if not provided:
+
+- `menu_slug` defaults to the table ID
+- `page_title` defaults to `labels.title` (which itself defaults from `labels.plural`)
+- `menu_title` defaults to `page_title`
+- `capability` defaults to `manage_options`
+
+So the minimal registration for a submenu page is:
+
+```php
+register_admin_table( 'my_orders', [
+    'parent_slug' => 'my-plugin',
+    'labels'      => [
+        'singular' => __( 'order', 'myplugin' ),
+        'plural'   => __( 'orders', 'myplugin' ),
+    ],
+    'callbacks' => [
+        'get_items'  => '\\MyPlugin\\get_orders',
+        'get_counts' => '\\MyPlugin\\get_order_counts',
+    ],
+    'columns' => [
+        'name'   => __( 'Name', 'myplugin' ),
+        'status' => __( 'Status', 'myplugin' ),
+    ],
 ] );
 ```
 
@@ -608,7 +675,7 @@ These styles are passed to the auto-formatter when rendering status columns.
 
 ### Single Capability
 
-Apply one capability to all actions:
+Apply one capability to all actions (also used for menu page access):
 
 ```php
 'capability' => 'manage_options',
@@ -620,7 +687,7 @@ Override capabilities for specific actions. The single `capability` value is use
 explicitly defined:
 
 ```php
-'capability'   => 'edit_posts',        // Default for all actions
+'capability'   => 'edit_posts',        // Default for all actions + menu access
 'capabilities' => [
     'view'   => 'edit_posts',          // View the table
     'edit'   => 'edit_posts',          // Edit row actions
@@ -780,19 +847,28 @@ add_action( 'arraypress_table_single_action_{table_id}', fn( $action, $item_id, 
 
 ```php
 register_admin_table( 'my_customers', [
+    // Menu registration
+    'page_title'  => __( 'Customers', 'myplugin' ),
+    'menu_title'  => __( 'Customers', 'myplugin' ),
+    'menu_slug'   => 'my-customers',
+    'capability'  => 'manage_options',
+    'icon'        => 'dashicons-groups',
+    'position'    => 30,
+    
+    // Labels
     'labels' => [
         'singular' => __( 'customer', 'myplugin' ),
         'plural'   => __( 'customers', 'myplugin' ),
         'title'    => __( 'Customers', 'myplugin' ),
     ],
     
+    // Data
     'callbacks' => [
         'get_items'       => '\\MyPlugin\\get_customers',
         'get_counts'      => '\\MyPlugin\\get_customer_counts',
         'delete'          => '\\MyPlugin\\delete_customer',
         'update'          => '\\MyPlugin\\update_customer',
         'search_callback' => function( string $search ) {
-            // Search across related orders table too
             $order_customer_ids = get_order_customer_ids_by_search( $search );
             if ( ! empty( $order_customer_ids ) ) {
                 return [ 'id__in' => $order_customer_ids ];
@@ -801,17 +877,19 @@ register_admin_table( 'my_customers', [
         },
     ],
     
-    'page'       => 'my-customers',
+    // Display
     'logo'       => plugin_dir_url( __FILE__ ) . 'logo.png',
     'per_page'   => 25,
     'show_count' => true,
     'body_class' => 'customers-page',
     
+    // Flyouts
     'flyouts' => [
         'edit' => 'customers_edit',
     ],
     'add_button' => 'customers_add',
     
+    // Columns
     'columns' => [
         'name' => [
             'label'   => __( 'Customer', 'myplugin' ),
@@ -839,6 +917,7 @@ register_admin_table( 'my_customers', [
     
     'sortable' => [ 'name', 'total_spent', 'date_created' ],
     
+    // Row Actions
     'row_actions' => [
         'edit' => [
             'label'  => __( 'Edit', 'myplugin' ),
@@ -866,6 +945,7 @@ register_admin_table( 'my_customers', [
         ],
     ],
     
+    // Bulk Actions
     'bulk_actions' => [
         'delete' => [
             'label'    => __( 'Delete', 'myplugin' ),
@@ -898,6 +978,7 @@ register_admin_table( 'my_customers', [
         ],
     ],
     
+    // Views & Filters
     'views' => [ 'active', 'inactive', 'pending' ],
     
     'filters' => [
@@ -924,12 +1005,23 @@ register_admin_table( 'my_customers', [
         ],
     ],
 ] );
+```
 
-// Register menu
+## Migration from v1
+
+If you were previously using `get_table_renderer()` with manual menu registration, you can now remove that boilerplate:
+
+**Before (v1):**
+```php
+register_admin_table( 'my_customers', [
+    'page' => 'my-customers',
+    // ...
+] );
+
 add_action( 'admin_menu', function() {
     add_menu_page(
-        __( 'Customers', 'myplugin' ),
-        __( 'Customers', 'myplugin' ),
+        'Customers',
+        'Customers',
         'manage_options',
         'my-customers',
         get_table_renderer( 'my_customers' ),
@@ -938,6 +1030,24 @@ add_action( 'admin_menu', function() {
     );
 } );
 ```
+
+**After (v2):**
+```php
+register_admin_table( 'my_customers', [
+    'menu_slug'  => 'my-customers',
+    'capability' => 'manage_options',
+    'icon'       => 'dashicons-groups',
+    'position'   => 30,
+    'labels'     => [
+        'singular' => 'customer',
+        'plural'   => 'customers',
+    ],
+    // ...
+] );
+```
+
+The legacy `page` config key is still supported and maps to `menu_slug` automatically. The `get_table_renderer()`
+function is still available for edge cases where you need to embed a table in an existing page.
 
 ## Requirements
 

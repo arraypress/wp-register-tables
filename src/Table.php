@@ -1040,7 +1040,7 @@ class Table extends WP_List_Table {
         $current = $this->status;
 
         // Build clean base URL — just the page, no search/filters/status
-        $base_url = add_query_arg( 'page', $this->config['page'], admin_url( 'admin.php' ) );
+        $base_url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
 
         // Ensure counts are loaded
         $this->get_counts();
@@ -1133,7 +1133,7 @@ class Table extends WP_List_Table {
             }
 
             if ( $has_filters ) {
-                $clear_url = add_query_arg( 'page', $this->config['page'], admin_url( 'admin.php' ) );
+                $clear_url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
                 printf(
                         '<a href="%s" class="button">%s</a>',
                         esc_url( $clear_url ),
@@ -1496,7 +1496,7 @@ class Table extends WP_List_Table {
      *
      */
     private function get_current_url(): string {
-        $url = add_query_arg( 'page', $this->config['page'], admin_url( 'admin.php' ) );
+        $url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
 
         // Preserve status
         if ( ! empty( $_GET['status'] ) ) {
