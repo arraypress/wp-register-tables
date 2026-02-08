@@ -193,54 +193,55 @@ class Manager {
         // Default configuration values
         $defaults = [
             // Menu registration
-                'page_title'     => '',
-                'menu_title'     => '',
-                'menu_slug'      => '',
-                'parent_slug'    => '',
-                'icon'           => 'dashicons-admin-generic',
-                'position'       => null,
+            'page_title'     => '',
+            'menu_title'     => '',
+            'menu_slug'      => '',
+            'parent_slug'    => '',
+            'icon'           => 'dashicons-admin-generic',
+            'position'       => null,
 
             // Core settings
-                'labels'         => [],
-                'callbacks'      => [],
+            'labels'         => [],
+            'callbacks'      => [],
 
             // Flyout integration
-                'flyouts'        => [],
-                'add_button'     => '',
+            'flyouts'        => [],
+            'add_button'     => '',
 
             // Column configuration
-                'columns'        => [],
-                'sortable'       => [],
-                'primary_column' => '',
-                'hidden_columns' => [],
+            'columns'        => [],
+            'sortable'       => [],
+            'primary_column' => '',
+            'hidden_columns' => [],
 
             // Actions
-                'row_actions'    => [],
-                'bulk_actions'   => [],
+            'row_actions'    => [],
+            'bulk_actions'   => [],
 
             // Filtering & views
-                'views'          => [],
-                'filters'        => [],
-                'status_styles'  => [],
+            'views'          => [],
+            'filters'        => [],
+            'status_styles'  => [],
 
             // Display options
-                'per_page'       => 30,
-                'searchable'     => true,
-                'show_count'     => false,
+            'per_page'       => 30,
+            'searchable'     => true,
+            'show_count'     => false,
 
             // Security
-                'capability'     => 'manage_options',
-                'capabilities'   => [],
+            'capability'     => 'manage_options',
+            'capabilities'   => [],
 
             // Help
-                'help'           => [],
+            'help'           => [],
 
             // Header options
-                'logo'           => '',
-                'header_title'   => '',
+            'logo'           => '',
+            'header_title'   => '',
+            'header_badge'   => '',
 
             // Body class
-                'body_class'     => '',
+            'body_class'     => '',
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -1477,6 +1478,7 @@ class Manager {
         $header_title = ! empty( $config['header_title'] )
                 ? $config['header_title']
                 : ( $config['labels']['title'] ?? '' );
+        $header_badge = $config['header_badge'] ?? '';
 
         ?>
         <div class="list-table-header">
@@ -1492,6 +1494,9 @@ class Manager {
                         <h1 class="list-table-header__title">
                             <?php echo esc_html( $header_title ); ?><?php echo $total_count; ?>
                         </h1>
+                    <?php endif; ?>
+                    <?php if ( ! empty( $header_badge ) ) : ?>
+                        <?php self::render_header_badge( $header_badge ); ?>
                     <?php endif; ?>
                 </div>
 
@@ -1597,6 +1602,52 @@ class Manager {
     }
 
     /**
+     * Render the header badge
+     *
+     * Outputs an inline badge next to the header title. Supports three formats:
+     * 1. String — rendered as-is with default styling
+     * 2. Array — with 'text' and optional 'class' keys
+     * 3. Callable — full control over output
+     *
+     * @param string|array|callable $badge Badge configuration.
+     *
+     * @return void
+     * @since 2.0.0
+     */
+    private static function render_header_badge( $badge ): void {
+        // Callable — full control
+        if ( is_callable( $badge ) ) {
+            echo call_user_func( $badge );
+            return;
+        }
+
+        // Array format: ['text' => 'Test Mode', 'class' => 'warning']
+        if ( is_array( $badge ) ) {
+            $text  = $badge['text'] ?? '';
+            $class = $badge['class'] ?? '';
+
+            if ( empty( $text ) ) {
+                return;
+            }
+
+            printf(
+                    '<span class="list-table-header__badge %s">%s</span>',
+                    esc_attr( $class ),
+                    esc_html( $text )
+            );
+            return;
+        }
+
+        // Simple string
+        if ( is_string( $badge ) && ! empty( $badge ) ) {
+            printf(
+                    '<span class="list-table-header__badge">%s</span>',
+                    esc_html( $badge )
+            );
+        }
+    }
+
+    /**
      * Render admin notices
      *
      * Displays success/error messages based on URL parameters from action
@@ -1615,11 +1666,13 @@ class Manager {
         $plural   = $config['labels']['plural'] ?? 'items';
 
         // Row action notices (custom handler results)
-        $row_action = sanitize_key( $_GET['_row_action'] ?? '' );
+        $row_action  = sanitize_key( $_GET['_row_action'] ?? '' );
+        $bulk_action = sanitize_key( $_GET['_bulk_action'] ?? '' );
+
         if ( ! empty( $row_action ) && isset( $config['row_actions'][ $row_action ]['notice'] ) ) {
             self::render_action_notice( $config['row_actions'][ $row_action ]['notice'] );
-        } elseif ( empty( $row_action ) ) {
-            // Only show generic notices when no row action is specified
+        } elseif ( empty( $row_action ) && empty( $bulk_action ) ) {
+            // Only show generic notices when no row action or bulk action is specified
             // to avoid double notices
 
             // Deleted notice
@@ -1650,7 +1703,7 @@ class Manager {
             }
 
             // Updated notice (generic, when no action-specific notice exists)
-            if ( isset( $_GET['updated'] ) && empty( $_GET['_bulk_action'] ) ) {
+            if ( isset( $_GET['updated'] ) ) {
                 $count = absint( $_GET['updated'] );
 
                 if ( $count > 0 ) {
@@ -1673,7 +1726,6 @@ class Manager {
         }
 
         // Bulk action notices
-        $bulk_action = sanitize_key( $_GET['_bulk_action'] ?? '' );
         if ( ! empty( $bulk_action ) && isset( $config['bulk_actions'][ $bulk_action ] ) ) {
             $bulk_config = $config['bulk_actions'][ $bulk_action ];
 
