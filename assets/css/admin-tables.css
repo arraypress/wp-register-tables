@@ -396,7 +396,7 @@ a.column-term:hover {
 .wp-list-table .column-subtitle--one-time {
     background: #f0f0f1;
     color: #646970;
-    border-color: #c3c4c78a;
+    border-color: #c3c4c782;
 }
 
 /* Recurring: soft blue */
@@ -442,4 +442,22 @@ a.column-term:hover {
 .list-table-header__badge.badge-info {
     background: #e5f0fa;
     color: #1d4ed8;
+}
+
+/* Customer column classes */
+span.column-customer {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+span.column-customer-detail {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+span.column-customer-email {
+    font-size: 12px;
+    color: #646970;
 }

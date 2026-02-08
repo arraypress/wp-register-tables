@@ -1541,7 +1541,7 @@ class Manager {
         // URL string — render as link
         if ( is_string( $add_button ) && filter_var( $add_button, FILTER_VALIDATE_URL ) ) {
             printf(
-                    '<a href="%s" class="page-title-action"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
+                    '<a href="%s" class="page-title-action button"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
                     esc_url( $add_button ),
                     esc_html( $config['labels']['add_new'] )
             );

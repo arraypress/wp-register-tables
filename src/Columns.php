@@ -104,8 +104,12 @@ class Columns {
 			'exact'  => [ 'items', 'order_items', 'line_items', 'products' ],
 			'suffix' => [ '_items' ],
 		],
+		'customer'   => [
+			'exact'  => [ 'customer', 'buyer', 'recipient' ],
+			'suffix' => [ '_customer' ],
+		],
 		'user'       => [
-			'exact'  => [ 'user', 'author', 'customer', 'owner', 'assignee' ],
+			'exact'  => [ 'user', 'author', 'owner', 'assignee' ],
 			'suffix' => [ '_user', '_author' ],
 		],
 		'taxonomy'   => [
@@ -202,6 +206,7 @@ class Columns {
 			'count' => self::format_count( $value ),
 			'items' => self::format_items( $value, $config['singular'] ?? null, $config['plural'] ?? null ),
 			'user' => self::format_user( $value, $config['avatar'] ?? null ),
+			'customer' => self::format_customer( $value, $item, $config['avatar'] ?? null ),
 			'taxonomy' => self::format_taxonomy( $value, $config['taxonomy'] ?? null ),
 			'image' => self::format_image( $value, $config['size'] ?? null ),
 			'color' => self::format_color( $value ),
@@ -508,6 +513,125 @@ class Columns {
 			$avatar_img,
 			$name_html
 		);
+	}
+
+	/**
+	 * Format a customer/person value.
+	 *
+	 * Inspects the data object for common getter methods to build
+	 * a rich display with avatar, name, email, and optional link.
+	 * Works with any object that exposes some combination of:
+	 *
+	 * - get_email() or get_customer_email()
+	 * - get_name() or get_display_name() or get_customer_name()
+	 * - get_url() or get_edit_url() or get_admin_url()
+	 *
+	 * Falls back gracefully when methods are missing. If the value
+	 * is a numeric user ID, delegates to format_user() instead.
+	 *
+	 * @param mixed    $value  Object, user ID, or customer ID.
+	 * @param object   $item   The row data object.
+	 * @param int|null $avatar Avatar size in pixels (default: 32).
+	 *
+	 * @return string Formatted customer HTML.
+	 */
+	public static function format_customer( $value, $item, ?int $avatar = null ): string {
+		$avatar_size = $avatar ?? 32;
+
+		// If it's a numeric ID, try the item itself for customer methods
+		$source = is_object( $value ) ? $value : $item;
+
+		// Resolve email
+		$email = self::resolve_method( $source, [
+			'get_email',
+			'get_customer_email',
+		] );
+
+		// Resolve name
+		$name = self::resolve_method( $source, [
+			'get_display_name',
+			'get_name',
+			'get_customer_name',
+		] );
+
+		// Resolve URL (admin link, edit screen, etc.)
+		$url = self::resolve_method( $source, [
+			'get_edit_url',
+			'get_admin_url',
+			'get_admin_orders_url',
+			'get_url',
+		] );
+
+		// If we have nothing to work with, fall back to user formatter
+		if ( empty( $email ) && empty( $name ) ) {
+			if ( is_numeric( $value ) && (int) $value > 0 ) {
+				return self::format_user( $value, $avatar_size );
+			}
+
+			return self::render_empty();
+		}
+
+		// Build avatar from email
+		$avatar_html = '';
+		if ( ! empty( $email ) ) {
+			$avatar_html = get_avatar( $email, $avatar_size );
+		}
+
+		// Fall back name to email local part
+		if ( empty( $name ) && ! empty( $email ) ) {
+			$name = strstr( $email, '@', true );
+		}
+
+		// Build name HTML with optional link
+		$name_escaped = esc_html( $name );
+		$name_html    = ! empty( $url )
+			? sprintf( '<a href="%s">%s</a>', esc_url( $url ), $name_escaped )
+			: $name_escaped;
+
+		// Build email subtitle
+		$email_html = '';
+		if ( ! empty( $email ) ) {
+			$email_html = sprintf(
+				'<span class="column-customer-email">%s</span>',
+				esc_html( $email )
+			);
+		}
+
+		return sprintf(
+			'<span class="column-customer">%s<span class="column-customer-detail">%s%s</span></span>',
+			$avatar_html,
+			$name_html,
+			$email_html
+		);
+	}
+
+	/**
+	 * Resolve the first available method on an object.
+	 *
+	 * Iterates through method names and returns the result of the
+	 * first one that exists and returns a non-empty value.
+	 *
+	 * @param object   $object  Object to check.
+	 * @param string[] $methods Method names to try in order.
+	 *
+	 * @return string|null First non-empty result or null.
+	 */
+	private static function resolve_method( $object, array $methods ): ?string {
+		if ( ! is_object( $object ) ) {
+			return null;
+		}
+
+		foreach ( $methods as $method ) {
+			if ( method_exists( $object, $method ) ) {
+				$result = $object->$method();
+
+				if ( ! empty( $result ) ) {
+					return (string) $result;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
