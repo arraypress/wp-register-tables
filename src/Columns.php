@@ -166,10 +166,18 @@ class Columns {
 	/**
 	 * Auto-format a column value based on column name patterns
 	 *
-	 * @param string $column_name Column name.
-	 * @param mixed  $value       Column value.
-	 * @param object $item        Data object.
-	 * @param array  $config      Column config from registration. Supports:
+	 * Column type is resolved in this order:
+	 * 1. Explicit 'type' in column config (highest priority)
+	 * 2. Auto-detection from column name patterns
+	 *
+	 * Set 'type' => false in column config to disable auto-formatting
+	 * entirely and output the raw escaped value.
+	 *
+	 * @param string $column_name  Column name.
+	 * @param mixed  $value        Column value.
+	 * @param object $item         Data object.
+	 * @param array  $config       Column config from registration. Supports:
+	 *                             - 'type'     (string|false) Explicit column type or false to disable.
 	 *                             - 'styles'   (array)        Status => badge type mappings.
 	 *                             - 'size'     (string|array) Image size name or [w, h] array.
 	 *                             - 'decimals' (int)          Decimal places for file_size.
@@ -186,9 +194,17 @@ class Columns {
 		$item,
 		array $config = []
 	): string {
-		// Handle empty values (but not for items which can be an empty array)
-		$type = self::detect_type( $column_name );
+		// Resolve type: explicit config wins, then auto-detect from name
+		$type = array_key_exists( 'type', $config )
+			? $config['type']
+			: self::detect_type( $column_name );
 
+		// Allow disabling auto-format entirely with type => false
+		if ( $type === false || $type === null ) {
+			return esc_html( (string) $value );
+		}
+
+		// Handle empty values (but not for items which can be an empty array)
 		if ( $type !== 'items' && self::is_empty( $value ) ) {
 			return self::render_empty();
 		}
@@ -206,7 +222,7 @@ class Columns {
 			'count' => self::format_count( $value ),
 			'items' => self::format_items( $value, $config['singular'] ?? null, $config['plural'] ?? null ),
 			'user' => self::format_user( $value, $config['avatar'] ?? null ),
-			'customer' => self::format_customer( $value, $item, $config['avatar'] ?? null ),
+			'customer' => self::format_customer( $value, $item, $config ),
 			'taxonomy' => self::format_taxonomy( $value, $config['taxonomy'] ?? null ),
 			'image' => self::format_image( $value, $config['size'] ?? null ),
 			'color' => self::format_color( $value ),
@@ -529,14 +545,16 @@ class Columns {
 	 * Falls back gracefully when methods are missing. If the value
 	 * is a numeric user ID, delegates to format_user() instead.
 	 *
-	 * @param mixed    $value  Object, user ID, or customer ID.
-	 * @param object   $item   The row data object.
-	 * @param int|null $avatar Avatar size in pixels (default: 32).
+	 * @param mixed  $value  Object, user ID, or customer ID.
+	 * @param object $item   The row data object.
+	 * @param array  $config Column configuration. Supports:
+	 *                        - 'avatar'       (int)    Avatar size in pixels (default: 32).
+	 *                        - '_filter_url'  (string) Explicit URL override for name link.
 	 *
 	 * @return string Formatted customer HTML.
 	 */
-	public static function format_customer( $value, $item, ?int $avatar = null ): string {
-		$avatar_size = $avatar ?? 32;
+	public static function format_customer( $value, $item, array $config = [] ): string {
+		$avatar_size = $config['avatar'] ?? 32;
 
 		// If it's a numeric ID, try the item itself for customer methods
 		$source = is_object( $value ) ? $value : $item;
@@ -554,8 +572,8 @@ class Columns {
 			'get_customer_name',
 		] );
 
-		// Resolve URL (admin link, edit screen, etc.)
-		$url = self::resolve_method( $source, [
+		// Resolve URL: explicit filter URL wins, then method resolution
+		$url = $config['_filter_url'] ?? self::resolve_method( $source, [
 			'get_edit_url',
 			'get_admin_url',
 			'get_admin_orders_url',

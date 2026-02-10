@@ -221,6 +221,7 @@ class Manager {
             // Filtering & views
             'views'          => [],
             'filters'        => [],
+            'query_args'     => [],
             'status_styles'  => [],
 
             // Display options
@@ -242,6 +243,10 @@ class Manager {
 
             // Body class
             'body_class'     => '',
+
+            // Default args
+            'orderby'        => '',
+            'order'          => 'desc',
         ];
 
         $config = wp_parse_args( $config, $defaults );
@@ -1618,6 +1623,7 @@ class Manager {
         // Callable — full control
         if ( is_callable( $badge ) ) {
             echo call_user_func( $badge );
+
             return;
         }
 
@@ -1635,6 +1641,7 @@ class Manager {
                     esc_attr( $class ),
                     esc_html( $text )
             );
+
             return;
         }
 

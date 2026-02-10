@@ -50,6 +50,7 @@ use WP_List_Table;
  * - `row_actions`      (array|callable) Row action definitions or callback
  * - `views`            (array)    Status view definitions
  * - `filters`          (array)    Dropdown filter definitions
+ * - `query_args`       (array)    Whitelisted URL params passed to query
  * - `callbacks`        (array)    Data callbacks (get_items, get_counts, delete)
  * - `labels`           (array)    UI labels (singular, plural, etc.)
  * - `per_page`         (int)      Items per page default
@@ -321,7 +322,8 @@ class Table extends WP_List_Table {
      * Get table data
      *
      * Retrieves items for display by calling the configured get_items callback.
-     * Applies pagination, sorting, search, status filter, and custom filters.
+     * Applies pagination, sorting, search, status filter, custom filters, and
+     * whitelisted query args.
      *
      * When a search_callback is configured, it receives the search term and
      * can return an array of query args (e.g., ['customer_id' => 42]) which
@@ -367,6 +369,9 @@ class Table extends WP_List_Table {
                 $args[ $filter_key ] = $value;
             }
         }
+
+        // Pass through whitelisted query args from URL
+        $args = $this->apply_query_args( $args );
 
         /**
          * Filter the query arguments before fetching items
@@ -461,6 +466,13 @@ class Table extends WP_List_Table {
                 // Legacy callback format (still supported)
                 if ( isset( $column_config['callback'] ) && is_callable( $column_config['callback'] ) ) {
                     return call_user_func( $column_config['callback'], $item );
+                }
+
+                // Value resolver — transform the value before auto-formatting
+                if ( isset( $column_config['value'] ) && is_callable( $column_config['value'] ) ) {
+                    $value = call_user_func( $column_config['value'], $item );
+
+                    return $this->auto_format_column( $column_name, $value, $item );
                 }
             }
         }
@@ -642,12 +654,26 @@ class Table extends WP_List_Table {
      */
     private function auto_format_column( string $column_name, $value, $item ): string {
         $config = $this->config['columns'][ $column_name ] ?? [];
+        $config = is_array( $config ) ? $config : [];
+
+        // Build filter URL if configured
+        if ( ! empty( $config['filter'] ) && is_object( $value ) ) {
+            $filter_key = $config['filter'];
+            $filter_id  = method_exists( $value, 'get_id' ) ? $value->get_id() : null;
+
+            if ( $filter_id ) {
+                $config['_filter_url'] = add_query_arg( [
+                        'page'      => $this->config['menu_slug'],
+                        $filter_key => $filter_id,
+                ], admin_url( 'admin.php' ) );
+            }
+        }
 
         return Columns::auto_format(
                 $column_name,
                 $value,
                 $item,
-                is_array( $config ) ? $config : []
+                $config
         );
     }
 
@@ -1108,7 +1134,10 @@ class Table extends WP_List_Table {
             return;
         }
 
-        if ( empty( $this->config['filters'] ) ) {
+        $has_filters    = ! empty( $this->config['filters'] );
+        $has_query_args = $this->has_active_query_args();
+
+        if ( ! $has_filters && ! $has_query_args ) {
             return;
         }
 
@@ -1120,19 +1149,23 @@ class Table extends WP_List_Table {
                 $this->render_filter( $key, $filter );
             }
 
-            // Filter submit button
-            submit_button( __( 'Filter', 'arraypress' ), '', 'filter_action', false );
+            // Filter submit button (only if dropdowns exist)
+            if ( $has_filters ) {
+                submit_button( __( 'Filter', 'arraypress' ), '', 'filter_action', false );
+            }
 
-            // Clear filters link — resets to base page
-            $has_filters = false;
-            foreach ( $this->config['filters'] as $key => $filter ) {
-                if ( ! empty( $_GET[ $key ] ) ) {
-                    $has_filters = true;
-                    break;
+            // Clear button — show when any filter or query arg is active
+            $any_active = $has_query_args;
+            if ( ! $any_active ) {
+                foreach ( $this->config['filters'] as $key => $filter ) {
+                    if ( ! empty( $_GET[ $key ] ) ) {
+                        $any_active = true;
+                        break;
+                    }
                 }
             }
 
-            if ( $has_filters ) {
+            if ( $any_active ) {
                 $clear_url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
                 printf(
                         '<a href="%s" class="button">%s</a>',
@@ -1258,17 +1291,26 @@ class Table extends WP_List_Table {
     }
 
     /**
-     * Check if any custom filters are currently active
+     * Check if any custom filters or whitelisted query args are currently active
      *
-     * @return bool True if any filters have values set.
+     * Checks both dropdown filters and query_args config for active URL
+     * parameters that would affect the result set.
+     *
+     * @return bool True if any filters or query args have values set.
      * @since 1.0.0
      *
      */
     private function has_active_filters(): bool {
+        // Check dropdown filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
             if ( isset( $_GET[ $filter_key ] ) && $_GET[ $filter_key ] !== '' ) {
                 return true;
             }
+        }
+
+        // Check whitelisted query args
+        if ( $this->has_active_query_args() ) {
+            return true;
         }
 
         return false;
@@ -1277,8 +1319,9 @@ class Table extends WP_List_Table {
     /**
      * Get count of items matching current filters
      *
-     * Builds query args with all active filters and gets the count
-     * either from a dedicated callback or by querying without pagination.
+     * Builds query args with all active filters, whitelisted query args,
+     * and gets the count either from a dedicated callback or by querying
+     * without pagination.
      *
      * @return int Filtered item count.
      * @since 1.0.0
@@ -1313,6 +1356,9 @@ class Table extends WP_List_Table {
                 $args[ $filter_key ] = $value;
             }
         }
+
+        // Pass through whitelisted query args from URL
+        $args = $this->apply_query_args( $args );
 
         // Request count only (no pagination)
         $args['count']  = true;
@@ -1453,8 +1499,8 @@ class Table extends WP_List_Table {
         $paged  = absint( $_REQUEST['paged'] ?? 1 );
         $offset = $paged > 1 ? $this->per_page * ( $paged - 1 ) : 0;
 
-        $orderby = sanitize_key( $_REQUEST['orderby'] ?? '' );
-        $order   = strtoupper( sanitize_key( $_REQUEST['order'] ?? '' ) );
+        $orderby = sanitize_key( $_GET['orderby'] ?? $this->config['orderby'] );
+        $order   = strtoupper( sanitize_key( $_GET['order'] ?? $this->config['order'] ) );
 
         if ( ! in_array( $order, [ 'ASC', 'DESC' ], true ) ) {
             $order = 'DESC';
@@ -1489,7 +1535,7 @@ class Table extends WP_List_Table {
      * Get current page URL
      *
      * Builds a clean URL for the current page with current filters,
-     * status, and search preserved.
+     * status, search, and whitelisted query args preserved.
      *
      * @return string Current admin page URL with query args.
      * @since 1.0.0
@@ -1508,12 +1554,21 @@ class Table extends WP_List_Table {
             $url = add_query_arg( 's', sanitize_text_field( $_GET['s'] ), $url );
         }
 
-        // Preserve filters
+        // Preserve dropdown filters
         if ( ! empty( $this->config['filters'] ) ) {
             foreach ( $this->config['filters'] as $filter_key => $filter ) {
                 if ( ! empty( $_GET[ $filter_key ] ) ) {
                     $url = add_query_arg( $filter_key, sanitize_text_field( $_GET[ $filter_key ] ), $url );
                 }
+            }
+        }
+
+        // Preserve whitelisted query args
+        foreach ( $this->config['query_args'] as $key => $value ) {
+            $arg_key = is_numeric( $key ) ? $value : $key;
+
+            if ( ! empty( $_GET[ $arg_key ] ) ) {
+                $url = add_query_arg( $arg_key, sanitize_text_field( $_GET[ $arg_key ] ), $url );
             }
         }
 
@@ -1552,6 +1607,65 @@ class Table extends WP_List_Table {
 
         // Fallback to raw search
         return [ 'search' => $search ];
+    }
+
+    /**
+     * Apply whitelisted query args from URL
+     *
+     * Processes the query_args config to pass URL parameters directly
+     * to the query. Supports both simple and advanced formats:
+     *
+     * Simple:   ['customer_id', 'product_id']
+     * Advanced: ['customer_id' => 'absint', 'discount_code' => 'sanitize_key']
+     * Mixed:    ['customer_id' => 'absint', 'product_id']
+     *
+     * Default sanitizer is sanitize_key when not specified.
+     *
+     * @param array $args Current query args.
+     *
+     * @return array Modified query args with whitelisted URL params applied.
+     * @since 1.0.0
+     *
+     */
+    private function apply_query_args( array $args ): array {
+        foreach ( $this->config['query_args'] as $key => $value ) {
+            if ( is_numeric( $key ) ) {
+                $arg_key   = $value;
+                $sanitizer = 'sanitize_key';
+            } else {
+                $arg_key   = $key;
+                $sanitizer = is_callable( $value ) ? $value : 'sanitize_key';
+            }
+
+            if ( isset( $_GET[ $arg_key ] ) && $_GET[ $arg_key ] !== '' ) {
+                $args[ $arg_key ] = call_user_func( $sanitizer, $_GET[ $arg_key ] );
+            }
+        }
+
+        return $args;
+    }
+
+    /**
+     * Check if any whitelisted query args are active in the URL
+     *
+     * Inspects the query_args config and checks whether any of the
+     * whitelisted parameter names are present and non-empty in the
+     * current request.
+     *
+     * @return bool True if any query args have values set.
+     * @since 1.0.0
+     *
+     */
+    private function has_active_query_args(): bool {
+        foreach ( $this->config['query_args'] as $key => $value ) {
+            $arg_key = is_numeric( $key ) ? $value : $key;
+
+            if ( isset( $_GET[ $arg_key ] ) && $_GET[ $arg_key ] !== '' ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
