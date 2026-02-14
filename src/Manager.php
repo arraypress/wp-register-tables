@@ -208,6 +208,9 @@ class Manager {
             'flyouts'        => [],
             'add_button'     => '',
 
+            // Sync integration
+            'sync'           => '',
+
             // Column configuration
             'columns'        => [],
             'sortable'       => [],
@@ -1506,12 +1509,41 @@ class Manager {
                 </div>
 
                 <div class="list-table-header__actions">
+                    <?php self::render_sync_buttons( $config ); ?>
                     <?php self::render_add_button( $config ); ?>
                 </div>
             </div>
         </div>
         <hr class="wp-header-end">
         <?php
+    }
+
+    /**
+     * Render sync trigger buttons
+     *
+     * Outputs sync trigger buttons if the wp-inline-sync library is available
+     * and one or more sync IDs are configured. The sync library handles all
+     * behavior — this method only renders the buttons.
+     *
+     * Supports a single sync ID string or an array of sync IDs for screens
+     * that have multiple sync operations.
+     *
+     * @param array $config Table configuration.
+     *
+     * @return void
+     * @since 2.0.0
+     *
+     */
+    private static function render_sync_buttons( array $config ): void {
+        if ( empty( $config['sync'] ) || ! function_exists( 'render_sync_button' ) ) {
+            return;
+        }
+
+        $sync_ids = (array) $config['sync'];
+
+        foreach ( $sync_ids as $sync_id ) {
+            \render_sync_button( $sync_id );
+        }
     }
 
     /**
