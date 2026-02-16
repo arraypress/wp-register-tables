@@ -215,7 +215,7 @@ class Columns {
 			'country' => Countries::render( $value ) ?? self::render_empty(),
 			'date' => Dates::render_date( $value ) ?? self::render_empty(),
 			'duration' => Dates::render_duration( $value ) ?? self::render_empty(),
-			'price' => Currency::render( $value, $item ) ?? self::render_empty(),
+			'price' => self::format_price( $value, $item ),
 			'rate' => Rate::render( $value, $item, $column_name ) ?? self::render_empty(),
 			'percentage' => Rate::render_percentage( $value ) ?? self::render_empty(),
 			'status' => self::format_status( $value, $config['styles'] ?? [] ),
@@ -545,9 +545,9 @@ class Columns {
 	 * Falls back gracefully when methods are missing. If the value
 	 * is a numeric user ID, delegates to format_user() instead.
 	 *
-	 * @param mixed  $value  Object, user ID, or customer ID.
-	 * @param object $item   The row data object.
-	 * @param array  $config Column configuration. Supports:
+	 * @param mixed  $value   Object, user ID, or customer ID.
+	 * @param object $item    The row data object.
+	 * @param array  $config  Column configuration. Supports:
 	 *                        - 'avatar'       (int)    Avatar size in pixels (default: 32).
 	 *                        - '_filter_url'  (string) Explicit URL override for name link.
 	 *
@@ -852,6 +852,31 @@ class Columns {
 		$formatted = size_format( (int) $value, $decimals );
 
 		return sprintf( '<span class="file-size">%s</span>', esc_html( $formatted ) );
+	}
+
+	/**
+	 * Format a price/currency value without recurring interval
+	 *
+	 * Renders a monetary amount using the item's currency. Does not
+	 * auto-resolve recurring intervals since the price type matches
+	 * many column names (revenue, total_spent, balance, cost) where
+	 * interval display would be incorrect. For columns that need
+	 * interval display, use a column callback with Currency::render().
+	 *
+	 * @param mixed  $value Amount in smallest currency unit.
+	 * @param object $item  Data object (checked for currency).
+	 *
+	 * @return string Formatted price HTML.
+	 */
+	public static function format_price( $value, $item ): string {
+		if ( ! is_numeric( $value ) ) {
+			return self::render_empty();
+		}
+
+		$currency  = Currency::resolve( $item );
+		$formatted = Currency::format( intval( $value ), $currency );
+
+		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
 }
