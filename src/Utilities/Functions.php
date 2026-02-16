@@ -5,7 +5,7 @@
  * Global helper functions for registering and rendering admin tables.
  * These functions provide a convenient procedural API for the Manager class.
  *
- * @package     ArrayPress\WP\RegisterTables
+ * @package     ArrayPress\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
  * @version     1.0.0
@@ -15,6 +15,7 @@
 declare( strict_types=1 );
 
 use ArrayPress\RegisterTables\Manager;
+use ArrayPress\RegisterTables\ParentMenu;
 
 if ( ! function_exists( 'register_admin_table' ) ) {
 	/**
@@ -91,5 +92,57 @@ if ( ! function_exists( 'get_table_renderer' ) ) {
 		return function () use ( $table_id ) {
 			Manager::render_table( $table_id );
 		};
+	}
+}
+
+if ( ! function_exists( 'register_parent_menu' ) ) {
+	/**
+	 * Register a parent-only admin menu
+	 *
+	 * Creates a top-level admin menu page that serves as a container
+	 * for submenu pages registered elsewhere. The auto-generated first
+	 * submenu item is automatically removed so the first real submenu
+	 * page becomes the default landing page.
+	 *
+	 * This is useful when multiple libraries or classes register their
+	 * own submenu pages (e.g., via register_admin_table()) and you need
+	 * a shared parent menu to group them under.
+	 *
+	 * @param string  $slug       Menu slug. Used as the parent_slug when registering
+	 *                            submenu pages via register_admin_table() or
+	 *                            add_submenu_page().
+	 * @param string  $title      Display title for the menu item.
+	 * @param array   $args       {
+	 *                            Optional. Configuration arguments.
+	 *
+	 * @type string   $capability Capability required to see the menu. Default 'manage_options'.
+	 * @type string   $icon       Dashicon class or icon URL. Default 'dashicons-admin-generic'.
+	 * @type int|null $position   Menu position. Default null.
+	 *                            }
+	 *
+	 * @return void
+	 *
+	 * @since 1.0.0
+	 *
+	 * @example
+	 * // Register the parent menu
+	 * register_parent_menu( 'sugarcart', __( 'SugarCart', 'sugarcart' ), [
+	 *     'icon'     => 'dashicons-cart',
+	 *     'position' => 30,
+	 * ] );
+	 *
+	 * // Then register submenu tables under it
+	 * register_admin_table( 'sc_orders', [
+	 *     'parent_slug' => 'sugarcart',
+	 *     'menu_title'  => __( 'Orders', 'sugarcart' ),
+	 *     'labels'      => [
+	 *         'singular' => 'order',
+	 *         'plural'   => 'orders',
+	 *     ],
+	 *     // ...
+	 * ] );
+	 */
+	function register_parent_menu( string $slug, string $title, array $args = [] ): void {
+		ParentMenu::register( $slug, $title, $args );
 	}
 }

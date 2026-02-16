@@ -4,7 +4,7 @@
  *
  * Handles automatic formatting of column values based on naming patterns.
  *
- * @package     ArrayPress\WP\RegisterTables
+ * @package     ArrayPress\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
  * @version     1.0.0

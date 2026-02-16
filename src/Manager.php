@@ -15,7 +15,7 @@
  * - Help tabs
  * - Modern EDD-style headers
  *
- * @package     ArrayPress\WP\RegisterTables
+ * @package     ArrayPress\RegisterTables
  * @copyright   Copyright (c) 2025, ArrayPress Limited
  * @license     GPL2+
  * @version     2.0.0
@@ -246,6 +246,12 @@ class Manager {
 
             // Body class
             'body_class'     => '',
+
+            // Row customization
+            'row_class'      => null,
+
+            // Empty state
+            'empty_state'    => [],
 
             // Default args
             'orderby'        => '',

@@ -158,6 +158,50 @@
 }
 
 /* ==========================================================================
+   Empty State
+   Shown when the table has zero items total (no search/filter active).
+   Follows WooCommerce / WordPress core empty post type screen patterns.
+   ========================================================================== */
+
+.list-table-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 400px;
+    margin: 40px auto;
+}
+
+.list-table-empty-state__icon {
+    margin-bottom: 16px;
+}
+
+.list-table-empty-state__icon .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--at-text-muted);
+}
+
+.list-table-empty-state__heading {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--at-text-primary);
+    margin: 0 0 8px;
+}
+
+.list-table-empty-state__description {
+    font-size: 13px;
+    color: var(--at-text-secondary);
+    margin: 0 0 24px;
+    line-height: 1.5;
+}
+
+.list-table-empty-state__action .button-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================================================
    Misc Column Styles
    ========================================================================== */
 
@@ -315,6 +359,36 @@ a.column-term:hover {
     border-radius: var(--at-radius-sm);
     border: 1px solid var(--at-border);
     vertical-align: middle;
+}
+
+/* ==========================================================================
+   Row Classes
+   Status-based row styling following WordPress core patterns
+   (e.g., status-draft, status-pending in WP_Posts_List_Table).
+   Auto-applied via single_row() when item has get_status().
+   Custom classes via row_class callback config.
+   ========================================================================== */
+
+.wp-list-table tr.status-inactive,
+.wp-list-table tr.status-disabled,
+.wp-list-table tr.status-trash {
+    background: var(--at-bg-subtle);
+}
+
+.wp-list-table tr.status-inactive td,
+.wp-list-table tr.status-disabled td,
+.wp-list-table tr.status-trash td {
+    color: var(--at-text-secondary);
+}
+
+.wp-list-table tr.status-inactive td a,
+.wp-list-table tr.status-disabled td a,
+.wp-list-table tr.status-trash td a {
+    color: var(--at-text-secondary);
+}
+
+.wp-list-table tr.status-pending {
+    background: #fcf9e8;
 }
 
 /* ==========================================================================
