@@ -288,6 +288,9 @@ class Manager {
             $config['menu_title'] = $config['page_title'];
         }
 
+        // Extract per-column flags into top-level arrays
+        self::collect_column_flags( $config );
+
         // Auto-detect primary column
         $config['primary_column'] = self::detect_primary_column(
                 $config['primary_column'],
@@ -296,6 +299,47 @@ class Manager {
 
         // Store configuration
         self::$tables[ $id ] = $config;
+    }
+
+    /**
+     * Collect per-column flags into top-level config arrays
+     *
+     * Scans column definitions for 'sortable' and 'hidden' flags and
+     * merges them into the top-level 'sortable' and 'hidden_columns'
+     * arrays. This allows column behavior to be defined inline:
+     *
+     * ```php
+     * 'columns' => [
+     *     'date_created' => [
+     *         'label'    => 'Created',
+     *         'sortable' => true,
+     *         'hidden'   => true,
+     *     ],
+     * ],
+     * ```
+     *
+     * Per-column flags are merged with any existing top-level values,
+     * so both approaches can be used together.
+     *
+     * @param array $config Table configuration array (passed by reference).
+     *
+     * @return void
+     * @since 2.0.0
+     */
+    private static function collect_column_flags( array &$config ): void {
+        foreach ( $config['columns'] as $key => $column ) {
+            if ( ! is_array( $column ) ) {
+                continue;
+            }
+
+            if ( ! empty( $column['sortable'] ) && ! in_array( $key, $config['sortable'], true ) ) {
+                $config['sortable'][] = $key;
+            }
+
+            if ( ! empty( $column['hidden'] ) && ! in_array( $key, $config['hidden_columns'], true ) ) {
+                $config['hidden_columns'][] = $key;
+            }
+        }
     }
 
     /**
