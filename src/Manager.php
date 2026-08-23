@@ -29,7 +29,9 @@ namespace ArrayPress\RegisterTables;
 // Exit if accessed directly
 use WP_Screen;
 
-defined( 'ABSPATH' ) || exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	return;
+}
 
 /**
  * Class Manager

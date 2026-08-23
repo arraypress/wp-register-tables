@@ -24,7 +24,9 @@ use ArrayPress\Stripe\Format;
 use WP_Term;
 
 // Exit if accessed directly
-defined( 'ABSPATH' ) || exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	return;
+}
 
 /**
  * Class Columns

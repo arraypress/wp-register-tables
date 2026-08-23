@@ -22,7 +22,9 @@ declare( strict_types=1 );
 namespace ArrayPress\RegisterTables;
 
 // Exit if accessed directly
-defined( 'ABSPATH' ) || exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	return;
+}
 
 /**
  * Class ParentMenu
