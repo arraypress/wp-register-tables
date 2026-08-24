@@ -15,6 +15,7 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables;
 
+use ArrayPress\FieldKit\Support\Display;
 use ArrayPress\Countries\Countries;
 use ArrayPress\Currencies\Currency;
 use ArrayPress\DateUtils\Dates;
@@ -335,12 +336,20 @@ class Columns {
 	/**
 	 * Check if value is empty
 	 *
+	 * The rule is the kit's, because it was answered here and again in the
+	 * flyouts library and the two disagreed about zero: a price of 0.00 read
+	 * as 0.00 in a list table and as an em-dash in the flyout that opened
+	 * from it. This one was right, which is why it is the one that survived.
+	 *
+	 * Kept as a method of this class rather than replaced at forty call
+	 * sites: it is public API, and the indirection costs nothing.
+	 *
 	 * @param mixed $value Value to check.
 	 *
 	 * @return bool
 	 */
 	public static function is_empty( $value ): bool {
-		return $value === null || $value === '' || $value === false;
+		return Display::is_empty( $value );
 	}
 
 	/* ========================================================================
@@ -353,8 +362,7 @@ class Columns {
 	 * @return string Empty placeholder HTML.
 	 */
 	public static function render_empty(): string {
-		return '<span aria-hidden="true">—</span><span class="screen-reader-text">' .
-				esc_html__( 'Unknown', 'arraypress' ) . '</span>';
+		return Display::placeholder();
 	}
 
 	/**

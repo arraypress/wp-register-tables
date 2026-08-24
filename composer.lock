@@ -259,12 +259,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-field-kit.git",
-                "reference": "9f5a69b5ad639d4301d6d6a3c188e41aa2ea44ee"
+                "reference": "1161147a35ef35bb0feaf9d04974e9e97cc1b842"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/9f5a69b5ad639d4301d6d6a3c188e41aa2ea44ee",
-                "reference": "9f5a69b5ad639d4301d6d6a3c188e41aa2ea44ee",
+                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/1161147a35ef35bb0feaf9d04974e9e97cc1b842",
+                "reference": "1161147a35ef35bb0feaf9d04974e9e97cc1b842",
                 "shasum": ""
             },
             "require": {
@@ -335,7 +335,7 @@
                 "issues": "https://github.com/arraypress/wp-field-kit/issues",
                 "source": "https://github.com/arraypress/wp-field-kit"
             },
-            "time": "2026-08-24T14:22:30+00:00"
+            "time": "2026-08-24T14:34:21+00:00"
         },
         {
             "name": "arraypress/wp-rate-format",
