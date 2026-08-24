@@ -232,3 +232,57 @@ if ( ! function_exists( 'did_action' ) ) {
 		return 1;
 	}
 }
+
+/*
+ * Admin URLs, for the page-address tests.
+ *
+ * add_query_arg() is written out rather than approximated: the real one keeps
+ * the argument order it was given and merges into an existing query string,
+ * and both matter to what page_url() produces.
+ */
+
+if ( ! function_exists( 'admin_url' ) ) {
+	function admin_url( $path = '' ) {
+		return 'https://example.test/wp-admin/' . ltrim( (string) $path, '/' );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	function add_query_arg( ...$args ) {
+		if ( is_array( $args[0] ) ) {
+			$pairs = $args[0];
+			$url   = (string) ( $args[1] ?? '' );
+		} else {
+			$pairs = [ (string) $args[0] => $args[1] ];
+			$url   = (string) ( $args[2] ?? '' );
+		}
+
+		$parts    = explode( '?', $url, 2 );
+		$existing = [];
+
+		if ( isset( $parts[1] ) ) {
+			parse_str( $parts[1], $existing );
+		}
+
+		$query = array_merge( $existing, $pairs );
+
+		return '' === $query ? $parts[0] : $parts[0] . '?' . http_build_query( $query );
+	}
+}
+
+if ( ! function_exists( 'remove_query_arg' ) ) {
+	function remove_query_arg( $key, $url = '' ) {
+		$parts = explode( '?', (string) $url, 2 );
+		$query = [];
+
+		if ( isset( $parts[1] ) ) {
+			parse_str( $parts[1], $query );
+		}
+
+		foreach ( (array) $key as $one ) {
+			unset( $query[ $one ] );
+		}
+
+		return [] === $query ? $parts[0] : $parts[0] . '?' . http_build_query( $query );
+	}
+}

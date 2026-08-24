@@ -721,10 +721,7 @@ class Table extends WP_List_Table {
             $filter_id  = method_exists( $value, 'get_id' ) ? $value->get_id() : null;
 
             if ( $filter_id ) {
-                $config['_filter_url'] = add_query_arg( [
-					'page'      => $this->config['menu_slug'],
-					$filter_key => $filter_id,
-                ], admin_url( 'admin.php' ) );
+                $config['_filter_url'] = Manager::page_url( $this->config, [ $filter_key => $filter_id ] );
             }
         }
 
@@ -1125,7 +1122,7 @@ class Table extends WP_List_Table {
         $current = $this->status;
 
         // Build clean base URL — just the page, no search/filters/status
-        $base_url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
+        $base_url = Manager::page_url( $this->config );
 
         // Ensure counts are loaded
         $this->get_counts();
@@ -1225,7 +1222,7 @@ class Table extends WP_List_Table {
             }
 
             if ( $any_active ) {
-                $clear_url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
+                $clear_url = Manager::page_url( $this->config );
                 printf(
                         '<a href="%s" class="button">%s</a>',
                         esc_url( $clear_url ),
@@ -1780,7 +1777,7 @@ class Table extends WP_List_Table {
      *
      */
     private function get_current_url(): string {
-        $url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
+        $url = Manager::page_url( $this->config );
 
         // Preserve status
         if ( Request::filled( 'status' ) ) {

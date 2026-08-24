@@ -1051,7 +1051,7 @@ class Manager {
             }
         }
 
-        wp_safe_redirect( add_query_arg( $clean_args, admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( self::page_url( $config, $clean_args ) );
         exit;
     }
 
@@ -2017,8 +2017,56 @@ class Manager {
      * @since 1.0.0
      *
      */
+    /**
+     * The URL of a table's own admin page.
+     *
+     * Every URL this library builds used to be hardcoded to admin.php, which
+     * is right only for a table with no parent. WordPress puts a submenu page
+     * under whatever file its parent slug names — a table under
+     * `edit.php?post_type=book` lives at
+     * `edit.php?post_type=book&page=my-table`, and asking for
+     * `admin.php?page=my-table` gets "Sorry, you are not allowed to access
+     * this page." Views, filters, the search form's action, and every
+     * post-action redirect were all built that way, so a table anywhere but
+     * the top level linked to a page that refuses to load.
+     *
+     * The rule is core's own: a parent slug naming a .php file is the file;
+     * anything else is a plugin page under admin.php. Query arguments in the
+     * parent slug are part of the address and are kept.
+     *
+     * @param array $config Table configuration.
+     * @param array $args   Extra query arguments.
+     *
+     * @return string
+     * @since 1.0.0
+     */
+    public static function page_url( array $config, array $args = [] ): string {
+        $parent = (string) ( $config['parent_slug'] ?? '' );
+        $file   = 'admin.php';
+        $extra  = [];
+
+        if ( '' !== $parent ) {
+            $parts = explode( '?', $parent, 2 );
+
+            // A parent that is itself a plugin page — 'my-plugin' — is served
+            // by admin.php like any other.
+            if ( str_contains( $parts[0], '.php' ) ) {
+                $file = $parts[0];
+
+                if ( isset( $parts[1] ) ) {
+                    parse_str( $parts[1], $extra );
+                }
+            }
+        }
+
+        return add_query_arg(
+            array_merge( $extra, [ 'page' => $config['menu_slug'] ], $args ),
+            admin_url( $file )
+        );
+    }
+
     private static function get_clean_base_url( array $config ): string {
-        $url = add_query_arg( 'page', $config['menu_slug'], admin_url( 'admin.php' ) );
+        $url = self::page_url( $config );
 
         // Preserve status filter
         if ( Request::filled( 'status' ) ) {
