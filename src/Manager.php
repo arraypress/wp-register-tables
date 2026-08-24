@@ -26,6 +26,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables;
 
+use ArrayPress\FieldKit\Support\PageHeader;
+
 // Exit if accessed directly
 use WP_Screen;
 
@@ -1565,40 +1567,69 @@ class Manager {
      *
      */
     private static function render_header( string $id, array $config, string $total_count ): void {
-        $logo_url     = $config['logo'] ?? '';
         $header_title = ! empty( $config['header_title'] )
                 ? $config['header_title']
                 : ( $config['labels']['title'] ?? '' );
-        $header_badge = $config['header_badge'] ?? '';
 
-        ?>
-        <div class="list-table-header">
-            <div class="list-table-header__inner">
-                <div class="list-table-header__branding">
-                    <?php if ( $logo_url ) : ?>
-                        <img src="<?php echo esc_url( $logo_url ); ?>" alt="" class="list-table-header__logo">
-                        <?php if ( ! empty( $header_title ) ) : ?>
-                            <span class="list-table-header__separator">/</span>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                    <?php if ( ! empty( $header_title ) ) : ?>
-                        <h1 class="list-table-header__title">
-                            <?php echo esc_html( $header_title ); ?><?php echo wp_kses_post( $total_count ); ?>
-                        </h1>
-                    <?php endif; ?>
-                    <?php if ( ! empty( $header_badge ) ) : ?>
-                        <?php self::render_header_badge( $header_badge ); ?>
-                    <?php endif; ?>
-                </div>
+        // The kit's header, which is core's own privacy-settings header. This
+        // library used to draw its own — a different height, a different type
+        // scale, and a slash between the logo and the title — so a plugin
+        // with a settings page and a list table had two headers that were
+        // nearly but not quite the same. There is one now.
+        //
+        // The count rides in the badge slot, which is what it was already
+        // trying to be inside the title, and the buttons in the actions slot
+        // on the right — where a date range and a refresh control go on a
+        // reports screen.
+        ob_start();
+        self::render_sync_buttons( $config );
+        self::render_add_button( $config );
+        $actions = (string) ob_get_clean();
 
-                <div class="list-table-header__actions">
-                    <?php self::render_sync_buttons( $config ); ?>
-                    <?php self::render_add_button( $config ); ?>
-                </div>
-            </div>
-        </div>
-        <hr class="wp-header-end">
-        <?php
+        $header = PageHeader::render(
+                [
+					'title'         => $header_title,
+					'logo'          => (string) ( $config['logo'] ?? '' ),
+					'logo_position' => (string) ( $config['logo_position'] ?? 'beside' ),
+					'badge'         => self::header_badge( $config, $total_count ),
+					'actions'       => $actions,
+                ]
+        );
+
+        echo $header; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the kit escapes as it builds.
+    }
+
+    /**
+     * What goes in the header's badge slot.
+     *
+     * A consumer's own badge if there is one, otherwise the item count. The
+     * count reads as a badge — "People (8)" — which is what it was already
+     * trying to be while it sat inside the title.
+     *
+     * @param array  $config      Table configuration.
+     * @param string $total_count Formatted total count HTML (or empty).
+     *
+     * @return mixed
+     */
+    private static function header_badge( array $config, string $total_count ) {
+        $badge = $config['header_badge'] ?? '';
+
+        // A callable was one of the three shapes this accepted. The kit's
+        // badge takes a string or an array, so the callable is resolved here
+        // and its answer used — which does mean one returning markup now has
+        // that markup escaped rather than printed. Nothing in these
+        // repositories passes one, and a badge is a word.
+        if ( ! is_string( $badge ) && is_callable( $badge ) ) {
+            $badge = call_user_func( $badge );
+        }
+
+        if ( ! empty( $badge ) ) {
+            return $badge;
+        }
+
+        $count = trim( wp_strip_all_tags( $total_count ) );
+
+        return '' === $count ? '' : trim( $count, '()' );
     }
 
     /**
@@ -1722,55 +1753,6 @@ class Manager {
             </a>
         </div>
         <?php
-    }
-
-    /**
-     * Render the header badge
-     *
-     * Outputs an inline badge next to the header title. Supports three formats:
-     * 1. String — rendered as-is with default styling
-     * 2. Array — with 'text' and optional 'class' keys
-     * 3. Callable — full control over output
-     *
-     * @param string|array|callable $badge Badge configuration.
-     *
-     * @return void
-     * @since 2.0.0
-     */
-    private static function render_header_badge( $badge ): void {
-        // Callable — full control
-        if ( is_callable( $badge ) ) {
-            // As above: markup from a callback, so it goes through kses.
-            echo wp_kses_post( call_user_func( $badge ) );
-
-            return;
-        }
-
-        // Array format: ['text' => 'Test Mode', 'class' => 'warning']
-        if ( is_array( $badge ) ) {
-            $text  = $badge['text'] ?? '';
-            $class = $badge['class'] ?? '';
-
-            if ( empty( $text ) ) {
-                return;
-            }
-
-            printf(
-                    '<span class="list-table-header__badge %s">%s</span>',
-                    esc_attr( $class ),
-                    esc_html( $text )
-            );
-
-            return;
-        }
-
-        // Simple string
-        if ( is_string( $badge ) && ! empty( $badge ) ) {
-            printf(
-                    '<span class="list-table-header__badge">%s</span>',
-                    esc_html( $badge )
-            );
-        }
     }
 
     /**
