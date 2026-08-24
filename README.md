@@ -85,7 +85,6 @@ register_admin_table( 'table_id', [
     // Display
     'per_page'   => 30,            // Default items per page
     'searchable' => true,          // Show search box
-    'show_count' => false,         // Show total count in header title
     
     // Header
     'logo'         => '',          // URL to logo image for EDD-style header
@@ -199,12 +198,11 @@ for proper full-width styling.
 register_admin_table( 'my_orders', [
     'logo'         => plugin_dir_url( __FILE__ ) . 'assets/logo.png',
     'header_title' => 'Order Management',
-    'show_count'   => true,
     // ...
 ] );
 ```
 
-When `show_count` is enabled, the total item count displays next to the title.
+There is no count beside the heading: core puts none on any list table, and the number is already in the views above the table and in the pagination beside it.
 
 ## Columns
 
@@ -900,7 +898,6 @@ register_admin_table( 'my_customers', [
     // Display
     'logo'       => plugin_dir_url( __FILE__ ) . 'logo.png',
     'per_page'   => 25,
-    'show_count' => true,
     'body_class' => 'customers-page',
     
     // Flyouts

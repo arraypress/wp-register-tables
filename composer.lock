@@ -259,12 +259,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-field-kit.git",
-                "reference": "1161147a35ef35bb0feaf9d04974e9e97cc1b842"
+                "reference": "fd0a4ae813c2521e89e3e6c1d2872d11a0db38e5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/1161147a35ef35bb0feaf9d04974e9e97cc1b842",
-                "reference": "1161147a35ef35bb0feaf9d04974e9e97cc1b842",
+                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/fd0a4ae813c2521e89e3e6c1d2872d11a0db38e5",
+                "reference": "fd0a4ae813c2521e89e3e6c1d2872d11a0db38e5",
                 "shasum": ""
             },
             "require": {
@@ -304,6 +304,9 @@
                 "format:check": [
                     "phpcs --standard=phpcs-format.xml.dist"
                 ],
+                "docs:verify": [
+                    "php bin/verify-docs.php --calls=FieldSet README.md"
+                ],
                 "test:js": [
                     "node tests/js/smoke.js"
                 ],
@@ -335,7 +338,7 @@
                 "issues": "https://github.com/arraypress/wp-field-kit/issues",
                 "source": "https://github.com/arraypress/wp-field-kit"
             },
-            "time": "2026-08-24T14:34:21+00:00"
+            "time": "2026-08-24T18:20:39+00:00"
         },
         {
             "name": "arraypress/wp-rate-format",

@@ -92,7 +92,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * | capabilities        | array             | Per-action capabilities (overrides capability)   |
  * | per_page            | int               | Items per page default (30)                      |
  * | searchable          | bool              | Enable search box (true)                         |
- * | show_count          | bool              | Show total count in header (false)               |
  * | logo                | string            | Header logo URL                                  |
  * | header_title        | string            | Custom header title                              |
  * | flyouts             | array             | Flyout IDs ['edit' => '', 'view' => '']          |
@@ -232,7 +231,6 @@ class Manager {
             // Display options
             'per_page'       => 30,
             'searchable'     => true,
-            'show_count'     => false,
 
             // Security
             'capability'     => 'manage_options',
@@ -1442,21 +1440,13 @@ class Manager {
         $table->process_bulk_action();
         $table->prepare_items();
 
-        // Build total count for header
-        $total_count = '';
-        if ( $config['show_count'] ) {
-            $counts = $table->get_counts();
-            $total  = $counts['total'] ?? 0;
-            if ( $total > 0 ) {
-                $total_count = sprintf(
-                        ' <span class="count">(%s)</span>',
-                        esc_html( number_format_i18n( $total ) )
-                );
-            }
-        }
-
-        // Render header outside .wrap (EDD pattern)
-        self::render_header( $id, $config, $total_count );
+        // Render header outside .wrap (EDD pattern).
+        //
+        // No count beside the heading: core puts none on any list table, and
+        // the number is already in the views above the table and in the
+        // pagination beside it. A third copy in a different shape is the one
+        // part of the screen that does not look like WordPress.
+        self::render_header( $id, $config );
 
         // Start WordPress wrap
         ?>
@@ -1538,13 +1528,12 @@ class Manager {
      *
      * @param string $id          Table identifier.
      * @param array  $config      Table configuration.
-     * @param string $total_count Formatted total count HTML (or empty).
      *
      * @return void
      * @since 1.0.0
      *
      */
-    private static function render_header( string $id, array $config, string $total_count ): void {
+    private static function render_header( string $id, array $config ): void {
         $header_title = ! empty( $config['header_title'] )
                 ? $config['header_title']
                 : ( $config['labels']['title'] ?? '' );
@@ -1574,7 +1563,7 @@ class Manager {
 					// the left, as core's own do and as EDD's do. Centred is the
 					// settings-page shape and looks wrong with a list under it.
 					'align'         => (string) ( $config['align'] ?? 'left' ),
-					'badge'         => self::header_badge( $config, $total_count ),
+					'badge'         => self::header_badge( $config ),
 					'actions'       => $actions,
                 ]
         );
@@ -1590,11 +1579,10 @@ class Manager {
      * trying to be while it sat inside the title.
      *
      * @param array  $config      Table configuration.
-     * @param string $total_count Formatted total count HTML (or empty).
      *
      * @return mixed
      */
-    private static function header_badge( array $config, string $total_count ) {
+    private static function header_badge( array $config ) {
         $badge = $config['header_badge'] ?? '';
 
         // A callable was one of the three shapes this accepted. The kit's
@@ -1606,13 +1594,7 @@ class Manager {
             $badge = call_user_func( $badge );
         }
 
-        if ( ! empty( $badge ) ) {
-            return $badge;
-        }
-
-        $count = trim( wp_strip_all_tags( $total_count ) );
-
-        return '' === $count ? '' : trim( $count, '()' );
+        return $badge;
     }
 
     /**
@@ -1678,7 +1660,7 @@ class Manager {
         // URL string — render as link
         if ( is_string( $add_button ) && filter_var( $add_button, FILTER_VALIDATE_URL ) ) {
             printf(
-                    '<a href="%s" class="page-title-action button"><span class="dashicons dashicons-plus-alt"></span> %s</a>',
+                    '<a href="%s" class="page-title-action">%s</a>',
                     esc_url( $add_button ),
                     esc_html( $config['labels']['add_new'] )
             );
@@ -1688,10 +1670,12 @@ class Manager {
 
         // String — assume flyout ID
         if ( is_string( $add_button ) && function_exists( 'render_flyout_button' ) ) {
+            // No icon: core's own Add New is a plain button, everywhere in
+            // the admin, and a plus beside it is the one thing on the screen
+            // that does not look like WordPress.
             \render_flyout_button( $add_button, [
 				'text'  => $config['labels']['add_new'],
 				'class' => 'page-title-action',
-				'icon'  => 'plus-alt',
             ] );
         }
     }
@@ -1853,13 +1837,18 @@ class Manager {
         /**
          * Filter custom admin notices for a specific table
          *
+         * Starts empty. The unscoped twin of this filter used to seed it, and
+         * removing that left the variable undefined — a warning above the
+         * table on every request, and every notice a consumer added dropped
+         * on the floor.
+         *
          * @param array $notices Array of notices (see above for format).
          * @param array $config  Table configuration.
          *
          * @since 1.0.0
          *
          */
-        $custom_notices = apply_filters( "arraypress_table_admin_notices_{$id}", $custom_notices, $config );
+        $custom_notices = (array) apply_filters( "arraypress_table_admin_notices_{$id}", [], $config );
 
         foreach ( $custom_notices as $notice ) {
             if ( empty( $notice['message'] ) ) {
