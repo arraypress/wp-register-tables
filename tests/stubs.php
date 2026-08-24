@@ -39,6 +39,20 @@ function rt_reset_globals(): void {
 	];
 	$GLOBALS['rt_users']   = [];
 	$GLOBALS['rt_terms']   = [];
+
+	// Everything allowed and every nonce good, so a test that is not about
+	// security need not say so.
+	$GLOBALS['rt_caps']     = null;
+	$GLOBALS['rt_nonce_ok'] = true;
+
+	unset(
+		$GLOBALS['rt_screen'],
+		$GLOBALS['rt_user_meta'],
+		$GLOBALS['rt_redirect'],
+		$GLOBALS['rt_fired'],
+		$GLOBALS['rt_actions'],
+		$GLOBALS['rt_filters']
+	);
 }
 
 rt_reset_globals();
@@ -284,5 +298,172 @@ if ( ! function_exists( 'remove_query_arg' ) ) {
 		}
 
 		return [] === $query ? $parts[0] : $parts[0] . '?' . http_build_query( $query );
+	}
+}
+
+/*
+ * The screen, and the user meta the per-page option lives in. Null by default:
+ * a table has a per-page long before anyone has opened Screen Options, and
+ * that is the path worth having as the default in a test.
+ */
+if ( ! function_exists( 'get_current_screen' ) ) {
+	function get_current_screen() {
+		return $GLOBALS['rt_screen'] ?? null;
+	}
+}
+
+if ( ! function_exists( 'get_current_user_id' ) ) {
+	function get_current_user_id() {
+		return $GLOBALS['rt_user_id'] ?? 1;
+	}
+}
+
+if ( ! function_exists( 'get_user_meta' ) ) {
+	function get_user_meta( $user_id, $key = '', $single = false ) {
+		return $GLOBALS['rt_user_meta'][ $key ] ?? '';
+	}
+}
+
+/*
+ * The rest of what the manager reaches for. Registration fills a table's
+ * configuration with defaults, and testing a table built any other way would
+ * be testing a shape the library never produces.
+ */
+if ( ! function_exists( 'wp_parse_args' ) ) {
+	function wp_parse_args( $args, $defaults = [] ) {
+		return array_merge( $defaults, (array) $args );
+	}
+}
+
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( $hook, $callback, $priority = 10, $args = 1 ) {
+		$GLOBALS['rt_actions'][ $hook ][] = $callback;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
+		$GLOBALS['rt_filters'][ $hook ][] = $callback;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'apply_filters' ) ) {
+	function apply_filters( $hook, $value, ...$args ) {
+		foreach ( $GLOBALS['rt_filters'][ $hook ] ?? [] as $callback ) {
+			$value = $callback( $value, ...$args );
+		}
+
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'do_action' ) ) {
+	function do_action( $hook, ...$args ) {
+		$GLOBALS['rt_fired'][] = $hook;
+
+		foreach ( $GLOBALS['rt_actions'][ $hook ] ?? [] as $callback ) {
+			$callback( ...$args );
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	function wp_unslash( $value ) {
+		return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( (string) $value );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	function add_query_arg( ...$args ) {
+		$url = is_array( $args[0] ) ? ( $args[1] ?? '' ) : ( $args[2] ?? '' );
+		$add = is_array( $args[0] ) ? $args[0] : [ $args[0] => $args[1] ];
+
+		return $url . ( str_contains( (string) $url, '?' ) ? '&' : '?' ) . http_build_query( $add );
+	}
+}
+
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	function number_format_i18n( $number, $decimals = 0 ) {
+		return number_format( (float) $number, (int) $decimals );
+	}
+}
+
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $value ) {
+		return abs( (int) $value );
+	}
+}
+
+/*
+ * The security primitives, so an action can be tested as refused rather than
+ * only as performed.
+ *
+ * $GLOBALS['rt_caps'] is what the current user may do — null for everything,
+ * which is the default so most tests need not care. $GLOBALS['rt_nonce_ok']
+ * is whether a nonce checks out.
+ */
+if ( ! function_exists( 'current_user_can' ) ) {
+	function current_user_can( $capability, ...$args ) {
+		$allowed = $GLOBALS['rt_caps'] ?? null;
+
+		return null === $allowed || in_array( $capability, (array) $allowed, true );
+	}
+}
+
+if ( ! function_exists( 'wp_verify_nonce' ) ) {
+	function wp_verify_nonce( $nonce, $action = -1 ) {
+		return ( $GLOBALS['rt_nonce_ok'] ?? true ) ? 1 : false;
+	}
+}
+
+if ( ! function_exists( 'wp_create_nonce' ) ) {
+	function wp_create_nonce( $action = -1 ) {
+		return 'nonce';
+	}
+}
+
+/**
+ * Thrown in place of the redirect, so a test can see what happened after it.
+ *
+ * Every action in this library ends `wp_safe_redirect(); exit;`, which is
+ * right in production and ends the PHP process in a test — PHPUnit reports it
+ * as "premature end of PHP process" and the assertions never run. Throwing
+ * from the redirect means the exit is never reached and the test regains
+ * control, with the destination to inspect.
+ */
+final class RT_Redirected extends \RuntimeException {
+
+	/**
+	 * Where it was going.
+	 *
+	 * @var string
+	 */
+	public string $location;
+
+	/**
+	 * @param string $location The destination.
+	 */
+	public function __construct( string $location ) {
+		parent::__construct( 'Redirected to ' . $location );
+
+		$this->location = $location;
+	}
+}
+
+if ( ! function_exists( 'wp_safe_redirect' ) ) {
+	function wp_safe_redirect( $location, $status = 302 ) {
+		$GLOBALS['rt_redirect'] = $location;
+
+		throw new RT_Redirected( (string) $location );
+	}
+}
+
+if ( ! function_exists( 'wp_die' ) ) {
+	function wp_die( $message = '', $title = '', $args = [] ) {
+		throw new \RuntimeException( is_string( $message ) ? $message : 'wp_die' );
 	}
 }

@@ -1305,6 +1305,24 @@ class Manager {
             return;
         }
 
+        // Whether this user may run a bulk action at all.
+        //
+        // Refused the same way the per-action check and the delete path
+        // refuse: told, rather than quietly ignored. A silently dropped
+        // action is indistinguishable from one that succeeded and did
+        // nothing.
+        //
+        // get_bulk_actions() checks the same capability, but that decides
+        // whether the dropdown is *drawn* — which is hiding the control
+        // rather than refusing the action. The nonce below is a CSRF check
+        // and not an authorisation one, and it is scoped to the plural label,
+        // so two tables sharing one accept each other's. Anyone who could see
+        // the page could run its bulk actions.
+        if ( ! empty( $config['capabilities']['bulk'] )
+            && ! current_user_can( $config['capabilities']['bulk'] ) ) {
+            wp_die( esc_html__( 'Sorry, you are not allowed to perform this action.', 'arraypress' ) );
+        }
+
         $plural = $config['labels']['plural'] ?? 'items';
 
         // Verify nonce

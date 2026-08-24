@@ -155,7 +155,7 @@ class Table extends WP_List_Table {
         $this->status = Request::key( 'status' );
 
         // Get per page from screen options or use config default
-        $this->per_page = $this->get_items_per_page( 'per_page', $config['per_page'] );
+        $this->per_page = $this->get_items_per_page( 'per_page', (int) ( $config['per_page'] ?? 30 ) );
 
         // Initialize parent WP_List_Table
         parent::__construct( [
