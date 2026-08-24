@@ -329,19 +329,13 @@ a.column-term:hover {
    Responsive
    ========================================================================== */
 
-@media screen and (max-width: 782px) {
-
-    .list-table-search-banner {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-}
 
 /* ==========================================================================
    Row Actions - Enforce Hover Behavior
-   WordPress may override this when columns are manageable, so we enforce it
+
+   WordPress may override this when columns are manageable, so we enforce it.
+   Undone on a narrow screen, at the end of this file, where there is no
+   hover to reveal them with.
    ========================================================================== */
 
 .admin-table .wp-list-table .row-actions,
@@ -420,4 +414,52 @@ span.column-customer-detail {
 span.column-customer-email {
     font-size: 12px;
     color: #646970;
+}
+
+/* ==========================================================================
+   Narrow screens
+
+   Last in the file on purpose. A media query carries no extra specificity —
+   only later position — so the row-action override has to come after the
+   rule it undoes rather than before it.
+
+   Core already handles the list table itself here: it collapses the columns
+   behind a toggle and grows the controls to touch targets. What is left is
+   the handful of things this library adds on top.
+   ========================================================================== */
+
+@media screen and (max-width: 782px) {
+
+    .list-table-search-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* Row actions are a hover affordance and a phone has no hover, so the
+       rule above would put every Edit and Delete link out of reach. */
+    .admin-table .wp-list-table .row-actions,
+    .admin-table .wp-list-table .row-actions.visible {
+        visibility: visible;
+    }
+
+    /* Sixty pixels of padding and forty of margin is most of a phone. */
+    .list-table-empty-state {
+        padding: 32px 16px;
+        margin: 20px auto;
+    }
+
+    .list-table-empty-state__icon .dashicons {
+        font-size: 36px;
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Core stacks the filter controls, and a horizontal gutter between
+       buttons does nothing once they are on their own lines. */
+    .tablenav .actions > .button + .button {
+        margin-left: 0;
+        margin-top: 6px;
+    }
+
 }
