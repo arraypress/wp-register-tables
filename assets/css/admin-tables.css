@@ -23,8 +23,13 @@
     --at-bg-info: #f0f6fc;
 
     /* Links / Accent */
-    --at-accent: #2271b1;
-    --at-accent-hover: #135e96;
+    /* The user's admin colour scheme, not the blue WordPress happens to ship
+       with. Core publishes these and recolours them per scheme, so a table
+       that hardcodes #2271b1 is the one thing on the screen that stays blue
+       when someone picks Midnight. The hex is a fallback for a context where
+       core's variables are not on the page. */
+    --at-accent: var(--wp-admin-theme-color, #2271b1);
+    --at-accent-hover: var(--wp-admin-theme-color-darker-10, #135e96);
     --at-accent-alt: #0073aa;
 
     /* Status */
