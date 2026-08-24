@@ -26,6 +26,7 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables;
 
+use ArrayPress\FieldKit\Assets;
 use ArrayPress\FieldKit\Support\PageHeader;
 
 // Exit if accessed directly
@@ -746,6 +747,13 @@ class Manager {
         }
 
         self::$assets_enqueued = true;
+
+        // The kit's stylesheet, because the header is the kit's. Without it
+        // the markup renders and none of the rules for it load, so the header
+        // falls back to core's .privacy-settings-header — centred, with an
+        // unstyled badge — which is exactly what a settings page looks like
+        // and exactly what a list table should not.
+        ( new Assets() )->enqueue();
 
         // Enqueue CSS from composer assets package
         wp_enqueue_composer_style(
