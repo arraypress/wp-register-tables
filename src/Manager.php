@@ -475,6 +475,7 @@ class Manager {
         // Add New from singular
         if ( empty( $labels['add_new'] ) && ! empty( $labels['singular'] ) ) {
             $labels['add_new'] = sprintf(
+                    /* translators: %s: the singular name of the thing being added */
                     __( 'Add New %s', 'arraypress' ),
                     ucfirst( $labels['singular'] )
             );
@@ -483,6 +484,7 @@ class Manager {
         // Search from plural
         if ( empty( $labels['search'] ) && ! empty( $labels['plural'] ) ) {
             $labels['search'] = sprintf(
+                    /* translators: %s: the plural name of the things being searched */
                     __( 'Search %s', 'arraypress' ),
                     $labels['plural']
             );
@@ -709,7 +711,7 @@ class Manager {
      *
      */
     public static function enqueue_assets( string $hook ): void {
-        $page = $_GET['page'] ?? '';
+        $page = Request::text( 'page' );
 
         if ( empty( $page ) ) {
             return;
@@ -825,7 +827,7 @@ class Manager {
             return;
         }
 
-        $page = $_GET['page'] ?? '';
+        $page = Request::text( 'page' );
 
         if ( empty( $page ) ) {
             return;
@@ -992,7 +994,7 @@ class Manager {
      *
      */
     public static function process_early_actions(): void {
-        $page = $_GET['page'] ?? '';
+        $page = Request::text( 'page' );
 
         if ( empty( $page ) ) {
             return;
@@ -1024,7 +1026,7 @@ class Manager {
      *
      */
     private static function process_filter_redirect( string $id, array $config ): void {
-        if ( ! isset( $_GET['filter_action'] ) ) {
+        if ( ! Request::has( 'filter_action' ) ) {
             return;
         }
 
@@ -1033,19 +1035,19 @@ class Manager {
         ];
 
         // Preserve search
-        if ( ! empty( $_GET['s'] ) ) {
-            $clean_args['s'] = sanitize_text_field( $_GET['s'] );
+        if ( Request::filled( 's' ) ) {
+            $clean_args['s'] = Request::text( 's' );
         }
 
         // Preserve status
-        if ( ! empty( $_GET['status'] ) ) {
-            $clean_args['status'] = sanitize_key( $_GET['status'] );
+        if ( Request::filled( 'status' ) ) {
+            $clean_args['status'] = Request::key( 'status' );
         }
 
         // Preserve custom filters
         foreach ( $config['filters'] as $filter_key => $filter ) {
-            if ( ! empty( $_GET[ $filter_key ] ) ) {
-                $clean_args[ $filter_key ] = sanitize_text_field( $_GET[ $filter_key ] );
+            if ( Request::filled( $filter_key ) ) {
+                $clean_args[ $filter_key ] = Request::text( $filter_key );
             }
         }
 
@@ -1067,8 +1069,8 @@ class Manager {
      *
      */
     private static function process_single_actions( string $id, array $config ): void {
-        $action  = sanitize_key( $_GET['action'] ?? '' );
-        $item_id = absint( $_GET['item'] ?? 0 );
+        $action  = Request::key( 'action' );
+        $item_id = Request::count( 'item' );
 
         if ( empty( $action ) || empty( $item_id ) ) {
             return;
@@ -1143,15 +1145,21 @@ class Manager {
         $nonce_action = str_replace( '{id}', (string) $item_id, $nonce_action );
 
         // Verify nonce
-        $nonce = $_GET['_wpnonce'] ?? '';
+        // The nonce itself, read before it can be verified. Every other
+        // query argument this method uses is read after the check below.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $nonce = isset( $_GET['_wpnonce'] )
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) )
+                : '';
         if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
-            wp_die( __( 'Security check failed.', 'arraypress' ) );
+            wp_die( esc_html__( 'Security check failed.', 'arraypress' ) );
         }
 
         // Check capability
         if ( ! empty( $action_config['capability'] ) ) {
             if ( ! current_user_can( $action_config['capability'] ) ) {
-                wp_die( __( 'You do not have permission to perform this action.', 'arraypress' ) );
+                wp_die( esc_html__( 'You do not have permission to perform this action.', 'arraypress' ) );
             }
         }
 
@@ -1199,15 +1207,21 @@ class Manager {
         $singular = $config['labels']['singular'] ?? 'item';
 
         // Verify nonce
-        $nonce = $_GET['_wpnonce'] ?? '';
+        // The nonce itself, read before it can be verified. Every other
+        // query argument this method uses is read after the check below.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $nonce = isset( $_GET['_wpnonce'] )
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) )
+                : '';
         if ( ! wp_verify_nonce( $nonce, "delete_{$singular}_{$item_id}" ) ) {
-            wp_die( __( 'Security check failed.', 'arraypress' ) );
+            wp_die( esc_html__( 'Security check failed.', 'arraypress' ) );
         }
 
         // Check capability
         if ( ! empty( $config['capabilities']['delete'] ) ) {
             if ( ! current_user_can( $config['capabilities']['delete'] ) ) {
-                wp_die( __( 'You do not have permission to delete this item.', 'arraypress' ) );
+                wp_die( esc_html__( 'You do not have permission to delete this item.', 'arraypress' ) );
             }
         }
 
@@ -1263,10 +1277,18 @@ class Manager {
     private static function process_bulk_actions( string $id, array $config ): void {
         // Determine which bulk action was selected
         $action = '';
-        if ( isset( $_REQUEST['action'] ) && $_REQUEST['action'] !== '-1' ) {
-            $action = sanitize_key( $_REQUEST['action'] );
-        } elseif ( isset( $_REQUEST['action2'] ) && $_REQUEST['action2'] !== '-1' ) {
-            $action = sanitize_key( $_REQUEST['action2'] );
+        // Which action was chosen, and from which end of the table. Read
+        // before the nonce because the nonce action is not known until the
+        // bulk action is; verified immediately below, before anything is
+        // done with it.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        if ( isset( $_REQUEST['action'] ) && '-1' !== $_REQUEST['action'] ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $action = sanitize_key( wp_unslash( $_REQUEST['action'] ) );
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        } elseif ( isset( $_REQUEST['action2'] ) && '-1' !== $_REQUEST['action2'] ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $action = sanitize_key( wp_unslash( $_REQUEST['action2'] ) );
         }
 
         if ( empty( $action ) ) {
@@ -1276,13 +1298,22 @@ class Manager {
         $plural = $config['labels']['plural'] ?? 'items';
 
         // Verify nonce
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- this is the check.
         if ( ! isset( $_REQUEST['_wpnonce'] ) ||
-            ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-' . $plural ) ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $plural ) ) {
             return;
         }
 
-        // Get selected items
-        $items = $_REQUEST[ $plural ] ?? [];
+        // Get selected items. The checkboxes post an array of ids, so each
+        // one is sanitized rather than the array: sanitize_text_field() hands
+        // back an empty string when it is given an array, which would drop
+        // every selection and make each bulk action quietly do nothing.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified immediately above.
+        $items = isset( $_REQUEST[ $plural ] )
+                // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                ? array_map( 'sanitize_text_field', (array) wp_unslash( $_REQUEST[ $plural ] ) )
+                : [];
 
         if ( empty( $items ) ) {
             return;
@@ -1305,7 +1336,7 @@ class Manager {
         // Check capability
         if ( isset( $action_config['capability'] ) ) {
             if ( ! current_user_can( $action_config['capability'] ) ) {
-                wp_die( __( 'Sorry, you are not allowed to perform this action.', 'arraypress' ) );
+                wp_die( esc_html__( 'Sorry, you are not allowed to perform this action.', 'arraypress' ) );
             }
         }
 
@@ -1402,7 +1433,7 @@ class Manager {
         // Check view capability
         if ( ! empty( $config['capabilities']['view'] ) ) {
             if ( ! current_user_can( $config['capabilities']['view'] ) ) {
-                wp_die( __( 'Sorry, you are not allowed to access this page.', 'arraypress' ) );
+                wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'arraypress' ) );
             }
         }
 
@@ -1469,11 +1500,11 @@ class Manager {
                 }
 
                 foreach ( $preserve_params as $key ) {
-                    if ( isset( $_GET[ $key ] ) && $_GET[ $key ] !== '' ) {
+                    if ( Request::filled( $key ) ) {
                         printf(
                                 '<input type="hidden" name="%s" value="%s">',
                                 esc_attr( $key ),
-                                esc_attr( sanitize_text_field( $_GET[ $key ] ) )
+                                esc_attr( Request::text( $key ) )
                         );
                     }
                 }
@@ -1552,7 +1583,7 @@ class Manager {
                     <?php endif; ?>
                     <?php if ( ! empty( $header_title ) ) : ?>
                         <h1 class="list-table-header__title">
-                            <?php echo esc_html( $header_title ); ?><?php echo $total_count; ?>
+                            <?php echo esc_html( $header_title ); ?><?php echo wp_kses_post( $total_count ); ?>
                         </h1>
                     <?php endif; ?>
                     <?php if ( ! empty( $header_badge ) ) : ?>
@@ -1622,7 +1653,10 @@ class Manager {
 
         // Callable — full control over output
         if ( is_callable( $add_button ) ) {
-            echo call_user_func( $add_button );
+            // A consumer callback returning markup. Through kses rather
+            // than printed raw: it is markup this library did not build, and
+            // whatever a filter put into it comes out here.
+            echo wp_kses_post( call_user_func( $add_button ) );
 
             return;
         }
@@ -1661,7 +1695,7 @@ class Manager {
      *
      */
     private static function render_search_results_banner( array $config ): void {
-        $search = sanitize_text_field( $_GET['s'] ?? '' );
+        $search = Request::text( 's' );
 
         if ( empty( $search ) ) {
             return;
@@ -1706,7 +1740,8 @@ class Manager {
     private static function render_header_badge( $badge ): void {
         // Callable — full control
         if ( is_callable( $badge ) ) {
-            echo call_user_func( $badge );
+            // As above: markup from a callback, so it goes through kses.
+            echo wp_kses_post( call_user_func( $badge ) );
 
             return;
         }
@@ -1757,8 +1792,8 @@ class Manager {
         $plural   = $config['labels']['plural'] ?? 'items';
 
         // Row action notices (custom handler results)
-        $row_action  = sanitize_key( $_GET['_row_action'] ?? '' );
-        $bulk_action = sanitize_key( $_GET['_bulk_action'] ?? '' );
+        $row_action  = Request::key( '_row_action' );
+        $bulk_action = Request::key( '_bulk_action' );
 
         if ( ! empty( $row_action ) && isset( $config['row_actions'][ $row_action ]['notice'] ) ) {
             self::render_action_notice( $config['row_actions'][ $row_action ]['notice'] );
@@ -1767,18 +1802,15 @@ class Manager {
             // to avoid double notices
 
             // Deleted notice
-            if ( isset( $_GET['deleted'] ) ) {
-                $count = absint( $_GET['deleted'] );
+            if ( Request::has( 'deleted' ) ) {
+                $count = Request::count( 'deleted' );
 
                 if ( $count > 0 ) {
                     $message = sprintf(
-                            _n(
-                                    '%s ' . $singular . ' deleted successfully.',
-                                    '%s ' . $plural . ' deleted successfully.',
-                                    $count,
-                                    'arraypress'
-                            ),
-                            number_format_i18n( $count )
+                            /* translators: 1: number of items, 2: what they are called, singular or plural */
+                            __( '%1$s %2$s deleted successfully.', 'arraypress' ),
+                            number_format_i18n( $count ),
+                            1 === $count ? $singular : $plural
                     );
                     $type    = 'success';
                 } else {
@@ -1794,18 +1826,15 @@ class Manager {
             }
 
             // Updated notice (generic, when no action-specific notice exists)
-            if ( isset( $_GET['updated'] ) ) {
-                $count = absint( $_GET['updated'] );
+            if ( Request::has( 'updated' ) ) {
+                $count = Request::count( 'updated' );
 
                 if ( $count > 0 ) {
                     $message = sprintf(
-                            _n(
-                                    '%s ' . $singular . ' updated successfully.',
-                                    '%s ' . $plural . ' updated successfully.',
-                                    $count,
-                                    'arraypress'
-                            ),
-                            number_format_i18n( $count )
+                            /* translators: 1: number of items, 2: what they are called, singular or plural */
+                            __( '%1$s %2$s updated successfully.', 'arraypress' ),
+                            number_format_i18n( $count ),
+                            1 === $count ? $singular : $plural
                     );
 
                     printf(
@@ -1822,21 +1851,18 @@ class Manager {
 
             if ( is_array( $bulk_config ) && isset( $bulk_config['notice'] ) ) {
                 // Get count from redirect args
-                $count = absint( $_GET['updated'] ?? $_GET['deleted'] ?? 0 );
+                $count = Request::has( 'updated' ) ? Request::count( 'updated' ) : Request::count( 'deleted' );
                 self::render_action_notice( $bulk_config['notice'], $count );
-            } elseif ( isset( $_GET['updated'] ) || isset( $_GET['deleted'] ) ) {
+            } elseif ( Request::has( 'updated' ) || Request::has( 'deleted' ) ) {
                 // Fallback to generic notice for bulk actions without custom notice
-                $count = absint( $_GET['updated'] ?? $_GET['deleted'] ?? 0 );
+                $count = Request::has( 'updated' ) ? Request::count( 'updated' ) : Request::count( 'deleted' );
 
                 if ( $count > 0 ) {
                     $message = sprintf(
-                            _n(
-                                    '%s ' . $singular . ' updated successfully.',
-                                    '%s ' . $plural . ' updated successfully.',
-                                    $count,
-                                    'arraypress'
-                            ),
-                            number_format_i18n( $count )
+                            /* translators: 1: number of items, 2: what they are called, singular or plural */
+                            __( '%1$s %2$s updated successfully.', 'arraypress' ),
+                            number_format_i18n( $count ),
+                            1 === $count ? $singular : $plural
                     );
 
                     printf(
@@ -1848,8 +1874,8 @@ class Manager {
         }
 
         // Error notice (always show, not action-specific)
-        if ( isset( $_GET['error'] ) && $_GET['error'] !== 'action_failed' || ( isset( $_GET['error'] ) && empty( $row_action ) ) ) {
-            $error = sanitize_text_field( $_GET['error'] );
+        if ( ( Request::has( 'error' ) && Request::text( 'error' ) !== 'action_failed' ) || ( Request::has( 'error' ) && empty( $row_action ) ) ) {
+            $error = Request::text( 'error' );
 
             if ( ! empty( $error ) && $error !== 'action_failed' ) {
                 printf(
@@ -1934,7 +1960,7 @@ class Manager {
     private static function render_action_notice( $notice_config, int $count = 0 ): void {
         // Callable format — let the callback determine the notice
         if ( is_callable( $notice_config ) ) {
-            $notice = call_user_func( $notice_config, $_GET );
+            $notice = call_user_func( $notice_config, Request::all() );
             if ( is_array( $notice ) && ! empty( $notice['message'] ) ) {
                 $type = $notice['type'] ?? 'success';
                 printf(
@@ -1953,7 +1979,7 @@ class Manager {
         }
 
         // Determine success or error based on URL params
-        $is_error = isset( $_GET['error'] ) || ( isset( $_GET['updated'] ) && absint( $_GET['updated'] ) === 0 );
+        $is_error = Request::has( 'error' ) || ( Request::has( 'updated' ) && 0 === Request::count( 'updated' ) );
 
         if ( $is_error && ! empty( $notice_config['error'] ) ) {
             printf(
@@ -1995,20 +2021,20 @@ class Manager {
         $url = add_query_arg( 'page', $config['menu_slug'], admin_url( 'admin.php' ) );
 
         // Preserve status filter
-        if ( ! empty( $_GET['status'] ) ) {
-            $url = add_query_arg( 'status', sanitize_key( $_GET['status'] ), $url );
+        if ( Request::filled( 'status' ) ) {
+            $url = add_query_arg( 'status', Request::key( 'status' ), $url );
         }
 
         // Preserve search
-        if ( ! empty( $_GET['s'] ) ) {
-            $url = add_query_arg( 's', sanitize_text_field( $_GET['s'] ), $url );
+        if ( Request::filled( 's' ) ) {
+            $url = add_query_arg( 's', Request::text( 's' ), $url );
         }
 
         // Preserve custom filters
         if ( ! empty( $config['filters'] ) ) {
             foreach ( $config['filters'] as $filter_key => $filter ) {
-                if ( ! empty( $_GET[ $filter_key ] ) ) {
-                    $url = add_query_arg( $filter_key, sanitize_text_field( $_GET[ $filter_key ] ), $url );
+                if ( Request::filled( $filter_key ) ) {
+                    $url = add_query_arg( $filter_key, Request::text( $filter_key ), $url );
                 }
             }
         }
@@ -2036,7 +2062,7 @@ class Manager {
      *
      */
     public static function add_body_class( string $classes ): string {
-        $page = $_GET['page'] ?? '';
+        $page = Request::text( 'page' );
 
         if ( empty( $page ) ) {
             return $classes;

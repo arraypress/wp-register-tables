@@ -851,8 +851,9 @@ class Columns {
 					esc_html__( 'and', 'arraypress' ),
 					esc_html( number_format_i18n( $rest ) ),
 					esc_html( sprintf(
-						_n( 'other %s', 'other %s', $rest, 'arraypress' ),
-						$rest === 1 ? $singular : $plural
+						/* translators: %s: what the remaining items are called, singular or plural */
+						__( 'other %s', 'arraypress' ),
+						1 === $rest ? $singular : $plural
 					) )
 				);
 			}
@@ -1048,19 +1049,19 @@ class Columns {
 	 * Iterates through method names and returns the result of the
 	 * first one that exists and returns a non-empty value.
 	 *
-	 * @param object   $object  Object to check.
+	 * @param object   $subject Object to check.
 	 * @param string[] $methods Method names to try in order.
 	 *
 	 * @return string|null First non-empty result or null.
 	 */
-	private static function resolve_method( $object, array $methods ): ?string {
-		if ( ! is_object( $object ) ) {
+	private static function resolve_method( $subject, array $methods ): ?string {
+		if ( ! is_object( $subject ) ) {
 			return null;
 		}
 
 		foreach ( $methods as $method ) {
-			if ( method_exists( $object, $method ) ) {
-				$result = $object->$method();
+			if ( method_exists( $subject, $method ) ) {
+				$result = $subject->$method();
 
 				if ( ! empty( $result ) ) {
 					return (string) $result;

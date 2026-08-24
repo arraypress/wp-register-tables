@@ -152,7 +152,7 @@ class Table extends WP_List_Table {
         $this->config = $config;
 
         // Get current status from URL
-        $this->status = sanitize_key( $_GET['status'] ?? '' );
+        $this->status = Request::key( 'status' );
 
         // Get per page from screen options or use config default
         $this->per_page = $this->get_items_per_page( 'per_page', $config['per_page'] );
@@ -410,11 +410,11 @@ class Table extends WP_List_Table {
 
         // Process custom filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( ! isset( $_GET[ $filter_key ] ) ) {
+            if ( ! Request::has( $filter_key ) ) {
                 continue;
             }
 
-            $value = sanitize_text_field( $_GET[ $filter_key ] );
+            $value = Request::text( $filter_key );
 
             if ( empty( $value ) ) {
                 continue;
@@ -1217,7 +1217,7 @@ class Table extends WP_List_Table {
             $any_active = $has_query_args;
             if ( ! $any_active ) {
                 foreach ( $this->config['filters'] as $key => $filter ) {
-                    if ( ! empty( $_GET[ $key ] ) ) {
+                    if ( Request::filled( $key ) ) {
                         $any_active = true;
                         break;
                     }
@@ -1252,16 +1252,15 @@ class Table extends WP_List_Table {
     private function render_filter( string $key, $filter ): void {
         $options = [];
         $label   = '';
-        $current = sanitize_text_field( $_GET[ $key ] ?? '' );
+        $current = Request::text( $key );
 
         if ( is_array( $filter ) ) {
             $label = $filter['label'] ?? '';
 
-            // Static options
+            // Options are either listed outright or produced by a callback.
             if ( isset( $filter['options'] ) && is_array( $filter['options'] ) ) {
                 $options = $filter['options'];
-            } // Dynamic options from callback
-            elseif ( isset( $filter['options_callback'] ) && is_callable( $filter['options_callback'] ) ) {
+            } elseif ( isset( $filter['options_callback'] ) && is_callable( $filter['options_callback'] ) ) {
                 $options = call_user_func( $filter['options_callback'] );
             }
         }
@@ -1362,7 +1361,7 @@ class Table extends WP_List_Table {
     private function has_active_filters(): bool {
         // Check dropdown filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( isset( $_GET[ $filter_key ] ) && $_GET[ $filter_key ] !== '' ) {
+            if ( Request::filled( $filter_key ) ) {
                 return true;
             }
         }
@@ -1399,11 +1398,11 @@ class Table extends WP_List_Table {
 
         // Process custom filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( ! isset( $_GET[ $filter_key ] ) ) {
+            if ( ! Request::has( $filter_key ) ) {
                 continue;
             }
 
-            $value = sanitize_text_field( $_GET[ $filter_key ] );
+            $value = Request::text( $filter_key );
 
             if ( $value === '' ) {
                 continue;
@@ -1587,9 +1586,11 @@ class Table extends WP_List_Table {
      * @since 2.0.0
      */
     private function render_empty_state_button( $button_config, string $label ): void {
-        // Callable — full control
+        // Callable — full control. Through kses rather than printed raw: it
+        // is markup this library did not build, and whatever a filter put
+        // into it comes out here.
         if ( is_callable( $button_config ) ) {
-            echo call_user_func( $button_config );
+            echo wp_kses_post( call_user_func( $button_config ) );
 
             return;
         }
@@ -1732,11 +1733,11 @@ class Table extends WP_List_Table {
      *
      */
     private function parse_pagination_args(): array {
-        $paged  = absint( $_REQUEST['paged'] ?? 1 );
+        $paged  = max( 1, Request::count( 'paged', 1 ) );
         $offset = $paged > 1 ? $this->per_page * ( $paged - 1 ) : 0;
 
-        $orderby = sanitize_key( $_GET['orderby'] ?? $this->config['orderby'] );
-        $order   = strtoupper( sanitize_key( $_GET['order'] ?? $this->config['order'] ) );
+        $orderby = Request::key( 'orderby', (string) $this->config['orderby'] );
+        $order   = strtoupper( Request::key( 'order', (string) $this->config['order'] ) );
 
         if ( ! in_array( $order, [ 'ASC', 'DESC' ], true ) ) {
             $order = 'DESC';
@@ -1764,7 +1765,8 @@ class Table extends WP_List_Table {
      *
      */
     private function get_search(): string {
-        return sanitize_text_field( $_REQUEST['s'] ?? '' );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- a search term is a view, not an action.
+        return Request::text( 's' );
     }
 
     /**
@@ -1781,20 +1783,20 @@ class Table extends WP_List_Table {
         $url = add_query_arg( 'page', $this->config['menu_slug'], admin_url( 'admin.php' ) );
 
         // Preserve status
-        if ( ! empty( $_GET['status'] ) ) {
-            $url = add_query_arg( 'status', sanitize_key( $_GET['status'] ), $url );
+        if ( Request::filled( 'status' ) ) {
+            $url = add_query_arg( 'status', Request::key( 'status' ), $url );
         }
 
         // Preserve search
-        if ( ! empty( $_GET['s'] ) ) {
-            $url = add_query_arg( 's', sanitize_text_field( $_GET['s'] ), $url );
+        if ( Request::filled( 's' ) ) {
+            $url = add_query_arg( 's', Request::text( 's' ), $url );
         }
 
         // Preserve dropdown filters
         if ( ! empty( $this->config['filters'] ) ) {
             foreach ( $this->config['filters'] as $filter_key => $filter ) {
-                if ( ! empty( $_GET[ $filter_key ] ) ) {
-                    $url = add_query_arg( $filter_key, sanitize_text_field( $_GET[ $filter_key ] ), $url );
+                if ( Request::filled( $filter_key ) ) {
+                    $url = add_query_arg( $filter_key, Request::text( $filter_key ), $url );
                 }
             }
         }
@@ -1803,8 +1805,8 @@ class Table extends WP_List_Table {
         foreach ( $this->config['query_args'] as $key => $value ) {
             $arg_key = is_numeric( $key ) ? $value : $key;
 
-            if ( ! empty( $_GET[ $arg_key ] ) ) {
-                $url = add_query_arg( $arg_key, sanitize_text_field( $_GET[ $arg_key ] ), $url );
+            if ( Request::filled( $arg_key ) ) {
+                $url = add_query_arg( $arg_key, Request::text( $arg_key ), $url );
             }
         }
 
@@ -1873,8 +1875,11 @@ class Table extends WP_List_Table {
                 $sanitizer = is_callable( $value ) ? $value : 'sanitize_key';
             }
 
-            if ( isset( $_GET[ $arg_key ] ) && $_GET[ $arg_key ] !== '' ) {
-                $args[ $arg_key ] = call_user_func( $sanitizer, $_GET[ $arg_key ] );
+            if ( Request::filled( $arg_key ) ) {
+                // Unslashed before the consumer's sanitizer sees it: it is
+                // theirs to validate, not to remember WordPress's slashing.
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $sanitizer is the sanitizer.
+                $args[ $arg_key ] = call_user_func( $sanitizer, Request::text( $arg_key ) );
             }
         }
 
@@ -1896,7 +1901,7 @@ class Table extends WP_List_Table {
         foreach ( $this->config['query_args'] as $key => $value ) {
             $arg_key = is_numeric( $key ) ? $value : $key;
 
-            if ( isset( $_GET[ $arg_key ] ) && $_GET[ $arg_key ] !== '' ) {
+            if ( Request::filled( $arg_key ) ) {
                 return true;
             }
         }
