@@ -1,0 +1,54 @@
+/* ==========================================================================
+   WP Status Badge
+   ========================================================================== */
+
+.wp-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 500;
+    border-radius: 4px;
+    background: #ececec;
+    color: #50575e;
+}
+
+.wp-status-badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    opacity: 0.85;
+}
+
+/* Success (green) */
+.wp-status-badge--success {
+    background: #e5f5f0;
+    color: #017d5c;
+}
+
+/* Warning (amber) */
+.wp-status-badge--warning {
+    background: #f5f2e5;
+    color: #996800;
+}
+
+/* Danger (red) */
+.wp-status-badge--danger {
+    background: #ffd6d6;
+    color: #ac3d3d;
+}
+
+/* Info (blue) */
+.wp-status-badge--info {
+    background: #e5f1f5;
+    color: #016087;
+}
+
+/* Default (grey) */
+.wp-status-badge--default {
+    background: #ececec;
+    color: #50575e;
+}

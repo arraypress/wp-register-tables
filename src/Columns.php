@@ -354,7 +354,7 @@ class Columns {
 	 */
 	public static function render_empty(): string {
 		return '<span aria-hidden="true">—</span><span class="screen-reader-text">' .
-		       esc_html__( 'Unknown', 'arraypress' ) . '</span>';
+				esc_html__( 'Unknown', 'arraypress' ) . '</span>';
 	}
 
 	/**
@@ -551,7 +551,7 @@ class Columns {
 		// Resolve currency: config override, then item methods, then default
 		$currency = $config['currency']
 		            ?? self::resolve_method( $item, [ 'get_currency', 'get_currency_code' ] )
-		               ?? 'USD';
+						?? 'USD';
 
 		$formatted = Currency::format( intval( $value ), $currency );
 
@@ -605,7 +605,7 @@ class Columns {
 		// Resolve currency
 		$currency = $config['currency']
 		            ?? self::resolve_method( $item, [ 'get_currency', 'get_currency_code' ] )
-		               ?? 'USD';
+						?? 'USD';
 
 		// Resolve interval
 		$interval = $config['interval']
@@ -766,7 +766,7 @@ class Columns {
 			$output = '<span class="unlimited">∞</span>';
 		} elseif ( $count === 0 ) {
 			$output = '<span aria-hidden="true">—</span><span class="screen-reader-text">' .
-			          esc_html__( 'None', 'arraypress' ) . '</span>';
+						esc_html__( 'None', 'arraypress' ) . '</span>';
 		} else {
 			$output = number_format_i18n( $count );
 		}
@@ -1422,5 +1422,4 @@ class Columns {
 		 */
 		return apply_filters( 'arraypress_column_format_file_size', $output, $value, $item, $column_name, $config );
 	}
-
 }

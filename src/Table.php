@@ -159,9 +159,9 @@ class Table extends WP_List_Table {
 
         // Initialize parent WP_List_Table
         parent::__construct( [
-                'singular' => $config['labels']['singular'] ?? 'item',
-                'plural'   => $config['labels']['plural'] ?? 'items',
-                'ajax'     => false
+			'singular' => $config['labels']['singular'] ?? 'item',
+			'plural'   => $config['labels']['plural'] ?? 'items',
+			'ajax'     => false,
         ] );
     }
 
@@ -680,8 +680,8 @@ class Table extends WP_List_Table {
         // Use the flyout library's link function if available
         if ( function_exists( 'get_flyout_link' ) ) {
             $link = \get_flyout_link( $flyout_id, [
-                    'id'   => $item_id,
-                    'text' => $title,
+				'id'   => $item_id,
+				'text' => $title,
             ] );
 
             if ( ! empty( $link ) ) {
@@ -722,8 +722,8 @@ class Table extends WP_List_Table {
 
             if ( $filter_id ) {
                 $config['_filter_url'] = add_query_arg( [
-                        'page'      => $this->config['menu_slug'],
-                        $filter_key => $filter_id,
+					'page'      => $this->config['menu_slug'],
+					$filter_key => $filter_id,
                 ], admin_url( 'admin.php' ) );
             }
         }
@@ -893,8 +893,8 @@ class Table extends WP_List_Table {
         if ( isset( $action['flyout'] ) && $action['flyout'] === true && ! empty( $this->config['flyouts']['edit'] ) ) {
             if ( function_exists( 'get_flyout_link' ) ) {
                 return \get_flyout_link( $this->config['flyouts']['edit'], [
-                        'id'   => $item_id,
-                        'text' => $action['label'] ?? ucfirst( $key ),
+					'id'   => $item_id,
+					'text' => $action['label'] ?? ucfirst( $key ),
                 ] );
             }
 
@@ -910,8 +910,8 @@ class Table extends WP_List_Table {
             $url = wp_nonce_url(
                     add_query_arg(
                             [
-                                    'action' => $key,
-                                    'item'   => $item_id,
+								'action' => $key,
+								'item'   => $item_id,
                             ],
                             $this->get_current_url()
                     ),
@@ -1025,8 +1025,8 @@ class Table extends WP_List_Table {
         $delete_url = wp_nonce_url(
                 add_query_arg(
                         [
-                                'action' => 'delete',
-                                'item'   => $item_id,
+							'action' => 'delete',
+							'item'   => $item_id,
                         ],
                         $this->get_current_url()
                 ),
@@ -1300,10 +1300,10 @@ class Table extends WP_List_Table {
     public function prepare_items(): void {
         // Set up column headers
         $this->_column_headers = [
-                $this->get_columns(),
-                $this->get_hidden_columns(),
-                $this->get_sortable_columns(),
-                $this->get_primary_column_name()
+			$this->get_columns(),
+			$this->get_hidden_columns(),
+			$this->get_sortable_columns(),
+			$this->get_primary_column_name(),
         ];
 
         // Fetch counts (for status views) and items
@@ -1315,9 +1315,9 @@ class Table extends WP_List_Table {
 
         // Set pagination
         $this->set_pagination_args( [
-                'total_items' => $total,
-                'per_page'    => $this->per_page,
-                'total_pages' => ceil( $total / $this->per_page )
+			'total_items' => $total,
+			'per_page'    => $this->per_page,
+			'total_pages' => ceil( $total / $this->per_page ),
         ] );
     }
 
@@ -1608,9 +1608,9 @@ class Table extends WP_List_Table {
         // String — assume flyout ID
         if ( is_string( $button_config ) && function_exists( 'render_flyout_button' ) ) {
             \render_flyout_button( $button_config, [
-                    'text'  => $label,
-                    'class' => 'button button-primary',
-                    'icon'  => 'plus-alt',
+				'text'  => $label,
+				'class' => 'button button-primary',
+				'icon'  => 'plus-alt',
             ] );
         }
     }
@@ -1747,10 +1747,10 @@ class Table extends WP_List_Table {
         }
 
         return [
-                'number'  => $this->per_page,
-                'offset'  => $offset,
-                'order'   => $order,
-                'orderby' => $orderby
+			'number'  => $this->per_page,
+			'offset'  => $offset,
+			'order'   => $order,
+			'orderby' => $orderby,
         ];
     }
 
@@ -1833,7 +1833,7 @@ class Table extends WP_List_Table {
 
         // Try the search callback first
         if ( isset( $this->config['callbacks']['search_callback'] )
-             && is_callable( $this->config['callbacks']['search_callback'] ) ) {
+            && is_callable( $this->config['callbacks']['search_callback'] ) ) {
             $resolved = call_user_func( $this->config['callbacks']['search_callback'], $search );
 
             if ( ! empty( $resolved ) && is_array( $resolved ) ) {
@@ -1903,5 +1903,4 @@ class Table extends WP_List_Table {
 
         return false;
     }
-
 }

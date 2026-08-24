@@ -355,13 +355,13 @@ class Manager {
      */
     private static function parse_labels( array $labels ): array {
         return wp_parse_args( $labels, [
-                'singular'         => '',
-                'plural'           => '',
-                'title'            => '',
-                'add_new'          => '',
-                'search'           => '',
-                'not_found'        => '',
-                'not_found_search' => '',
+			'singular'         => '',
+			'plural'           => '',
+			'title'            => '',
+			'add_new'          => '',
+			'search'           => '',
+			'not_found'        => '',
+			'not_found_search' => '',
         ] );
     }
 
@@ -376,10 +376,10 @@ class Manager {
      */
     private static function parse_callbacks( array $callbacks ): array {
         return wp_parse_args( $callbacks, [
-                'get_items'  => null,
-                'get_counts' => null,
-                'delete'     => null,
-                'update'     => null,
+			'get_items'  => null,
+			'get_counts' => null,
+			'delete'     => null,
+			'update'     => null,
         ] );
     }
 
@@ -399,10 +399,10 @@ class Manager {
      */
     private static function parse_capabilities( string $capability, array $capabilities ): array {
         $defaults = [
-                'view'   => $capability,
-                'edit'   => $capability,
-                'delete' => $capability,
-                'bulk'   => $capability,
+			'view'   => $capability,
+			'edit'   => $capability,
+			'delete' => $capability,
+			'bulk'   => $capability,
         ];
 
         return wp_parse_args( $capabilities, $defaults );
@@ -419,8 +419,8 @@ class Manager {
      */
     private static function parse_flyouts( array $flyouts ): array {
         return wp_parse_args( $flyouts, [
-                'edit' => '',
-                'view' => '',
+			'edit' => '',
+			'view' => '',
         ] );
     }
 
@@ -867,9 +867,9 @@ class Manager {
 
         // Add per page screen option
         $screen->add_option( 'per_page', [
-                'label'   => __( 'Number of items per page:', 'arraypress' ),
-                'default' => $config['per_page'],
-                'option'  => $option_name,
+			'label'   => __( 'Number of items per page:', 'arraypress' ),
+			'default' => $config['per_page'],
+			'option'  => $option_name,
         ] );
 
         // Add column visibility options
@@ -947,9 +947,9 @@ class Manager {
             }
 
             $screen->add_help_tab( [
-                    'id'      => sanitize_key( $key ),
-                    'title'   => $tab['title'],
-                    'content' => $content,
+				'id'      => sanitize_key( $key ),
+				'title'   => $tab['title'],
+				'content' => $content,
             ] );
         }
     }
@@ -1029,7 +1029,7 @@ class Manager {
         }
 
         $clean_args = [
-                'page' => $config['menu_slug'],
+			'page' => $config['menu_slug'],
         ];
 
         // Preserve search
@@ -1130,11 +1130,11 @@ class Manager {
      *
      */
     private static function handle_custom_action(
-            string $id,
-            array $config,
-            string $action,
-            array $action_config,
-            int $item_id
+        string $id,
+        array $config,
+        string $action,
+        array $action_config,
+        int $item_id
     ): void {
         $singular = $config['labels']['singular'] ?? 'item';
 
@@ -1277,7 +1277,7 @@ class Manager {
 
         // Verify nonce
         if ( ! isset( $_REQUEST['_wpnonce'] ) ||
-             ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-' . $plural ) ) {
+            ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-' . $plural ) ) {
             return;
         }
 
@@ -1641,9 +1641,9 @@ class Manager {
         // String — assume flyout ID
         if ( is_string( $add_button ) && function_exists( 'render_flyout_button' ) ) {
             \render_flyout_button( $add_button, [
-                    'text'  => $config['labels']['add_new'],
-                    'class' => 'page-title-action',
-                    'icon'  => 'plus-alt',
+				'text'  => $config['labels']['add_new'],
+				'class' => 'page-title-action',
+				'icon'  => 'plus-alt',
             ] );
         }
     }
@@ -2140,5 +2140,4 @@ class Manager {
     public static function get_hook_suffix( string $id ): ?string {
         return self::$hook_suffixes[ $id ] ?? null;
     }
-
 }
