@@ -1591,6 +1591,11 @@ class Manager {
 					'title'         => $header_title,
 					'logo'          => (string) ( $config['logo'] ?? '' ),
 					'logo_position' => (string) ( $config['logo_position'] ?? 'beside' ),
+
+					// A list table's heading and its Add button sit side by side at
+					// the left, as core's own do and as EDD's do. Centred is the
+					// settings-page shape and looks wrong with a list under it.
+					'align'         => (string) ( $config['align'] ?? 'left' ),
 					'badge'         => self::header_badge( $config, $total_count ),
 					'actions'       => $actions,
                 ]
@@ -2103,6 +2108,13 @@ class Manager {
             if ( $config['menu_slug'] === $page ) {
                 // Add generic table class
                 $classes .= ' admin-table';
+
+                // The header is core's privacy-settings header, which only
+                // spans the screen once #wpcontent's left padding is removed
+                // — and core removes it with a body class rather than on the
+                // header itself. The name comes from the kit, so the rule and
+                // the class cannot drift apart.
+                $classes .= ' ' . PageHeader::body_class();
 
                 // Add table-specific class
                 $classes .= ' admin-table-' . sanitize_html_class( $id );
