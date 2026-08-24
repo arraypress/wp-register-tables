@@ -380,20 +380,7 @@ class Columns {
 	public static function format_email( $value, $item, string $column_name, array $config = [] ): string {
 		$email = (string) $value;
 
-		$output = sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
-
-		/**
-		 * Filter the formatted email column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw email address.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_email', $output, $value, $item, $column_name, $config );
+		return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
 	}
 
 	/**
@@ -415,24 +402,11 @@ class Columns {
 		$phone = (string) $value;
 		$tel   = preg_replace( '/[^\d+]/', '', $phone );
 
-		$output = sprintf(
+		return sprintf(
 			'<a href="tel:%s">%s</a>',
 			esc_attr( $tel ),
 			esc_html( $phone )
 		);
-
-		/**
-		 * Filter the formatted phone column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw phone number.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_phone', $output, $value, $item, $column_name, $config );
 	}
 
 	/**
@@ -451,20 +425,7 @@ class Columns {
 	 * @since 1.0.0
 	 */
 	public static function format_country( $value, $item, string $column_name, array $config = [] ): string {
-		$output = Countries::render( (string) $value ) ?? self::render_empty();
-
-		/**
-		 * Filter the formatted country column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw country code.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_country', $output, $value, $item, $column_name, $config );
+		return Countries::render( (string) $value ) ?? self::render_empty();
 	}
 
 	/**
@@ -483,20 +444,7 @@ class Columns {
 	 * @since 1.0.0
 	 */
 	public static function format_date( $value, $item, string $column_name, array $config = [] ): string {
-		$output = Dates::render_date( $value ) ?? self::render_empty();
-
-		/**
-		 * Filter the formatted date column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw date value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_date', $output, $value, $item, $column_name, $config );
+		return Dates::render_date( $value ) ?? self::render_empty();
 	}
 
 	/**
@@ -514,20 +462,7 @@ class Columns {
 	 * @since 1.0.0
 	 */
 	public static function format_duration( $value, $item, string $column_name, array $config = [] ): string {
-		$output = Dates::render_duration( $value ) ?? self::render_empty();
-
-		/**
-		 * Filter the formatted duration column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw duration value in seconds.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_duration', $output, $value, $item, $column_name, $config );
+		return Dates::render_duration( $value ) ?? self::render_empty();
 	}
 
 	/**
@@ -563,21 +498,7 @@ class Columns {
 
 		$formatted = Currency::format( intval( $value ), $currency );
 
-		$output = sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
-
-		/**
-		 * Filter the formatted price column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw amount in smallest currency unit.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 * @param string $currency    Resolved currency code.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_price', $output, $value, $item, $column_name, $config, $currency );
+		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
 	/**
@@ -633,23 +554,7 @@ class Columns {
 			$interval_count
 		);
 
-		$output = sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
-
-		/**
-		 * Filter the formatted Stripe price column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw amount in smallest currency unit.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 * @param string $currency    Resolved currency code.
-		 * @param string|null $interval       Resolved billing interval.
-		 * @param int    $interval_count Resolved interval count.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_stripe_price', $output, $value, $item, $column_name, $config, $currency, $interval, $interval_count );
+		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
 	/**
@@ -668,20 +573,7 @@ class Columns {
 	 * @since 1.0.0
 	 */
 	public static function format_rate( $value, $item, string $column_name, array $config = [] ): string {
-		$output = Rate::render( $value, $item, $column_name ) ?? self::render_empty();
-
-		/**
-		 * Filter the formatted rate column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw rate value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_rate', $output, $value, $item, $column_name, $config );
+		return Rate::render( $value, $item, $column_name ) ?? self::render_empty();
 	}
 
 	/**
@@ -700,20 +592,7 @@ class Columns {
 	 * @since 1.0.0
 	 */
 	public static function format_percentage( $value, $item, string $column_name, array $config = [] ): string {
-		$output = Rate::render_percentage( $value ) ?? self::render_empty();
-
-		/**
-		 * Filter the formatted percentage column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw percentage value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_percentage', $output, $value, $item, $column_name, $config );
+		return Rate::render_percentage( $value ) ?? self::render_empty();
 	}
 
 	/**
@@ -736,20 +615,7 @@ class Columns {
 	public static function format_status( $value, $item, string $column_name, array $config = [] ): string {
 		$styles = $config['styles'] ?? [];
 
-		$output = self::get_badge( $styles )->render( (string) $value );
-
-		/**
-		 * Filter the formatted status column output
-		 *
-		 * @param string $output      Formatted badge HTML.
-		 * @param mixed  $value       Raw status value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_status', $output, $value, $item, $column_name, $config );
+		return self::get_badge( $styles )->render( (string) $value );
 	}
 
 	/**
@@ -779,18 +645,7 @@ class Columns {
 			$output = number_format_i18n( $count );
 		}
 
-		/**
-		 * Filter the formatted count column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw count value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_count', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -869,18 +724,7 @@ class Columns {
 			return self::render_empty();
 		}
 
-		/**
-		 * Filter the formatted items column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw value (array or numeric).
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_items', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -929,18 +773,7 @@ class Columns {
 			$name_html
 		);
 
-		/**
-		 * Filter the formatted user column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw user ID.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_user', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -1030,25 +863,12 @@ class Columns {
 			);
 		}
 
-		$output = sprintf(
+		return sprintf(
 			'<span class="column-customer">%s<span class="column-customer-detail">%s%s</span></span>',
 			$avatar_html,
 			$name_html,
 			$email_html
 		);
-
-		/**
-		 * Filter the formatted customer column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw value (object or ID).
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_customer', $output, $value, $item, $column_name, $config );
 	}
 
 	/**
@@ -1144,20 +964,7 @@ class Columns {
 			return self::render_empty();
 		}
 
-		$output = sprintf( '<span class="column-taxonomy">%s</span>', implode( ', ', $terms ) );
-
-		/**
-		 * Filter the formatted taxonomy column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw term data.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_taxonomy', $output, $value, $item, $column_name, $config );
+		return sprintf( '<span class="column-taxonomy">%s</span>', implode( ', ', $terms ) );
 	}
 
 	/**
@@ -1179,24 +986,11 @@ class Columns {
 		$url         = (string) $value;
 		$display_url = wp_parse_url( $url, PHP_URL_HOST ) ?: $url;
 
-		$output = sprintf(
+		return sprintf(
 			'<a href="%s" target="_blank">%s</a>',
 			esc_url( $url ),
 			esc_html( $display_url )
 		);
-
-		/**
-		 * Filter the formatted URL column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw URL.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_url', $output, $value, $item, $column_name, $config );
 	}
 
 	/**
@@ -1244,18 +1038,7 @@ class Columns {
 			);
 		}
 
-		/**
-		 * Filter the formatted image column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw value (attachment ID or URL).
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_image', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -1286,18 +1069,7 @@ class Columns {
 			esc_html( $color )
 		);
 
-		/**
-		 * Filter the formatted color column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw color value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_color', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -1337,18 +1109,7 @@ class Columns {
 				: '<span class="dashicons dashicons-minus column-boolean-no"></span><span class="screen-reader-text">' . esc_html__( 'No', 'arraypress' ) . '</span>';
 		}
 
-		/**
-		 * Filter the formatted boolean column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw boolean value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_boolean', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -1375,18 +1136,7 @@ class Columns {
 
 		$output = sprintf( '<code class="code">%s</code>', esc_html( $code ) );
 
-		/**
-		 * Filter the formatted code column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw code value.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_code', $output, $value, $item, $column_name, $config );
+		return $output;
 	}
 
 	/**
@@ -1416,19 +1166,6 @@ class Columns {
 
 		$formatted = size_format( (int) $value, $decimals );
 
-		$output = sprintf( '<span class="file-size">%s</span>', esc_html( $formatted ) );
-
-		/**
-		 * Filter the formatted file size column output
-		 *
-		 * @param string $output      Formatted HTML.
-		 * @param mixed  $value       Raw size in bytes.
-		 * @param object $item        Data object.
-		 * @param string $column_name Column name.
-		 * @param array  $config      Column configuration.
-		 *
-		 * @since 1.0.0
-		 */
-		return apply_filters( 'arraypress_column_format_file_size', $output, $value, $item, $column_name, $config );
+		return sprintf( '<span class="file-size">%s</span>', esc_html( $formatted ) );
 	}
 }

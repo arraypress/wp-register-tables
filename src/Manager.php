@@ -102,16 +102,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * ## Action Hooks
  *
- * - `arraypress_before_render_table`          - Before table renders
- * - `arraypress_before_render_table_{$id}`    - Before specific table renders
- * - `arraypress_after_render_table`           - After table renders
- * - `arraypress_after_render_table_{$id}`     - After specific table renders
- * - `arraypress_table_item_deleted`           - After item deleted
- * - `arraypress_table_item_deleted_{$id}`     - After item deleted from specific table
- * - `arraypress_table_bulk_action`            - When bulk action processed
- * - `arraypress_table_bulk_action_{$id}`      - When bulk action processed on specific table
- * - `arraypress_table_bulk_action_{$id}_{$action}` - Specific bulk action on specific table
- * - `arraypress_table_single_action_{$id}`    - Custom single action (when no handler defined)
+ * - `arraypress_before_render_table_{$id}`    - Before the table renders
+ * - `arraypress_after_render_table_{$id}`     - After it renders
+ * - `arraypress_table_item_deleted_{$id}`     - After an item is deleted
+ * - `arraypress_table_bulk_action_{$id}`      - After a bulk action
+ * - `arraypress_table_bulk_action_{$id}_{$action}` - After one particular bulk action
+ * - `arraypress_table_single_action_{$id}`    - A row action with no handler of its own
+ * - `arraypress_table_admin_notices_{$id}`    - Notices above the table
  *
  * ## Filter Hooks
  *
@@ -1239,19 +1236,6 @@ class Manager {
         $result = call_user_func( $config['callbacks']['delete'], $item_id );
 
         /**
-         * Fires after a single item is deleted
-         *
-         * @param int    $item_id Item ID that was deleted.
-         * @param mixed  $result  Result from delete callback.
-         * @param string $id      Table identifier.
-         * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
-         */
-        do_action( 'arraypress_table_item_deleted', $item_id, $result, $id, $config );
-
-        /**
          * Fires after a single item is deleted from a specific table
          *
          * @param int   $item_id Item ID that was deleted.
@@ -1369,18 +1353,6 @@ class Manager {
         }
 
         /**
-         * Fires when a bulk action is processed
-         *
-         * @param array  $items  Selected item IDs.
-         * @param string $action Bulk action key.
-         * @param string $id     Table identifier.
-         *
-         * @since 1.0.0
-         *
-         */
-        do_action( 'arraypress_table_bulk_action', $items, $action, $id );
-
-        /**
          * Fires when a bulk action is processed on a specific table
          *
          * @param array  $items  Selected item IDs.
@@ -1493,16 +1465,6 @@ class Manager {
             <?php self::render_search_results_banner( $config ); ?>
 
             <?php
-            /**
-             * Fires before the table is rendered
-             *
-             * @param string $id     Table identifier.
-             * @param array  $config Table configuration.
-             *
-             * @since 1.0.0
-             *
-             */
-            do_action( 'arraypress_before_render_table', $id, $config );
 
             /**
              * Fires before a specific table is rendered
@@ -1552,16 +1514,6 @@ class Manager {
             </form>
 
             <?php
-            /**
-             * Fires after the table is rendered
-             *
-             * @param string $id     Table identifier.
-             * @param array  $config Table configuration.
-             *
-             * @since 1.0.0
-             *
-             */
-            do_action( 'arraypress_after_render_table', $id, $config );
 
             /**
              * Fires after a specific table is rendered
@@ -1897,21 +1849,6 @@ class Manager {
                 );
             }
         }
-
-        /**
-         * Filter custom admin notices for a table
-         *
-         * @param array  $notices Array of notices. Each notice should have:
-         *                        - 'message' (string) Notice text
-         *                        - 'type' (string) Notice type: success, error, warning, info
-         *                        - 'dismissible' (bool) Whether notice is dismissible (default true)
-         * @param string $id      Table identifier.
-         * @param array  $config  Table configuration.
-         *
-         * @since 1.0.0
-         *
-         */
-        $custom_notices = apply_filters( 'arraypress_table_admin_notices', [], $id, $config );
 
         /**
          * Filter custom admin notices for a specific table

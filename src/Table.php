@@ -65,15 +65,18 @@ use WP_List_Table;
  *
  * ## Filters
  *
- * - `arraypress_table_columns`              - Modify column definitions
- * - `arraypress_table_hidden_columns`       - Modify hidden columns
- * - `arraypress_table_sortable_columns`     - Modify sortable columns
- * - `arraypress_table_query_args`           - Modify query args before fetching items
- * - `arraypress_table_query_args_{$id}`     - Modify query args for specific table
- * - `arraypress_table_row_actions`          - Modify row actions
- * - `arraypress_table_row_actions_{$id}`    - Modify row actions for specific table
- * - `arraypress_table_bulk_actions`         - Modify bulk actions
- * - `arraypress_table_views`                - Modify status views
+ * Every one is scoped by table id. These names are not derived from the
+ * namespace, so a Strauss-prefixed copy fires them unchanged — which is what
+ * makes them reachable, and what made the unscoped ones shared between every
+ * plugin on the site that bundles this library.
+ *
+ * - `arraypress_table_columns_{$id}`          - Modify column definitions
+ * - `arraypress_table_hidden_columns_{$id}`   - Modify hidden columns
+ * - `arraypress_table_sortable_columns_{$id}` - Modify sortable columns
+ * - `arraypress_table_query_args_{$id}`       - Modify query args before fetching items
+ * - `arraypress_table_row_actions_{$id}`      - Modify row actions
+ * - `arraypress_table_bulk_actions_{$id}`     - Modify bulk actions
+ * - `arraypress_table_views_{$id}`            - Modify status views
  *
  * @since 1.0.0
  */
@@ -201,13 +204,12 @@ class Table extends WP_List_Table {
          * Filter the table columns
          *
          * @param array  $columns Column definitions.
-         * @param string $id      Table identifier.
          * @param array  $config  Table configuration.
          *
          * @since 1.0.0
          *
          */
-        return apply_filters( 'arraypress_table_columns', $columns, $this->id, $this->config );
+        return apply_filters( "arraypress_table_columns_{$this->id}", $columns, $this->config );
     }
 
     /**
@@ -237,13 +239,12 @@ class Table extends WP_List_Table {
          * Filter the hidden columns
          *
          * @param array  $hidden Hidden column keys.
-         * @param string $id     Table identifier.
          * @param array  $config Table configuration.
          *
          * @since 1.0.0
          *
          */
-        return apply_filters( 'arraypress_table_hidden_columns', $hidden, $this->id, $this->config );
+        return apply_filters( "arraypress_table_hidden_columns_{$this->id}", $hidden, $this->config );
     }
 
     /**
@@ -275,13 +276,12 @@ class Table extends WP_List_Table {
          * Filter the sortable columns
          *
          * @param array  $sortable Sortable column definitions.
-         * @param string $id       Table identifier.
          * @param array  $config   Table configuration.
          *
          * @since 1.0.0
          *
          */
-        return apply_filters( 'arraypress_table_sortable_columns', $sortable, $this->id, $this->config );
+        return apply_filters( "arraypress_table_sortable_columns_{$this->id}", $sortable, $this->config );
     }
 
     /**
@@ -431,18 +431,6 @@ class Table extends WP_List_Table {
 
         // Pass through whitelisted query args from URL
         $args = $this->apply_query_args( $args );
-
-        /**
-         * Filter the query arguments before fetching items
-         *
-         * @param array  $args   Query arguments.
-         * @param string $id     Table identifier.
-         * @param array  $config Table configuration.
-         *
-         * @since 1.0.0
-         *
-         */
-        $args = apply_filters( 'arraypress_table_query_args', $args, $this->id, $this->config );
 
         /**
          * Filter query arguments for a specific table
@@ -794,18 +782,6 @@ class Table extends WP_List_Table {
         }
 
         /**
-         * Filter row actions
-         *
-         * @param array  $actions Row action links.
-         * @param object $item    Data object.
-         * @param string $id      Table identifier.
-         *
-         * @since 1.0.0
-         *
-         */
-        $actions = apply_filters( 'arraypress_table_row_actions', $actions, $item, $this->id );
-
-        /**
          * Filter row actions for a specific table
          *
          * @param array  $actions Row action links.
@@ -1084,12 +1060,11 @@ class Table extends WP_List_Table {
          * Filter bulk actions
          *
          * @param array  $actions Bulk action options.
-         * @param string $id      Table identifier.
          *
          * @since 1.0.0
          *
          */
-        return apply_filters( 'arraypress_table_bulk_actions', $actions, $this->id );
+        return apply_filters( "arraypress_table_bulk_actions_{$this->id}", $actions, $this->config );
     }
 
     /**
@@ -1162,13 +1137,12 @@ class Table extends WP_List_Table {
          * Filter the status views
          *
          * @param array  $views  View links.
-         * @param string $id     Table identifier.
          * @param string $status Current status filter.
          *
          * @since 1.0.0
          *
          */
-        return apply_filters( 'arraypress_table_views', $views, $this->id, $this->status );
+        return apply_filters( "arraypress_table_views_{$this->id}", $views, $this->status );
     }
 
     /* =========================================================================

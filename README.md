@@ -790,58 +790,78 @@ Admin table pages automatically receive CSS body classes for targeted styling:
 
 ## Hooks
 
+Every one is scoped by table id, and that is deliberate. These names are not
+derived from the namespace, so a Strauss-prefixed copy fires them unchanged —
+which makes them reachable by a third party, and makes an unscoped one shared
+between every plugin on the site that bundles this library. A filter meant for
+one plugin's orders table would have applied to another's.
+
+`{table_id}` is the first argument you passed to `register_admin_table()`.
+
 ### Filters
 
 ```php
-// Modify column definitions
-add_filter( 'arraypress_table_columns', fn( $columns, $id, $config ) => $columns, 10, 3 );
+// Column definitions, hidden columns, and which are sortable
+add_filter( 'arraypress_table_columns_{table_id}', fn( $columns, $config ) => $columns, 10, 2 );
+add_filter( 'arraypress_table_hidden_columns_{table_id}', fn( $hidden, $config ) => $hidden, 10, 2 );
+add_filter( 'arraypress_table_sortable_columns_{table_id}', fn( $sortable, $config ) => $sortable, 10, 2 );
 
-// Modify hidden columns
-add_filter( 'arraypress_table_hidden_columns', fn( $hidden, $id, $config ) => $hidden, 10, 3 );
-
-// Modify sortable columns
-add_filter( 'arraypress_table_sortable_columns', fn( $sortable, $id, $config ) => $sortable, 10, 3 );
-
-// Modify query args before fetching items
-add_filter( 'arraypress_table_query_args', fn( $args, $id, $config ) => $args, 10, 3 );
+// The query arguments, before the items are fetched
 add_filter( 'arraypress_table_query_args_{table_id}', fn( $args, $config ) => $args, 10, 2 );
 
-// Modify row actions
-add_filter( 'arraypress_table_row_actions', fn( $actions, $item, $id ) => $actions, 10, 3 );
+// Row actions and bulk actions
 add_filter( 'arraypress_table_row_actions_{table_id}', fn( $actions, $item ) => $actions, 10, 2 );
+add_filter( 'arraypress_table_bulk_actions_{table_id}', fn( $actions, $config ) => $actions, 10, 2 );
 
-// Modify bulk actions
-add_filter( 'arraypress_table_bulk_actions', fn( $actions, $id ) => $actions, 10, 2 );
+// Status views
+add_filter( 'arraypress_table_views_{table_id}', fn( $views, $status ) => $views, 10, 2 );
 
-// Modify status views
-add_filter( 'arraypress_table_views', fn( $views, $id, $status ) => $views, 10, 3 );
-
-// Custom admin notices
-add_filter( 'arraypress_table_admin_notices', fn( $notices, $id, $config ) => $notices, 10, 3 );
+// Admin notices
 add_filter( 'arraypress_table_admin_notices_{table_id}', fn( $notices, $config ) => $notices, 10, 2 );
 ```
 
 ### Actions
 
 ```php
-// Before/after table renders
-add_action( 'arraypress_before_render_table', fn( $id, $config ) => null, 10, 2 );
-add_action( 'arraypress_before_render_table_{table_id}', fn( $config ) => null, 10, 1 );
-add_action( 'arraypress_after_render_table', fn( $id, $config ) => null, 10, 2 );
-add_action( 'arraypress_after_render_table_{table_id}', fn( $config ) => null, 10, 1 );
+// Around the table
+add_action( 'arraypress_before_render_table_{table_id}', fn( $config ) => null );
+add_action( 'arraypress_after_render_table_{table_id}', fn( $config ) => null );
 
-// Item deleted
-add_action( 'arraypress_table_item_deleted', fn( $item_id, $result, $id, $config ) => null, 10, 4 );
+// After a deletion
 add_action( 'arraypress_table_item_deleted_{table_id}', fn( $item_id, $result, $config ) => null, 10, 3 );
 
-// Bulk action processed
-add_action( 'arraypress_table_bulk_action', fn( $items, $action, $id ) => null, 10, 3 );
+// After a bulk action, and after one particular bulk action
 add_action( 'arraypress_table_bulk_action_{table_id}', fn( $items, $action ) => null, 10, 2 );
-add_action( 'arraypress_table_bulk_action_{table_id}_{action}', fn( $items ) => null, 10, 1 );
+add_action( 'arraypress_table_bulk_action_{table_id}_{action}', fn( $items ) => null );
 
-// Custom single action (only needed if NOT using handler in row_actions config)
+// After a single row action
 add_action( 'arraypress_table_single_action_{table_id}', fn( $action, $item_id, $config ) => null, 10, 3 );
 ```
+
+### Formatting a column
+
+There is no filter for it. A column that wants different formatting says so in
+its own configuration, which is where the rest of its behaviour is:
+
+```php
+'columns' => [
+    // Render the whole cell.
+    'status' => [
+        'label'    => __( 'Status', 'my-plugin' ),
+        'callback' => fn( $item ) => my_status_markup( $item ),
+    ],
+
+    // Or transform the value and let the column format it as usual.
+    'total'  => [
+        'label' => __( 'Total', 'my-plugin' ),
+        'type'  => 'price',
+        'value' => fn( $item ) => $item->total_in_cents,
+    ],
+],
+```
+
+There used to be twenty-one filters — one per column type — doing a third time
+what these two already do, and every one of them was global.
 
 ## Complete Example
 
