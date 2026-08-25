@@ -245,12 +245,26 @@ class Table extends WP_List_Table {
             }
         }
 
-        // Auto-add status class if item has a status method
-        if ( method_exists( $item, 'get_status' ) ) {
-            $status = $item->get_status();
-            if ( ! empty( $status ) ) {
-                $classes .= ' status-' . sanitize_html_class( $status );
-            }
+        // Auto-add a status class when the row has a status to add.
+        //
+        // A row is whatever get_items() returned, and that is very often an
+        // array — $wpdb->get_results() with ARRAY_A, or a plugin that never
+        // had objects. method_exists() takes an object or a class name and
+        // throws a TypeError on anything else, so this used to fatal on the
+        // first row of any table built that way, with a stack trace instead
+        // of a screen.
+        $status = '';
+
+        if ( is_object( $item ) && method_exists( $item, 'get_status' ) ) {
+            $status = (string) $item->get_status();
+        } elseif ( is_object( $item ) && isset( $item->status ) ) {
+            $status = (string) $item->status;
+        } elseif ( is_array( $item ) && isset( $item['status'] ) ) {
+            $status = (string) $item['status'];
+        }
+
+        if ( '' !== $status ) {
+            $classes .= ' status-' . sanitize_html_class( $status );
         }
 
         $classes = trim( $classes );

@@ -334,4 +334,85 @@ final class TableTest extends TestCase {
 
 		$this->assertSame( [], $table->get_data() );
 	}
+	/**
+	 * A row that is an array draws, like a row that is an object.
+	 *
+	 * `get_items()` returns whatever the plugin's query returned, and that is
+	 * very often an array — $wpdb->get_results() with ARRAY_A, or a plugin
+	 * that never had objects for its rows. Drawing one used to call
+	 * method_exists() on it to see whether it had a status, and
+	 * method_exists() takes an object or a class name and throws a TypeError
+	 * on anything else.
+	 *
+	 * So every table built that way fataled on its first row, with a stack
+	 * trace where the list should be, and only tables whose rows happened to
+	 * be objects worked.
+	 *
+	 * @dataProvider rowShapeProvider
+	 *
+	 * @param mixed  $row      One row, in some shape.
+	 * @param string $expected The row class it should get.
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider( 'rowShapeProvider' )]
+	public function test_a_row_draws_whatever_shape_it_is( mixed $row, string $expected ): void {
+		$table = $this->table(
+			[
+				'columns' => [ 'title' => 'Title' ],
+			]
+		);
+
+		ob_start();
+
+		try {
+			$table->single_row( $row );
+		} finally {
+			$html = (string) ob_get_clean();
+		}
+
+		// The cells are the stub's; what this decides is the row's class.
+		if ( '' === $expected ) {
+			$this->assertStringStartsWith( '<tr>', $html );
+
+			return;
+		}
+
+		$this->assertStringContainsString( $expected, $html );
+	}
+
+	/**
+	 * One row per shape a query can hand back.
+	 *
+	 * @return array<string, array{0: mixed, 1: string}>
+	 */
+	public static function rowShapeProvider(): array {
+		return [
+			'an array'                => [ [ 'title' => 'Widget', 'status' => 'complete' ], 'status-complete' ],
+			'an array with no status' => [ [ 'title' => 'Widget' ], '' ],
+			'an object'               => [ (object) [ 'title' => 'Widget', 'status' => 'pending' ], 'status-pending' ],
+			'an object with a method' => [ new RowWithStatus(), 'status-refunded' ],
+		];
+	}
+
+}
+
+/**
+ * A row that answers get_status(), as an ORM's model would.
+ */
+final class RowWithStatus {
+
+	/**
+	 * Its title.
+	 *
+	 * @var string
+	 */
+	public string $title = 'Widget';
+
+	/**
+	 * Its status.
+	 *
+	 * @return string
+	 */
+	public function get_status(): string {
+		return 'refunded';
+	}
 }
