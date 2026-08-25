@@ -228,10 +228,46 @@ if ( ! function_exists( 'site_url' ) ) {
  * rendered, which reaches wp-composer-assets and from there the whole asset
  * API. Stubbed rather than avoided, because "render a status" is exactly
  * what the test is for.
+ *
+ * Written out one at a time rather than generated in a loop. A loop needs the
+ * runtime code interpreter to declare a function from a name, and this file
+ * ships -- Composer installs tests/ alongside src/ unless a .gitattributes
+ * says otherwise, and that construct is the first thing a WordPress security
+ * scanner looks for in a plugin's vendor tree.
  */
-foreach ( [ 'wp_register_style', 'wp_enqueue_style', 'wp_register_script', 'wp_enqueue_script', 'wp_add_inline_style', 'wp_add_inline_script' ] as $rt_asset_fn ) {
-	if ( ! function_exists( $rt_asset_fn ) ) {
-		eval( "function {$rt_asset_fn}() { return true; }" );
+if ( ! function_exists( 'wp_register_style' ) ) {
+	function wp_register_style( ...$args ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	function wp_enqueue_style( ...$args ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_register_script' ) ) {
+	function wp_register_script( ...$args ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	function wp_enqueue_script( ...$args ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_add_inline_style' ) ) {
+	function wp_add_inline_style( ...$args ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_add_inline_script' ) ) {
+	function wp_add_inline_script( ...$args ) {
+		return true;
 	}
 }
 
