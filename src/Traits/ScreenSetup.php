@@ -26,7 +26,7 @@ use WP_Screen;
  */
 trait ScreenSetup {
 
-/**
+    /**
      * Setup load hooks for screen options
      *
      * Detects when we're on one of our admin pages and sets up screen
@@ -62,7 +62,7 @@ trait ScreenSetup {
         }
     }
 
-/**
+    /**
      * Setup screen options and help tabs
      *
      * Adds the "items per page" screen option and any configured help tabs.
@@ -100,7 +100,7 @@ trait ScreenSetup {
         }
     }
 
-/**
+    /**
      * Setup column visibility screen options
      *
      * Registers columns so users can show/hide them via Screen Options.
@@ -135,7 +135,7 @@ trait ScreenSetup {
         } );
     }
 
-/**
+    /**
      * Setup help tabs on the screen
      *
      * @param WP_Screen $screen Current screen object.
@@ -173,7 +173,7 @@ trait ScreenSetup {
         }
     }
 
-/**
+    /**
      * Handle screen option saving
      *
      * Adds filters to allow per_page options to be saved.

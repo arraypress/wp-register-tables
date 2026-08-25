@@ -24,7 +24,7 @@ use ArrayPress\Stripe\Format;
  */
 trait DateFormatters {
 
-/**
+	/**
 	 * Format a date/datetime value as a human-readable time difference
 	 *
 	 * Uses the DateUtils library to render dates as relative time
@@ -43,7 +43,7 @@ trait DateFormatters {
 		return Dates::render_date( $value ) ?? self::render_empty();
 	}
 
-/**
+	/**
 	 * Format a duration value in seconds as a human-readable string
 	 *
 	 * Uses the DateUtils library to render durations like "2h 15m" or "3 days".

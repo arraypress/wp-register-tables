@@ -24,7 +24,7 @@ use ArrayPress\RegisterTables\Request;
  */
 trait QueryBuilder {
 
-/**
+    /**
      * Get table data
      *
      * Retrieves items for display by calling the configured get_items callback.
@@ -98,7 +98,7 @@ trait QueryBuilder {
         return [];
     }
 
-/**
+    /**
      * Get status counts
      *
      * Retrieves and caches item counts per status. Used for view tabs
@@ -128,7 +128,7 @@ trait QueryBuilder {
         return $this->counts;
     }
 
-/**
+    /**
      * Prepare items for display
      *
      * Main method called before rendering. Sets up column headers,
@@ -160,7 +160,7 @@ trait QueryBuilder {
         ] );
     }
 
-/**
+    /**
      * Get item ID from item object
      *
      * Extracts the ID from a data object, checking for get_id() method
@@ -180,7 +180,7 @@ trait QueryBuilder {
         return (int) ( $item->id ?? 0 );
     }
 
-/**
+    /**
      * Parse pagination arguments
      *
      * Extracts and sanitizes pagination/sorting parameters from the

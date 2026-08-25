@@ -25,7 +25,7 @@ use ArrayPress\RegisterTables\Table;
  */
 trait MenuBuilder {
 
-/**
+    /**
      * Register admin menu pages for all tables
      *
      * Hooks into admin_menu to create menu/submenu pages for each registered
@@ -42,7 +42,7 @@ trait MenuBuilder {
         }
     }
 
-/**
+    /**
      * Register a single admin menu page
      *
      * Creates either a top-level menu page or submenu page based on the
@@ -86,7 +86,7 @@ trait MenuBuilder {
         }
     }
 
-/**
+    /**
      * Fix parent menu highlight for submenu table pages
      *
      * Ensures the correct parent menu item is highlighted when viewing
@@ -114,7 +114,7 @@ trait MenuBuilder {
         return $parent_file;
     }
 
-/**
+    /**
      * Fix submenu highlight for table pages
      *
      * Ensures the correct submenu item is highlighted when viewing

@@ -25,7 +25,7 @@ use ArrayPress\RegisterTables\Table;
  */
 trait AdminNotices {
 
-/**
+    /**
      * Render admin notices
      *
      * Displays success/error messages based on URL parameters from action
@@ -174,7 +174,7 @@ trait AdminNotices {
         }
     }
 
-/**
+    /**
      * Render a notice from action configuration
      *
      * Handles the 'notice' key from row_actions and bulk_actions config.

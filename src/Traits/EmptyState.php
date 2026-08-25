@@ -23,7 +23,7 @@ namespace ArrayPress\RegisterTables\Traits;
  */
 trait EmptyState {
 
-/**
+    /**
      * Display the table or the empty state
      *
      * Overrides the parent display() method to render a styled empty state
@@ -47,7 +47,7 @@ trait EmptyState {
         parent::display();
     }
 
-/**
+    /**
      * Determine whether the empty state CTA should be shown
      *
      * Returns true only when the table has zero total items and no
@@ -81,7 +81,7 @@ trait EmptyState {
         return true;
     }
 
-/**
+    /**
      * Render the empty state with call-to-action
      *
      * Displays a centered message with optional icon, heading, description,
@@ -158,7 +158,7 @@ trait EmptyState {
         <?php
     }
 
-/**
+    /**
      * Render the empty state action button
      *
      * Supports the same formats as add_button: callable, URL string,
@@ -200,7 +200,7 @@ trait EmptyState {
         }
     }
 
-/**
+    /**
      * Display message when no items found
      *
      * Shows contextual message based on current filters/search.

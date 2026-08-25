@@ -25,7 +25,7 @@ use ArrayPress\RegisterTables\Request;
  */
 trait Filtering {
 
-/**
+    /**
      * Get total count for pagination, accounting for active filters
      *
      * When search or custom filters are active, we need to get the actual
@@ -53,7 +53,7 @@ trait Filtering {
         return $this->get_filtered_count();
     }
 
-/**
+    /**
      * Check if any custom filters or whitelisted query args are currently active
      *
      * Checks both dropdown filters and query_args config for active URL
@@ -79,7 +79,7 @@ trait Filtering {
         return false;
     }
 
-/**
+    /**
      * Get count of items matching current filters
      *
      * Builds query args with all active filters, whitelisted query args,
@@ -144,7 +144,7 @@ trait Filtering {
         return 0;
     }
 
-/**
+    /**
      * Get search query
      *
      * Retrieves and sanitizes the search term from the request.
@@ -158,7 +158,7 @@ trait Filtering {
         return Request::text( 's' );
     }
 
-/**
+    /**
      * Get current page URL
      *
      * Builds a clean URL for the current page with current filters,
@@ -202,7 +202,7 @@ trait Filtering {
         return $url;
     }
 
-/**
+    /**
      * Resolve search term into query arguments
      *
      * If a search_callback is configured, calls it with the search term.
@@ -236,7 +236,7 @@ trait Filtering {
         return [ 'search' => $search ];
     }
 
-/**
+    /**
      * Apply whitelisted query args from URL
      *
      * Processes the query_args config to pass URL parameters directly
@@ -275,7 +275,7 @@ trait Filtering {
         return $args;
     }
 
-/**
+    /**
      * Check if any whitelisted query args are active in the URL
      *
      * Inspects the query_args config and checks whether any of the

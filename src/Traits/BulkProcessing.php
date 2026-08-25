@@ -28,7 +28,7 @@ use ArrayPress\RegisterTables\Table;
  */
 trait BulkProcessing {
 
-/**
+    /**
      * Process bulk actions
      *
      * Handles bulk action form submissions. Verifies nonce, checks capability,

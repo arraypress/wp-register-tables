@@ -28,7 +28,7 @@ use ArrayPress\Stripe\Format;
  */
 trait TextFormatters {
 
-/**
+	/**
 	 * Format an email address as a clickable mailto link
 	 *
 	 * @param mixed  $value       Email address.
@@ -46,7 +46,7 @@ trait TextFormatters {
 		return sprintf( '<a href="mailto:%1$s">%1$s</a>', esc_attr( $email ) );
 	}
 
-/**
+	/**
 	 * Format a phone number as a clickable tel: link
 	 *
 	 * Strips non-numeric characters (except leading +) for the href
@@ -72,7 +72,7 @@ trait TextFormatters {
 		);
 	}
 
-/**
+	/**
 	 * Format a URL as a clickable link showing the hostname
 	 *
 	 * Extracts the hostname from the URL for a clean display while
@@ -98,7 +98,7 @@ trait TextFormatters {
 		);
 	}
 
-/**
+	/**
 	 * Format a code/ID value in monospace font
 	 *
 	 * Displays codes, IDs, UUIDs, SKUs, tokens, etc. in a styled
@@ -125,7 +125,7 @@ trait TextFormatters {
 		return $output;
 	}
 
-/**
+	/**
 	 * Format a boolean value as a yes/no icon or test/live badge
 	 *
 	 * Standard booleans render as checkmark (yes) or dash (no) icons.
@@ -165,7 +165,7 @@ trait TextFormatters {
 		return $output;
 	}
 
-/**
+	/**
 	 * Format a file size in bytes as a human-readable string
 	 *
 	 * Converts bytes into human-readable file size format (e.g., "1.5 MB")

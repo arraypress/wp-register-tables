@@ -25,7 +25,7 @@ use ArrayPress\FieldKit\Support\PageHeader;
  */
 trait PageRenderer {
 
-/**
+    /**
      * Render a registered table
      *
      * Outputs the complete admin page including header, notices, search banner,
@@ -136,7 +136,7 @@ trait PageRenderer {
         <?php
     }
 
-/**
+    /**
      * Render the modern header
      *
      * Outputs the EDD-style header with optional logo, title, and add button.
@@ -188,7 +188,7 @@ trait PageRenderer {
         echo $header; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the kit escapes as it builds.
     }
 
-/**
+    /**
      * What goes in the header's badge slot.
      *
      * A consumer's own badge if there is one, otherwise the item count. The
@@ -214,7 +214,7 @@ trait PageRenderer {
         return $badge;
     }
 
-/**
+    /**
      * Render sync trigger buttons
      *
      * Outputs sync trigger buttons if the wp-inline-sync library is available
@@ -242,7 +242,7 @@ trait PageRenderer {
         }
     }
 
-/**
+    /**
      * Render the add new button
      *
      * Outputs the "Add New" button using the configured method. The add_button
@@ -297,7 +297,7 @@ trait PageRenderer {
         }
     }
 
-/**
+    /**
      * Render search results banner
      *
      * Shows a banner when search results are being displayed,

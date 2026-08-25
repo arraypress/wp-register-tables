@@ -25,7 +25,7 @@ use ArrayPress\RegisterTables\Request;
  */
 trait ViewsAndFilters {
 
-/**
+    /**
      * Get views (status filter tabs)
      *
      * Builds the list of status links shown above the table.
@@ -88,7 +88,7 @@ trait ViewsAndFilters {
         return apply_filters( "arraypress_table_views_{$this->id}", $views, $this->status );
     }
 
-/**
+    /**
      * Extra table navigation (filters)
      *
      * Renders dropdown filters above the table (top position only).
@@ -147,7 +147,7 @@ trait ViewsAndFilters {
         <?php
     }
 
-/**
+    /**
      * Render a single filter dropdown
      *
      * Generates a select element for filtering table data.

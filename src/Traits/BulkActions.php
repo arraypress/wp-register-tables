@@ -24,7 +24,7 @@ use ArrayPress\RegisterTables\Manager;
  */
 trait BulkActions {
 
-/**
+    /**
      * Get bulk actions
      *
      * Returns array of bulk action options for the dropdown.
@@ -67,7 +67,7 @@ trait BulkActions {
         return apply_filters( "arraypress_table_bulk_actions_{$this->id}", $actions, $this->config );
     }
 
-/**
+    /**
      * Process bulk actions
      *
      * Stub method — actual processing is handled by Manager::process_bulk_actions().

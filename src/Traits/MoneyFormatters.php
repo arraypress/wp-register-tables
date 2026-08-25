@@ -30,7 +30,7 @@ use ArrayPress\Stripe\Format;
  */
 trait MoneyFormatters {
 
-/**
+	/**
 	 * Format a monetary amount with currency symbol
 	 *
 	 * Resolves the currency code from the data object by checking for
@@ -66,7 +66,7 @@ trait MoneyFormatters {
 		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
-/**
+	/**
 	 * Format a Stripe price amount with currency and optional recurring interval
 	 *
 	 * Uses the Stripe Format library to render prices with billing interval
@@ -122,7 +122,7 @@ trait MoneyFormatters {
 		return sprintf( '<span class="price">%s</span>', esc_html( $formatted ) );
 	}
 
-/**
+	/**
 	 * Format a rate value (e.g., discount rate, commission rate)
 	 *
 	 * Uses the RateFormat library to render rate values with appropriate
@@ -141,7 +141,7 @@ trait MoneyFormatters {
 		return Rate::render( $value, $item, $column_name ) ?? self::render_empty();
 	}
 
-/**
+	/**
 	 * Format a percentage value
 	 *
 	 * Uses the RateFormat library to render a numeric value as a percentage

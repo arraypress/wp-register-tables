@@ -29,7 +29,7 @@ use ArrayPress\RegisterTables\Manager;
  */
 trait ColumnRenderer {
 
-/**
+    /**
      * Default column renderer
      *
      * Renders column content when no specific column_* method exists.
@@ -85,7 +85,7 @@ trait ColumnRenderer {
         return Columns::render_empty();
     }
 
-/**
+    /**
      * Render a structured column with before/title/after/link support
      *
      * Allows columns to be defined with separate components:
@@ -140,7 +140,7 @@ trait ColumnRenderer {
         return $output;
     }
 
-/**
+    /**
      * Render the title with optional link
      *
      * Handles different link types including flyouts which need special attributes.
@@ -195,7 +195,7 @@ trait ColumnRenderer {
         return '<strong>' . esc_html( $title ) . '</strong>';
     }
 
-/**
+    /**
      * Build a flyout trigger link for column title
      *
      * Uses get_flyout_link() if available to ensure proper attributes.
@@ -230,7 +230,7 @@ trait ColumnRenderer {
         return '<strong>' . esc_html( $title ) . '</strong>';
     }
 
-/**
+    /**
      * Auto-format column value based on naming patterns
      *
      * Passes the column config directly to the Columns utility, which
@@ -265,7 +265,7 @@ trait ColumnRenderer {
         );
     }
 
-/**
+    /**
      * Checkbox column renderer
      *
      * Renders the checkbox for bulk action selection.

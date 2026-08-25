@@ -23,7 +23,7 @@ namespace ArrayPress\RegisterTables\Traits;
  */
 trait ColumnDefinitions {
 
-/**
+    /**
      * Get column definitions
      *
      * Returns array of column key => label pairs for the table header.
@@ -63,7 +63,7 @@ trait ColumnDefinitions {
         return apply_filters( "arraypress_table_columns_{$this->id}", $columns, $this->config );
     }
 
-/**
+    /**
      * Get hidden columns
      *
      * Returns array of column keys that should be hidden by default.
@@ -98,7 +98,7 @@ trait ColumnDefinitions {
         return apply_filters( "arraypress_table_hidden_columns_{$this->id}", $hidden, $this->config );
     }
 
-/**
+    /**
      * Get sortable columns
      *
      * Returns array defining which columns are sortable and their
@@ -135,7 +135,7 @@ trait ColumnDefinitions {
         return apply_filters( "arraypress_table_sortable_columns_{$this->id}", $sortable, $this->config );
     }
 
-/**
+    /**
      * Get primary column name
      *
      * Returns the column that should display row actions.

@@ -27,7 +27,7 @@ use ArrayPress\RegisterTables\Manager;
  */
 trait RowActions {
 
-/**
+    /**
      * Handle row actions for primary column
      *
      * Builds and renders row actions (Edit, View, Delete, etc.) that appear
@@ -76,7 +76,7 @@ trait RowActions {
         return $this->row_actions( $actions );
     }
 
-/**
+    /**
      * Build row actions from configuration
      *
      * Processes the row_actions config array to generate action links.
@@ -119,7 +119,7 @@ trait RowActions {
         return $actions;
     }
 
-/**
+    /**
      * Build a single row action link
      *
      * Generates HTML for a single row action based on its type:
@@ -227,7 +227,7 @@ trait RowActions {
         return '';
     }
 
-/**
+    /**
      * Check if auto delete action should be added
      *
      * Automatically adds a delete row action when a delete callback exists
@@ -262,7 +262,7 @@ trait RowActions {
         return true;
     }
 
-/**
+    /**
      * Build auto delete action HTML
      *
      * Generates a delete action link with nonce and confirmation dialog.

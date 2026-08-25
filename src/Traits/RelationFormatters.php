@@ -28,7 +28,7 @@ use WP_Term;
  */
 trait RelationFormatters {
 
-/**
+	/**
 	 * Format a user ID as an avatar with linked display name
 	 *
 	 * Renders a WordPress user's avatar image alongside their display name,
@@ -77,7 +77,7 @@ trait RelationFormatters {
 		return $output;
 	}
 
-/**
+	/**
 	 * Format a customer/person value with avatar, name, and email
 	 *
 	 * Inspects the data object for common getter methods to build
@@ -172,7 +172,7 @@ trait RelationFormatters {
 		);
 	}
 
-/**
+	/**
 	 * Format taxonomy terms as linked badges
 	 *
 	 * Accepts an array of term names, term objects, or WP_Term objects.
@@ -239,7 +239,7 @@ trait RelationFormatters {
 		return sprintf( '<span class="column-taxonomy">%s</span>', implode( ', ', $terms ) );
 	}
 
-/**
+	/**
 	 * Format an items summary from an array of names or a numeric count
 	 *
 	 * Arrays render as:

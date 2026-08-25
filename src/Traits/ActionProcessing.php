@@ -28,7 +28,7 @@ use ArrayPress\RegisterTables\Table;
  */
 trait ActionProcessing {
 
-/**
+    /**
      * Process early actions
      *
      * Handles actions that require redirects before any output is sent.
@@ -58,7 +58,7 @@ trait ActionProcessing {
         }
     }
 
-/**
+    /**
      * Process filter form submission
      *
      * When filters are submitted, redirects to a clean URL with only
@@ -101,7 +101,7 @@ trait ActionProcessing {
         exit;
     }
 
-/**
+    /**
      * Process single item actions
      *
      * Handles row actions like delete. Checks for handler-based actions
@@ -161,7 +161,7 @@ trait ActionProcessing {
         do_action( "arraypress_table_single_action_{$id}", $action, $item_id, $config );
     }
 
-/**
+    /**
      * Handle custom row action with handler callback
      *
      * Processes a row action that has a 'handler' callback defined.
@@ -230,7 +230,7 @@ trait ActionProcessing {
         exit;
     }
 
-/**
+    /**
      * Handle built-in delete action
      *
      * Processes delete requests using the configured delete callback.

@@ -28,7 +28,7 @@ use ArrayPress\Stripe\Format;
  */
 trait StatusFormatters {
 
-/**
+	/**
 	 * Format a status value as a styled badge
 	 *
 	 * Renders the status as a colored badge using the StatusBadge library.
@@ -51,7 +51,7 @@ trait StatusFormatters {
 		return self::get_badge( $styles )->render( (string) $value );
 	}
 
-/**
+	/**
 	 * Format a count value with special handling for unlimited (-1) and zero
 	 *
 	 * Renders -1 as an infinity symbol (∞), zero as an empty placeholder,
@@ -81,7 +81,7 @@ trait StatusFormatters {
 		return $output;
 	}
 
-/**
+	/**
 	 * Format a country code as a flag and country name
 	 *
 	 * Uses the Countries library to render the country flag emoji
@@ -100,7 +100,7 @@ trait StatusFormatters {
 		return Countries::render( (string) $value ) ?? self::render_empty();
 	}
 
-/**
+	/**
 	 * Format a color value as a swatch with hex/rgb code
 	 *
 	 * Renders a small color swatch alongside the hex/rgb value in
@@ -131,7 +131,7 @@ trait StatusFormatters {
 		return $output;
 	}
 
-/**
+	/**
 	 * Format an image value as a thumbnail
 	 *
 	 * Accepts either a WordPress attachment ID or a raw URL. Attachment IDs

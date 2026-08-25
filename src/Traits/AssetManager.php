@@ -26,7 +26,7 @@ use ArrayPress\FieldKit\Assets;
  */
 trait AssetManager {
 
-/**
+    /**
      * Enqueue assets callback
      *
      * Hooked to admin_enqueue_scripts. Checks if current page matches
@@ -54,7 +54,7 @@ trait AssetManager {
         }
     }
 
-/**
+    /**
      * Actually enqueue the assets
      *
      * Enqueues the main stylesheet and outputs dynamic inline styles
@@ -91,7 +91,7 @@ trait AssetManager {
         self::output_dynamic_styles( $config );
     }
 
-/**
+    /**
      * Output dynamic inline styles
      *
      * Generates CSS for custom column widths and text alignments

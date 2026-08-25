@@ -30,7 +30,7 @@ use ArrayPress\RegisterTables\Table;
  */
 trait Registration {
 
-/**
+    /**
      * Register an admin table
      *
      * Registers a new admin table with the given configuration. The table's
@@ -161,7 +161,7 @@ trait Registration {
         self::$tables[ $id ] = $config;
     }
 
-/**
+    /**
      * Collect per-column flags into top-level config arrays
      *
      * Scans column definitions for 'sortable' and 'hidden' flags and
@@ -202,7 +202,7 @@ trait Registration {
         }
     }
 
-/**
+    /**
      * Parse labels configuration with defaults
      *
      * @param array $labels User-provided labels.
@@ -223,7 +223,7 @@ trait Registration {
         ] );
     }
 
-/**
+    /**
      * Parse callbacks configuration with defaults
      *
      * @param array $callbacks User-provided callbacks.
@@ -241,7 +241,7 @@ trait Registration {
         ] );
     }
 
-/**
+    /**
      * Parse capabilities configuration
      *
      * Supports both a single capability string (applied to all actions)
@@ -266,7 +266,7 @@ trait Registration {
         return wp_parse_args( $capabilities, $defaults );
     }
 
-/**
+    /**
      * Parse flyouts configuration with defaults
      *
      * @param array $flyouts User-provided flyouts.
@@ -282,7 +282,7 @@ trait Registration {
         ] );
     }
 
-/**
+    /**
      * Parse views configuration
      *
      * Supports both simple array format (auto-generates labels from keys)
@@ -315,7 +315,7 @@ trait Registration {
         return $parsed;
     }
 
-/**
+    /**
      * Auto-generate missing labels from singular/plural
      *
      * @param array $labels Parsed labels array.
@@ -351,7 +351,7 @@ trait Registration {
         return $labels;
     }
 
-/**
+    /**
      * Detect primary column from configuration
      *
      * Checks for explicit 'primary' flag in column config, otherwise
