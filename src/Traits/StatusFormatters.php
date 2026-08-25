@@ -14,7 +14,6 @@ namespace ArrayPress\RegisterTables\Traits;
 
 use ArrayPress\Countries\Countries;
 use ArrayPress\StatusBadge\StatusBadge;
-use ArrayPress\Stripe\Format;
 
 /**
  * Columns that are a state, a tally or a swatch.

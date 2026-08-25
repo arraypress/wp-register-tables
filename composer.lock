@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "580959e6957ec3e2986ab13dd0eb8e8a",
+    "content-hash": "d6f6dc6ff86d7a6e6a9e6ca21aafe980",
     "packages": [
         {
             "name": "arraypress/wp-composer-assets",
@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-composer-assets.git",
-                "reference": "8236c96ba1fc8b952c4cdbe1e0408e998ec9050f"
+                "reference": "efb53f624b2bae98bfab797e217e6f7768ac4670"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-composer-assets/zipball/8236c96ba1fc8b952c4cdbe1e0408e998ec9050f",
-                "reference": "8236c96ba1fc8b952c4cdbe1e0408e998ec9050f",
+                "url": "https://api.github.com/repos/arraypress/wp-composer-assets/zipball/efb53f624b2bae98bfab797e217e6f7768ac4670",
+                "reference": "efb53f624b2bae98bfab797e217e6f7768ac4670",
                 "shasum": ""
             },
             "require": {
@@ -67,7 +67,7 @@
                 "issues": "https://github.com/arraypress/wp-composer-assets/issues",
                 "source": "https://github.com/arraypress/wp-composer-assets"
             },
-            "time": "2026-08-23T15:32:04+00:00"
+            "time": "2026-08-25T15:44:02+00:00"
         },
         {
             "name": "arraypress/wp-countries",
@@ -75,16 +75,22 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-countries.git",
-                "reference": "603dd511dac5c6d3f252ffa076fdd482fe30c941"
+                "reference": "4565c54202ca826a1b66caa4887501b67d353bba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-countries/zipball/603dd511dac5c6d3f252ffa076fdd482fe30c941",
-                "reference": "603dd511dac5c6d3f252ffa076fdd482fe30c941",
+                "url": "https://api.github.com/repos/arraypress/wp-countries/zipball/4565c54202ca826a1b66caa4887501b67d353bba",
+                "reference": "4565c54202ca826a1b66caa4887501b67d353bba",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.3"
+            },
+            "require-dev": {
+                "phpcompatibility/phpcompatibility-wp": "^2.1",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^3.13.5",
+                "wp-coding-standards/wpcs": "^3.4"
             },
             "default-branch": true,
             "type": "library",
@@ -124,66 +130,7 @@
                 "issues": "https://github.com/arraypress/wp-countries/issues",
                 "source": "https://github.com/arraypress/wp-countries"
             },
-            "time": "2026-08-23T18:15:19+00:00"
-        },
-        {
-            "name": "arraypress/wp-currencies",
-            "version": "dev-main",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/arraypress/wp-currencies.git",
-                "reference": "cda7405f94a2a41d347752702dc21f1b21f76826"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-currencies/zipball/cda7405f94a2a41d347752702dc21f1b21f76826",
-                "reference": "cda7405f94a2a41d347752702dc21f1b21f76826",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.2"
-            },
-            "default-branch": true,
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/Functions.php"
-                ],
-                "psr-4": {
-                    "ArrayPress\\Currencies\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "David Sherlock",
-                    "homepage": "https://arraypress.com/"
-                }
-            ],
-            "description": "A comprehensive WordPress library for Stripe currency formatting, conversion, and validation supporting all 135 Stripe currencies.",
-            "homepage": "https://github.com/arraypress/wp-currencies",
-            "keywords": [
-                "arraypress",
-                "currencies",
-                "currency",
-                "ecommerce",
-                "formatting",
-                "international",
-                "money",
-                "payment",
-                "stripe",
-                "wordpress",
-                "wp",
-                "zero-decimal"
-            ],
-            "support": {
-                "issues": "https://github.com/arraypress/wp-currencies/issues",
-                "source": "https://github.com/arraypress/wp-currencies"
-            },
-            "time": "2026-08-23T18:15:03+00:00"
+            "time": "2026-08-25T17:48:45+00:00"
         },
         {
             "name": "arraypress/wp-date-utils",
@@ -191,12 +138,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-date-utils.git",
-                "reference": "0540fcd6d83d6a18dab1db1b523296eb6eb6c91e"
+                "reference": "acfa82eb76c7368d2b03c52f2f7e3b5136c79fef"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-date-utils/zipball/0540fcd6d83d6a18dab1db1b523296eb6eb6c91e",
-                "reference": "0540fcd6d83d6a18dab1db1b523296eb6eb6c91e",
+                "url": "https://api.github.com/repos/arraypress/wp-date-utils/zipball/acfa82eb76c7368d2b03c52f2f7e3b5136c79fef",
+                "reference": "acfa82eb76c7368d2b03c52f2f7e3b5136c79fef",
                 "shasum": ""
             },
             "require": {
@@ -211,11 +158,8 @@
             "default-branch": true,
             "type": "library",
             "autoload": {
-                "files": [
-                    "src/Functions.php"
-                ],
                 "psr-4": {
-                    "ArrayPress\\DateUtils\\": "src/"
+                    "ArrayPress\\Dates\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -228,7 +172,7 @@
                     "homepage": "https://arraypress.com/"
                 }
             ],
-            "description": "Lightweight WordPress date utilities with UTC storage, local display, and zero dependencies. Handles date ranges, business logic, subscriptions, and formatting.",
+            "description": "Dates for reporting: UTC ranges, presets, chart buckets and relative phrasing, plus the site timezone and formats.",
             "homepage": "https://github.com/arraypress/wp-date-utils",
             "keywords": [
                 "arraypress",
@@ -251,7 +195,7 @@
                 "issues": "https://github.com/arraypress/wp-date-utils/issues",
                 "source": "https://github.com/arraypress/wp-date-utils"
             },
-            "time": "2026-08-23T19:26:23+00:00"
+            "time": "2026-08-25T17:47:21+00:00"
         },
         {
             "name": "arraypress/wp-field-kit",
@@ -259,12 +203,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-field-kit.git",
-                "reference": "5e95f47665c853e233108b8b9917219db25ec511"
+                "reference": "8572c6c60816efc7718ee6a3fa51204c5cf1f74b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/5e95f47665c853e233108b8b9917219db25ec511",
-                "reference": "5e95f47665c853e233108b8b9917219db25ec511",
+                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/8572c6c60816efc7718ee6a3fa51204c5cf1f74b",
+                "reference": "8572c6c60816efc7718ee6a3fa51204c5cf1f74b",
                 "shasum": ""
             },
             "require": {
@@ -338,34 +282,60 @@
                 "issues": "https://github.com/arraypress/wp-field-kit/issues",
                 "source": "https://github.com/arraypress/wp-field-kit"
             },
-            "time": "2026-08-24T19:29:05+00:00"
+            "time": "2026-08-25T15:44:59+00:00"
         },
         {
-            "name": "arraypress/wp-rate-format",
+            "name": "arraypress/wp-format-utils",
             "version": "dev-main",
             "source": {
                 "type": "git",
-                "url": "https://github.com/arraypress/wp-rate-format.git",
-                "reference": "4169a0ff77fb2f1e38024d24c2609230cede05fb"
+                "url": "https://github.com/arraypress/wp-format-utils.git",
+                "reference": "4b3632bdfb94b820de3b9978d7917f60969e1bcd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-rate-format/zipball/4169a0ff77fb2f1e38024d24c2609230cede05fb",
-                "reference": "4169a0ff77fb2f1e38024d24c2609230cede05fb",
+                "url": "https://api.github.com/repos/arraypress/wp-format-utils/zipball/4b3632bdfb94b820de3b9978d7917f60969e1bcd",
+                "reference": "4b3632bdfb94b820de3b9978d7917f60969e1bcd",
                 "shasum": ""
             },
             "require": {
-                "arraypress/wp-currencies": "dev-main",
-                "php": ">=7.4"
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "phpcompatibility/phpcompatibility-wp": "^2.1",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^3.13.5",
+                "wp-coding-standards/wpcs": "^3.4"
             },
             "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "ArrayPress\\RateFormat\\": "src/"
+                    "ArrayPress\\FormatUtils\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "ArrayPress\\FormatUtils\\Tests\\": "tests/"
+                },
+                "exclude-from-classmap": [
+                    "/tests/bootstrap.php"
+                ]
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "lint": [
+                    "phpcs"
+                ],
+                "format": [
+                    "phpcbf --standard=phpcs-format.xml.dist"
+                ],
+                "format:check": [
+                    "phpcs --standard=phpcs-format.xml.dist"
+                ]
+            },
             "license": [
                 "GPL-2.0-or-later"
             ],
@@ -375,25 +345,99 @@
                     "homepage": "https://arraypress.com/"
                 }
             ],
-            "description": "A WordPress library for formatting, rendering, sanitizing, and validating rates and percentages",
-            "homepage": "https://github.com/arraypress/wp-rate-format/",
+            "description": "Formatting for people to read: bytes, durations, file kinds, compact numbers, text and booleans.",
+            "homepage": "https://github.com/arraypress/wp-format-utils/",
             "keywords": [
-                "Rate",
-                "commission",
-                "currency",
-                "discount",
+                "bytes",
+                "duration",
+                "filesize",
                 "formatting",
-                "percentage",
-                "sanitization",
-                "stripe",
-                "validation",
+                "humanize",
                 "wordpress"
             ],
             "support": {
-                "issues": "https://github.com/arraypress/wp-rate-format/issues",
-                "source": "https://github.com/arraypress/wp-rate-format"
+                "issues": "https://github.com/arraypress/wp-format-utils/issues",
+                "source": "https://github.com/arraypress/wp-format-utils"
             },
-            "time": "2026-02-04T06:49:29+00:00"
+            "time": "2026-08-25T17:44:42+00:00"
+        },
+        {
+            "name": "arraypress/wp-money",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/arraypress/wp-money.git",
+                "reference": "26d9ada079831b7e23d5f7effbf29fa89616bc6a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/arraypress/wp-money/zipball/26d9ada079831b7e23d5f7effbf29fa89616bc6a",
+                "reference": "26d9ada079831b7e23d5f7effbf29fa89616bc6a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "phpcompatibility/phpcompatibility-wp": "^2.1",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^3.13.5",
+                "wp-coding-standards/wpcs": "^3.4"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ArrayPress\\Money\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "ArrayPress\\Money\\Tests\\": "tests/"
+                },
+                "exclude-from-classmap": [
+                    "/tests/bootstrap.php"
+                ]
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "lint": [
+                    "phpcs"
+                ],
+                "format": [
+                    "phpcbf --standard=phpcs-format.xml.dist"
+                ],
+                "format:check": [
+                    "phpcs --standard=phpcs-format.xml.dist"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "David Sherlock",
+                    "homepage": "https://arraypress.com/"
+                }
+            ],
+            "description": "Integer-minor-unit money formatting and parsing for WordPress. 136 currencies with the correct decimal exponent, so the twenty that are not two decimal places are right.",
+            "homepage": "https://github.com/arraypress/wp-money/",
+            "keywords": [
+                "currency",
+                "ecommerce",
+                "formatting",
+                "iso-4217",
+                "minor-units",
+                "money",
+                "wordpress"
+            ],
+            "support": {
+                "issues": "https://github.com/arraypress/wp-money/issues",
+                "source": "https://github.com/arraypress/wp-money"
+            },
+            "time": "2026-08-25T17:40:38+00:00"
         },
         {
             "name": "arraypress/wp-status-badge",
@@ -401,17 +445,23 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-status-badge.git",
-                "reference": "1de4f4e89e776af0f83c455acc1425f005decebc"
+                "reference": "e8be537eb5a4126bbaaf702e903f7677b93eba7b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-status-badge/zipball/1de4f4e89e776af0f83c455acc1425f005decebc",
-                "reference": "1de4f4e89e776af0f83c455acc1425f005decebc",
+                "url": "https://api.github.com/repos/arraypress/wp-status-badge/zipball/e8be537eb5a4126bbaaf702e903f7677b93eba7b",
+                "reference": "e8be537eb5a4126bbaaf702e903f7677b93eba7b",
                 "shasum": ""
             },
             "require": {
                 "arraypress/wp-composer-assets": "dev-main",
                 "php": ">=7.4"
+            },
+            "require-dev": {
+                "phpcompatibility/phpcompatibility-wp": "^2.1",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^3.13.5",
+                "wp-coding-standards/wpcs": "^3.4"
             },
             "default-branch": true,
             "type": "library",
@@ -446,7 +496,7 @@
                 "issues": "https://github.com/arraypress/wp-status-badge/issues",
                 "source": "https://github.com/arraypress/wp-status-badge"
             },
-            "time": "2026-02-03T15:20:54+00:00"
+            "time": "2026-08-25T15:44:04+00:00"
         }
     ],
     "packages-dev": [
@@ -1259,23 +1309,23 @@
         },
         {
             "name": "phpunit/php-file-iterator",
-            "version": "6.0.1",
+            "version": "6.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-file-iterator.git",
-                "reference": "3d1cd096ef6bea4bf2762ba586e35dbd317cbfd5"
+                "reference": "a248d1640ab059b075f53a2ef0f9856e864e06b5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-file-iterator/zipball/3d1cd096ef6bea4bf2762ba586e35dbd317cbfd5",
-                "reference": "3d1cd096ef6bea4bf2762ba586e35dbd317cbfd5",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-file-iterator/zipball/a248d1640ab059b075f53a2ef0f9856e864e06b5",
+                "reference": "a248d1640ab059b075f53a2ef0f9856e864e06b5",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.3"
             },
             "require-dev": {
-                "phpunit/phpunit": "^12.0"
+                "phpunit/phpunit": "^12.5.33"
             },
             "type": "library",
             "extra": {
@@ -1308,7 +1358,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-file-iterator/issues",
                 "security": "https://github.com/sebastianbergmann/php-file-iterator/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-file-iterator/tree/6.0.1"
+                "source": "https://github.com/sebastianbergmann/php-file-iterator/tree/6.0.2"
             },
             "funding": [
                 {
@@ -1328,7 +1378,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-02-02T14:04:18+00:00"
+            "time": "2026-08-25T14:40:53+00:00"
         },
         {
             "name": "phpunit/php-invoker",
@@ -1825,24 +1875,24 @@
         },
         {
             "name": "sebastian/diff",
-            "version": "7.0.0",
+            "version": "7.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/diff.git",
-                "reference": "7ab1ea946c012266ca32390913653d844ecd085f"
+                "reference": "cd4cabe39f8a4e8ee6818ba99f10a05561ea4ad6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/diff/zipball/7ab1ea946c012266ca32390913653d844ecd085f",
-                "reference": "7ab1ea946c012266ca32390913653d844ecd085f",
+                "url": "https://api.github.com/repos/sebastianbergmann/diff/zipball/cd4cabe39f8a4e8ee6818ba99f10a05561ea4ad6",
+                "reference": "cd4cabe39f8a4e8ee6818ba99f10a05561ea4ad6",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.3"
             },
             "require-dev": {
-                "phpunit/phpunit": "^12.0",
-                "symfony/process": "^7.2"
+                "phpunit/phpunit": "^12.5.33",
+                "symfony/process": "^7.4.17"
             },
             "type": "library",
             "extra": {
@@ -1880,15 +1930,27 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/diff/issues",
                 "security": "https://github.com/sebastianbergmann/diff/security/policy",
-                "source": "https://github.com/sebastianbergmann/diff/tree/7.0.0"
+                "source": "https://github.com/sebastianbergmann/diff/tree/7.0.1"
             },
             "funding": [
                 {
                     "url": "https://github.com/sebastianbergmann",
                     "type": "github"
+                },
+                {
+                    "url": "https://liberapay.com/sebastianbergmann",
+                    "type": "liberapay"
+                },
+                {
+                    "url": "https://thanks.dev/u/gh/sebastianbergmann",
+                    "type": "thanks_dev"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/sebastian/diff",
+                    "type": "tidelift"
                 }
             ],
-            "time": "2025-02-07T04:55:46+00:00"
+            "time": "2026-08-25T15:35:54+00:00"
         },
         {
             "name": "sebastian/environment",
@@ -2766,16 +2828,16 @@
     "stability-flags": {
         "arraypress/wp-composer-assets": 20,
         "arraypress/wp-countries": 20,
-        "arraypress/wp-currencies": 20,
         "arraypress/wp-date-utils": 20,
         "arraypress/wp-field-kit": 20,
-        "arraypress/wp-rate-format": 20,
+        "arraypress/wp-format-utils": 20,
+        "arraypress/wp-money": 20,
         "arraypress/wp-status-badge": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.4"
+        "php": ">=8.3"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

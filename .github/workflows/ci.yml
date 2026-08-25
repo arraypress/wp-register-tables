@@ -28,7 +28,9 @@ jobs:
           tools: composer:v2
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+        # No --prefer-dist: it overrides config.preferred-install, and the
+        # kit is installed from source here for its shared test fixtures.
+        run: composer install --no-progress --no-interaction
 
       - name: Lint
         run: find src tests -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null

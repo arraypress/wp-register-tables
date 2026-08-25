@@ -12,7 +12,6 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
-use ArrayPress\Stripe\Format;
 use WP_Term;
 
 /**

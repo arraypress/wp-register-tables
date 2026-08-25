@@ -17,7 +17,6 @@ namespace ArrayPress\RegisterTables;
 
 use ArrayPress\FieldKit\Support\Display;
 use ArrayPress\StatusBadge\StatusBadge;
-use ArrayPress\Stripe\Format;
 use ArrayPress\RegisterTables\Traits\DateFormatters;
 use ArrayPress\RegisterTables\Traits\MoneyFormatters;
 use ArrayPress\RegisterTables\Traits\RelationFormatters;
@@ -245,7 +244,6 @@ class Columns {
 			'boolean'    => self::format_boolean( $value, $item, $column_name, $config ),
 			'code'       => self::format_code( $value, $item, $column_name, $config ),
 			'file_size'  => self::format_file_size( $value, $item, $column_name, $config ),
-			'stripe_price' => self::format_stripe_price( $value, $item, $column_name, $config ),
 			default      => esc_html( (string) $value ),
 		};
 	}

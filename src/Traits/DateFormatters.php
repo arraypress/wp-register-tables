@@ -12,8 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
-use ArrayPress\DateUtils\Dates;
-use ArrayPress\Stripe\Format;
+use ArrayPress\Dates\Site;
+use ArrayPress\FormatUtils\Duration;
 
 /**
  * When something happened, and how long it took.
@@ -27,7 +27,8 @@ trait DateFormatters {
 	/**
 	 * Format a date/datetime value as a human-readable time difference
 	 *
-	 * Uses the DateUtils library to render dates as relative time
+	 * Renders as relative time -- "2 hours ago" -- with the exact moment, in
+	 * the site's timezone and format, on hover.
 	 * (e.g., "2 hours ago") with the full date shown on hover.
 	 *
 	 * @param mixed  $value       Date string, timestamp, or DateTime object.
@@ -40,13 +41,24 @@ trait DateFormatters {
 	 * @since 1.0.0
 	 */
 	public static function format_date( $value, $item, string $column_name, array $config = [] ): string {
-		return Dates::render_date( $value ) ?? self::render_empty();
+		$pair = Site::relative_with_exact( (string) $value );
+
+		if ( '' === $pair['text'] ) {
+			return self::render_empty();
+		}
+
+		return sprintf(
+			'<time datetime="%s" title="%s">%s</time>',
+			esc_attr( (string) $value ),
+			esc_attr( $pair['title'] ),
+			esc_html( $pair['text'] )
+		);
 	}
 
 	/**
 	 * Format a duration value in seconds as a human-readable string
 	 *
-	 * Uses the DateUtils library to render durations like "2h 15m" or "3 days".
+	 * Renders a count of seconds as "2h 15m".
 	 *
 	 * @param mixed  $value       Duration in seconds.
 	 * @param object $item        Data object.
@@ -58,6 +70,10 @@ trait DateFormatters {
 	 * @since 1.0.0
 	 */
 	public static function format_duration( $value, $item, string $column_name, array $config = [] ): string {
-		return Dates::render_duration( $value ) ?? self::render_empty();
+		if ( ! is_numeric( $value ) ) {
+			return self::render_empty();
+		}
+
+		return esc_html( Duration::compact( (int) $value ) );
 	}
 }

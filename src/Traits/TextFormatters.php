@@ -13,7 +13,6 @@ declare( strict_types=1 );
 namespace ArrayPress\RegisterTables\Traits;
 
 use ArrayPress\StatusBadge\StatusBadge;
-use ArrayPress\Stripe\Format;
 
 /**
  * Values that are read rather than counted: an address, a number to ring, a

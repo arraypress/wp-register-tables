@@ -503,3 +503,21 @@ if ( ! function_exists( 'wp_die' ) ) {
 		throw new \RuntimeException( is_string( $message ) ? $message : 'wp_die' );
 	}
 }
+
+if ( ! function_exists( 'wp_timezone' ) ) {
+	function wp_timezone(): DateTimeZone {
+		return new DateTimeZone( $GLOBALS['rt_options']['timezone'] ?? 'UTC' );
+	}
+}
+
+if ( ! function_exists( 'date_i18n' ) ) {
+	function date_i18n( $format, $timestamp = null ) {
+		return gmdate( (string) $format, null === $timestamp ? time() : (int) $timestamp );
+	}
+}
+
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	function number_format_i18n( $number, $decimals = 0 ) {
+		return number_format( (float) $number, (int) $decimals );
+	}
+}
