@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\Row;
+
 use ArrayPress\RegisterTables\Columns;
 use ArrayPress\RegisterTables\Manager;
 
@@ -68,17 +70,12 @@ trait ColumnRenderer {
             }
         }
 
-        // Try getter method (e.g., get_email() for 'email' column)
-        $getter = 'get_' . $column_name;
-        if ( method_exists( $item, $getter ) ) {
-            $value = $item->$getter();
-
-            return $this->auto_format_column( $column_name, $value, $item );
-        }
-
-        // Try direct property access
-        if ( property_exists( $item, $column_name ) ) {
-            return $this->auto_format_column( $column_name, $item->$column_name, $item );
+        // A getter, a property or an array key — whichever the row has.
+        // method_exists() and property_exists() both throw a TypeError on an
+        // array, so a column with no callback used to fatal for any table
+        // whose query returned arrays.
+        if ( Row::has( $item, $column_name ) ) {
+            return $this->auto_format_column( $column_name, Row::get( $item, $column_name ), $item );
         }
 
         // No value found

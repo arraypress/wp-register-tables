@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\Row;
+
 use ArrayPress\RegisterTables\Request;
 
 /**
@@ -161,23 +163,20 @@ trait QueryBuilder {
     }
 
     /**
-     * Get item ID from item object
+     * Get a row's id
      *
-     * Extracts the ID from a data object, checking for get_id() method
-     * first, then falling back to id property.
+     * Whatever shape the row is: a get_id() method, an id property, or an
+     * `id` key. method_exists() throws a TypeError on an array, so this used
+     * to fatal for any table whose query returned arrays.
      *
-     * @param object $item Data object.
+     * @param mixed $item The row.
      *
      * @return int Item ID.
      * @since 1.0.0
      *
      */
     private function get_item_id( $item ): int {
-        if ( method_exists( $item, 'get_id' ) ) {
-            return (int) $item->get_id();
-        }
-
-        return (int) ( $item->id ?? 0 );
+        return Row::id( $item );
     }
 
     /**

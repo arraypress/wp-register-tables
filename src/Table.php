@@ -253,15 +253,7 @@ class Table extends WP_List_Table {
         // throws a TypeError on anything else, so this used to fatal on the
         // first row of any table built that way, with a stack trace instead
         // of a screen.
-        $status = '';
-
-        if ( is_object( $item ) && method_exists( $item, 'get_status' ) ) {
-            $status = (string) $item->get_status();
-        } elseif ( is_object( $item ) && isset( $item->status ) ) {
-            $status = (string) $item->status;
-        } elseif ( is_array( $item ) && isset( $item['status'] ) ) {
-            $status = (string) $item['status'];
-        }
+        $status = (string) Row::get( $item, 'status', '' );
 
         if ( '' !== $status ) {
             $classes .= ' status-' . sanitize_html_class( $status );
