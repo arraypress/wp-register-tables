@@ -367,12 +367,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-money.git",
-                "reference": "26d9ada079831b7e23d5f7effbf29fa89616bc6a"
+                "reference": "c25413d658cb5ae15a3d7d1cbf674e11ccaee080"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-money/zipball/26d9ada079831b7e23d5f7effbf29fa89616bc6a",
-                "reference": "26d9ada079831b7e23d5f7effbf29fa89616bc6a",
+                "url": "https://api.github.com/repos/arraypress/wp-money/zipball/c25413d658cb5ae15a3d7d1cbf674e11ccaee080",
+                "reference": "c25413d658cb5ae15a3d7d1cbf674e11ccaee080",
                 "shasum": ""
             },
             "require": {
@@ -389,7 +389,10 @@
             "autoload": {
                 "psr-4": {
                     "ArrayPress\\Money\\": "src/"
-                }
+                },
+                "files": [
+                    "src/Functions.php"
+                ]
             },
             "autoload-dev": {
                 "psr-4": {
@@ -437,7 +440,7 @@
                 "issues": "https://github.com/arraypress/wp-money/issues",
                 "source": "https://github.com/arraypress/wp-money"
             },
-            "time": "2026-08-25T17:40:38+00:00"
+            "time": "2026-08-25T19:28:29+00:00"
         },
         {
             "name": "arraypress/wp-status-badge",

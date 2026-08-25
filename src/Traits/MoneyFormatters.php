@@ -49,7 +49,7 @@ trait MoneyFormatters {
 			return self::render_empty();
 		}
 
-		return Render::amount( (int) $value, self::resolve_currency( $item, $config ) );
+		return Render::price( (int) $value, array( 'currency' => self::resolve_currency( $item, $config ) ) );
 	}
 
 	/**
@@ -79,7 +79,7 @@ trait MoneyFormatters {
 			return self::format_percentage( $value, $item, $column_name, $config );
 		}
 
-		return Render::amount( (int) $value, self::resolve_currency( $item, $config ) );
+		return Render::price( (int) $value, array( 'currency' => self::resolve_currency( $item, $config ) ) );
 	}
 
 	/**
