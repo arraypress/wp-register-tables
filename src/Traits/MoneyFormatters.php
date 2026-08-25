@@ -12,7 +12,7 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
-use ArrayPress\Money\Money;
+use ArrayPress\Money\Currencies;
 use ArrayPress\Money\Render;
 
 /**
@@ -121,13 +121,13 @@ trait MoneyFormatters {
 		$currency = $config['currency']
 			?? self::resolve_method( $item, [ 'get_currency', 'get_currency_code' ] );
 
-		if ( is_string( $currency ) && Money::supports( $currency ) ) {
+		if ( is_string( $currency ) && Currencies::supports( $currency ) ) {
 			return $currency;
 		}
 
 		$default = (string) apply_filters( 'register_tables_default_currency', 'USD' );
 
-		return Money::supports( $default ) ? $default : 'USD';
+		return Currencies::supports( $default ) ? $default : 'USD';
 	}
 
 	/**

@@ -219,4 +219,52 @@ final class ColumnsTest extends TestCase {
 
 		$this->assertStringContainsString( '2026/08/24', $html );
 	}
+
+	/**
+	 * A price column renders the row's own currency.
+	 *
+	 * The test that was missing when this trait was rewritten: nothing
+	 * exercised resolve_currency(), so a call to a method that does not exist
+	 * -- Money::supports() rather than Currencies::supports() -- sat in the
+	 * file and the suite stayed green. It would have fatalled on the first
+	 * row that carried a currency.
+	 */
+	public function test_a_price_column_uses_the_rows_currency(): void {
+		$row = (object) [ 'total' => 4999 ];
+
+		$this->assertStringContainsString(
+			'$49.99',
+			Columns::auto_format( 'total', 4999, $row, [ 'type' => 'price' ] )
+		);
+
+		// A row that names its own currency is formatted in it, decimals and
+		// all -- 1000 is a thousand yen, not ten.
+		$japanese = new class() {
+			/**
+			 * @return string
+			 */
+			public function get_currency(): string {
+				return 'JPY';
+			}
+		};
+
+		$rendered = Columns::auto_format( 'total', 1000, $japanese, [ 'type' => 'price' ] );
+
+		$this->assertStringContainsString( '1,000', $rendered );
+		$this->assertStringNotContainsString( '10.00', $rendered );
+	}
+
+	/**
+	 * A rate column asks the row whether it is a percentage.
+	 *
+	 * A discount of 20 is twenty percent or twenty pence and the number
+	 * cannot say which.
+	 */
+	public function test_a_rate_column_reads_the_rows_type(): void {
+		$percent = (object) [ 'rate' => 20, 'rate_type' => 'percent' ];
+		$flat    = (object) [ 'rate' => 20, 'rate_type' => 'flat' ];
+
+		$this->assertStringContainsString( '20%', Columns::auto_format( 'rate', 20, $percent, [ 'type' => 'rate' ] ) );
+		$this->assertStringContainsString( '0.20', Columns::auto_format( 'rate', 20, $flat, [ 'type' => 'rate' ] ) );
+	}
 }
