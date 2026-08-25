@@ -393,6 +393,52 @@ final class TableTest extends TestCase {
 		];
 	}
 
+
+	/**
+	 * A table with no status views still knows how many items it has.
+	 *
+	 * Counts are for the status links above the table, so a table with no
+	 * statuses has no reason to supply them — and one that supplied only
+	 * get_total() was told it had nothing. "0 items" above a full page of
+	 * them, and no pagination at all, because the pager works from that
+	 * number.
+	 */
+	public function test_a_table_without_counts_uses_its_total_callback(): void {
+		$table = $this->table(
+			[
+				'columns'   => [ 'title' => 'Title' ],
+				'callbacks' => [
+					'get_items' => static fn(): array => [ [ 'id' => 1, 'title' => 'Widget' ] ],
+					'get_total' => static fn(): int => 240,
+				],
+			]
+		);
+
+		$table->prepare_items();
+
+		$this->assertSame( 240, (int) $table->pagination_args()['total_items'] );
+	}
+
+	/**
+	 * And a counts callback still wins, because it knows about the statuses.
+	 */
+	public function test_a_counts_callback_wins(): void {
+		$table = $this->table(
+			[
+				'columns'   => [ 'title' => 'Title' ],
+				'callbacks' => [
+					'get_items'  => static fn(): array => [],
+					'get_counts' => static fn(): array => [ 'total' => 12 ],
+					'get_total'  => static fn(): int => 240,
+				],
+			]
+		);
+
+		$table->prepare_items();
+
+		$this->assertSame( 12, (int) $table->pagination_args()['total_items'] );
+	}
+
 }
 
 /**

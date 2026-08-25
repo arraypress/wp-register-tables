@@ -122,11 +122,10 @@ trait QueryBuilder {
             $this->counts = call_user_func( $this->config['callbacks']['get_counts'] );
         }
 
-        // Ensure total exists
-        if ( empty( $this->counts ) ) {
-            $this->counts = [ 'total' => 0 ];
-        }
-
+        // Deliberately not invented. A fabricated total of nought is
+        // indistinguishable from a real one, so a table with no counts
+        // callback looked like a table that had counted itself and found
+        // nothing — and the get_total() fallback below it never ran.
         return $this->counts;
     }
 

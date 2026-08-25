@@ -46,7 +46,20 @@ trait Filtering {
                 return (int) $this->counts[ $this->status ];
             }
 
-            return (int) ( $this->counts['total'] ?? 0 );
+            if ( isset( $this->counts['total'] ) ) {
+                return (int) $this->counts['total'];
+            }
+
+            // A table with no status views has no reason to supply a counts
+            // callback, and one that supplies only get_total() used to be
+            // told it had nothing: "0 items" above a full page of them, and
+            // no pagination, because the total the pager works from was
+            // nought.
+            if ( isset( $this->config['callbacks']['get_total'] ) && is_callable( $this->config['callbacks']['get_total'] ) ) {
+                return (int) call_user_func( $this->config['callbacks']['get_total'], [] );
+            }
+
+            return 0;
         }
 
         // Filters are active — get count from callback or count items
