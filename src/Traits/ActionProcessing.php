@@ -90,6 +90,14 @@ trait ActionProcessing {
             $clean_args['status'] = Request::key( 'status' );
         }
 
+        // Preserve the sort, which the form now carries and which would
+        // otherwise be dropped by the very redirect meant to tidy the URL.
+        foreach ( [ 'orderby', 'order' ] as $key ) {
+            if ( Request::filled( $key ) ) {
+                $clean_args[ $key ] = Request::key( $key );
+            }
+        }
+
         // Preserve custom filters
         foreach ( $config['filters'] as $filter_key => $filter ) {
             if ( Request::filled( $filter_key ) ) {

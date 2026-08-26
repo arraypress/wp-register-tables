@@ -521,3 +521,13 @@ if ( ! function_exists( 'number_format_i18n' ) ) {
 		return number_format( (float) $number, (int) $decimals );
 	}
 }
+
+/*
+ * page_args() reads the query string back out of the URL page_url() built,
+ * so the suite needs core's parser as well as its builder.
+ */
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( (string) $url, $component );
+	}
+}

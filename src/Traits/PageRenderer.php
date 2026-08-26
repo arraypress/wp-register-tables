@@ -85,23 +85,49 @@ trait PageRenderer {
             ?>
 
             <form method="get">
-                <input type="hidden" name="page" value="<?php echo esc_attr( $config['menu_slug'] ); ?>">
-
                 <?php
-                // Preserve essential params (not nonce, action, etc.)
-                $preserve_params = [ 'status' ];
-
-                // Add filter keys to preserve list
-                foreach ( $config['filters'] as $filter_key => $filter ) {
-                    $preserve_params[] = $filter_key;
+                /*
+                 * Every argument the page's own URL carries.
+                 *
+                 * A GET form replaces the query string outright, so anything
+                 * not written here as a hidden input is simply gone when the
+                 * form submits -- and for a table hanging off
+                 * `edit.php?post_type=X`, losing post_type is losing the
+                 * screen. WordPress builds the page hook from $pagenow plus
+                 * $typenow; with no post_type it looks for the page under
+                 * plain `edit.php`, finds nothing, and answers "Sorry, you
+                 * are not allowed to access this page." Which is what every
+                 * bulk action and every filter did.
+                 *
+                 * Read back out of page_url() rather than listed again here,
+                 * so the form cannot disagree with the links and redirects
+                 * the rest of the library builds about what identifies this
+                 * page.
+                 */
+                foreach ( self::page_args( $config ) as $key => $value ) {
+                    printf(
+                            '<input type="hidden" name="%s" value="%s">',
+                            esc_attr( (string) $key ),
+                            esc_attr( (string) $value )
+                    );
                 }
 
-                foreach ( $preserve_params as $key ) {
+                /*
+                 * The status views are links rather than controls, so the
+                 * one being viewed has to be carried by hand. So is the
+                 * sort, which is otherwise lost the moment anything is
+                 * searched or filtered.
+                 *
+                 * The filters are deliberately not here: each renders its
+                 * own select inside this form, and a hidden input beside it
+                 * would post the same key twice.
+                 */
+                foreach ( [ 'status', 'orderby', 'order' ] as $key ) {
                     if ( Request::filled( $key ) ) {
                         printf(
                                 '<input type="hidden" name="%s" value="%s">',
                                 esc_attr( $key ),
-                                esc_attr( Request::text( $key ) )
+                                esc_attr( Request::key( $key ) )
                         );
                     }
                 }
