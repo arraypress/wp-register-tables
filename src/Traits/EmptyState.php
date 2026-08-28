@@ -94,6 +94,7 @@ trait EmptyState {
      * - `heading`     (string)          Main heading text (auto-generated from labels if empty)
      * - `description` (string)          Subtext below the heading
      * - `button`      (string|callable) Override for add_button behavior
+     * - `link`        (array)           A place to read more: [ 'text', 'url' ]
      *
      * @since 2.0.0
      */
@@ -153,6 +154,36 @@ trait EmptyState {
                 <div class="list-table-empty-state__action">
                     <?php $this->render_empty_state_button( $button_config, $add_new_label ); ?>
                 </div>
+            <?php endif; ?>
+
+            <?php
+            /*
+             * Somewhere to read more. Its own element rather than markup
+             * inside the description, because the description is escaped --
+             * a link written into it comes out as the text of an anchor tag
+             * rather than as a link, which is the sort of thing nobody
+             * notices until a screenshot arrives.
+             */
+            $link = $empty_state['link'] ?? [];
+
+            if ( ! empty( $link['text'] ) && ! empty( $link['url'] ) ) :
+                $external = 0 === strpos( (string) $link['url'], 'http' )
+                    && false === strpos( (string) $link['url'], (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+                ?>
+                <p class="list-table-empty-state__link">
+                    <a href="<?php echo esc_url( (string) $link['url'] ); ?>"
+                        <?php if ( $external ) : ?>
+                            target="_blank" rel="noopener noreferrer"
+                        <?php endif; ?>
+                    >
+                        <?php echo esc_html( (string) $link['text'] ); ?>
+                        <?php if ( $external ) : ?>
+                            <span class="screen-reader-text">
+                                <?php esc_html_e( '(opens in a new tab)', 'arraypress' ); ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </p>
             <?php endif; ?>
         </div>
         <?php

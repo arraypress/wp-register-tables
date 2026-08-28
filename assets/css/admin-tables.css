@@ -125,8 +125,16 @@
 .list-table-empty-state__description {
     font-size: 13px;
     color: var(--at-text-secondary);
-    margin: 0 0 24px;
+    margin: 0 auto 24px;
     line-height: 1.5;
+    max-width: 34rem;
+}
+
+/* Under the button, because it is the second thing to do rather than an
+   alternative to the first. */
+.list-table-empty-state__link {
+    font-size: 13px;
+    margin: 16px 0 0;
 }
 
 .list-table-empty-state__action .button-primary {
