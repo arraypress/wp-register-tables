@@ -56,18 +56,34 @@ trait PageRenderer {
         $table->process_bulk_action();
         $table->prepare_items();
 
-        // Render header outside .wrap (EDD pattern).
-        //
-        // No count beside the heading: core puts none on any list table, and
-        // the number is already in the views above the table and in the
-        // pagination beside it. A third copy in a different shape is the one
-        // part of the screen that does not look like WordPress.
-        self::render_header( $id, $config );
-
-        // Start WordPress wrap
+        /*
+         * The shape of wp-admin/edit.php, in its order:
+         *
+         *     <div class="wrap">
+         *       <h1 class="wp-heading-inline">
+         *       <a class="page-title-action">
+         *       <span class="subtitle">          only while searching
+         *       <hr class="wp-header-end">
+         *       ...notices...
+         *       views()
+         *       <form> search_box() hidden inputs display() </form>
+         *     </div>
+         *
+         * The heading inside the wrap is the part that matters: core's own
+         * spacing then applies, and none of it has to be re-stated. Outside,
+         * as this drew it before, every bit of that had to be approximated in
+         * a stylesheet -- and never quite matched.
+         */
         ?>
         <div class="wrap">
+            <?php self::render_header( $id, $config ); ?>
             <?php self::render_admin_notices( $id, $config ); ?>
+
+            <?php
+            // Above the form, as core has it: the views are links rather than
+            // controls, and nothing inside the form submits them.
+            $table->views();
+            ?>
 
             <?php
 
