@@ -100,11 +100,7 @@ trait Registration {
             'help'           => [],
 
             // Header options
-            'logo'           => '',
             'header_title'   => '',
-            'header_badge'   => '',
-
-            // Body class
             'body_class'     => '',
 
             // Row customization

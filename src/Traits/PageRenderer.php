@@ -14,7 +14,6 @@ namespace ArrayPress\RegisterTables\Traits;
 
 use ArrayPress\RegisterTables\Request;
 use ArrayPress\RegisterTables\Table;
-use ArrayPress\FieldKit\Support\PageHeader;
 
 /**
  * Drawing the page around the list table.
@@ -69,7 +68,6 @@ trait PageRenderer {
         ?>
         <div class="wrap">
             <?php self::render_admin_notices( $id, $config ); ?>
-            <?php self::render_search_results_banner( $config ); ?>
 
             <?php
 
@@ -132,9 +130,6 @@ trait PageRenderer {
                     }
                 }
 
-                // Render table components
-                $table->views();
-
                 if ( $config['searchable'] !== false ) {
                     $table->search_box(
                             $config['labels']['search'] ?: __( 'Search', 'arraypress' ),
@@ -181,63 +176,58 @@ trait PageRenderer {
                 ? $config['header_title']
                 : ( $config['labels']['title'] ?? '' );
 
-        // The kit's header, which is core's own privacy-settings header. This
-        // library used to draw its own — a different height, a different type
-        // scale, and a slash between the logo and the title — so a plugin
-        // with a settings page and a list table had two headers that were
-        // nearly but not quite the same. There is one now.
-        //
-        // The count rides in the badge slot, which is what it was already
-        // trying to be inside the title, and the buttons in the actions slot
-        // on the right — where a date range and a refresh control go on a
-        // reports screen.
-        ob_start();
-        self::render_sync_buttons( $config );
-        self::render_add_button( $config );
-        $actions = (string) ob_get_clean();
-
-        $header = PageHeader::render(
-                [
-					'title'         => $header_title,
-					'logo'          => (string) ( $config['logo'] ?? '' ),
-					'logo_position' => (string) ( $config['logo_position'] ?? 'beside' ),
-
-					// A list table's heading and its Add button sit side by side at
-					// the left, as core's own do and as EDD's do. Centred is the
-					// settings-page shape and looks wrong with a list under it.
-					'align'         => (string) ( $config['align'] ?? 'left' ),
-					'badge'         => self::header_badge( $config ),
-					'actions'       => $actions,
-                ]
-        );
-
-        echo $header; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the kit escapes as it builds.
-    }
-
-    /**
-     * What goes in the header's badge slot.
-     *
-     * A consumer's own badge if there is one, otherwise the item count. The
-     * count reads as a badge — "People (8)" — which is what it was already
-     * trying to be while it sat inside the title.
-     *
-     * @param array  $config      Table configuration.
-     *
-     * @return mixed
-     */
-    private static function header_badge( array $config ) {
-        $badge = $config['header_badge'] ?? '';
-
-        // A callable was one of the three shapes this accepted. The kit's
-        // badge takes a string or an array, so the callable is resolved here
-        // and its answer used — which does mean one returning markup now has
-        // that markup escaped rather than printed. Nothing in these
-        // repositories passes one, and a badge is a word.
-        if ( ! is_string( $badge ) && is_callable( $badge ) ) {
-            $badge = call_user_func( $badge );
+        if ( '' === (string) $header_title ) {
+            return;
         }
 
-        return $badge;
+        /*
+         * core's own list-table header, and nothing else: an h1 with
+         * .wp-heading-inline, the actions after it, and the <hr> that tells
+         * WordPress where to put admin notices.
+         *
+         * This used to draw the privacy-settings header -- a white band, a
+         * logo slot, a badge, its own type scale. It looked like a settings
+         * page above a list of rows, it needed a growing pile of CSS to sit
+         * where core puts things, and every screen using it had a heading
+         * that lined up with nothing else in the admin. A list of products
+         * should look like a list of posts.
+         *
+         * The count is not a badge any more either. core writes it as a
+         * subtitle after the heading, which is where a reader of any other
+         * list already knows to look.
+         */
+        ?>
+        <h1 class="wp-heading-inline"><?php echo esc_html( $header_title ); ?></h1>
+        <?php
+
+        self::render_sync_buttons( $config );
+        self::render_add_button( $config );
+
+        /*
+         * core's subtitle, in core's words and core's place: after the add
+         * button, before the rule, and only while something is being searched
+         * for. This library drew a banner of its own instead -- its own div,
+         * a magnifying glass, a Clear link -- below the heading, which is a
+         * component no other list screen in WordPress has.
+         *
+         * Clearing a search is what the empty search box already does, and
+         * what the browser's back button does.
+         */
+        $search = Request::text( 's' );
+
+        if ( '' !== $search ) {
+            echo '<span class="subtitle">';
+            printf(
+                /* translators: %s: Search query. */
+                esc_html__( 'Search results for: %s', 'arraypress' ),
+                '<strong>' . esc_html( $search ) . '</strong>'
+            );
+            echo '</span>';
+        }
+
+        // Where admin notices land. Not optional -- without it every notice
+        // on the screen renders above the heading instead of below it.
+        echo '<hr class="wp-header-end">';
     }
 
     /**
@@ -321,47 +311,5 @@ trait PageRenderer {
 				'class' => 'page-title-action',
             ] );
         }
-    }
-
-    /**
-     * Render search results banner
-     *
-     * Shows a banner when search results are being displayed,
-     * with a link to clear the search.
-     *
-     * @param array $config Table configuration.
-     *
-     * @return void
-     * @since 1.0.0
-     *
-     */
-    private static function render_search_results_banner( array $config ): void {
-        $search = Request::text( 's' );
-
-        if ( empty( $search ) ) {
-            return;
-        }
-
-        $clear_url = remove_query_arg( 's', self::get_clean_base_url( $config ) );
-        $plural    = $config['labels']['plural'] ?? 'items';
-
-        ?>
-        <div class="list-table-search-banner">
-			<span class="list-table-search-banner__text">
-				<span class="dashicons dashicons-search"></span>
-				<?php
-                printf(
-                /* translators: 1: search term, 2: plural item name */
-                        esc_html__( 'Search results for %1$s in %2$s', 'arraypress' ),
-                        '<strong>"' . esc_html( $search ) . '"</strong>',
-                        esc_html( $plural )
-                );
-                ?>
-			</span>
-            <a href="<?php echo esc_url( $clear_url ); ?>" class="list-table-search-banner__clear">
-                <?php esc_html_e( 'Clear search', 'arraypress' ); ?>
-            </a>
-        </div>
-        <?php
     }
 }

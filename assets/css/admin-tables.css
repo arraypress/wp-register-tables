@@ -51,47 +51,6 @@
 }
 
 /* ==========================================================================
-   Search Results Banner
-   ========================================================================== */
-
-.list-table-search-banner {
-    background: var(--at-bg-info);
-    border: 1px solid var(--at-border);
-    border-radius: var(--at-radius-md);
-    padding: 12px 16px;
-    margin: 16px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.list-table-search-banner__text {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--at-text-primary);
-    font-size: 13px;
-}
-
-.list-table-search-banner__text .dashicons {
-    color: var(--at-accent);
-}
-
-.list-table-search-banner__text strong {
-    color: var(--at-text-primary);
-}
-
-.list-table-search-banner__clear {
-    text-decoration: none;
-    color: var(--at-accent);
-    font-size: 13px;
-}
-
-.list-table-search-banner__clear:hover {
-    color: var(--at-accent-hover);
-}
-
-/* ==========================================================================
    Empty State
    Shown when the table has zero items total (no search/filter active).
    Follows WooCommerce / WordPress core empty post type screen patterns.
@@ -438,13 +397,7 @@ span.column-customer-email {
 
 @media screen and (max-width: 782px) {
 
-    .list-table-search-banner {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    /* Row actions are a hover affordance and a phone has no hover, so the
+        /* Row actions are a hover affordance and a phone has no hover, so the
        rule above would put every Edit and Delete link out of reach. */
     .admin-table .wp-list-table .row-actions,
     .admin-table .wp-list-table .row-actions.visible {
