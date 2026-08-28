@@ -184,12 +184,23 @@ trait ViewsAndFilters {
             }
         }
 
-        if ( empty( $options ) ) {
-            return;
-        }
+        /*
+         * Drawn even with nothing to choose from. Returning here left the
+         * Filter button standing on its own -- the button asks whether there
+         * are filters at all, not whether any of them found options, so a
+         * country filter on a screen where no order has a country yet showed
+         * a button beside nothing.
+         *
+         * A select holding only its own label says the same thing the button
+         * does and keeps the row the shape it will be once there is data,
+         * which is the whole reason the filter is declared before there is
+         * any.
+         */
+        $empty = empty( $options );
 
         ?>
-        <select name="<?php echo esc_attr( $key ); ?>" id="filter-by-<?php echo esc_attr( $key ); ?>">
+        <select name="<?php echo esc_attr( $key ); ?>" id="filter-by-<?php echo esc_attr( $key ); ?>"
+            <?php disabled( $empty ); ?>>
             <?php if ( $label ) : ?>
                 <option value=""><?php echo esc_html( $label ); ?></option>
             <?php endif; ?>
