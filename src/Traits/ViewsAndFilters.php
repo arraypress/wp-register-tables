@@ -45,6 +45,15 @@ trait ViewsAndFilters {
         // Ensure counts are loaded
         $this->get_counts();
 
+        // Nothing at all, anywhere. The status links would read "All (0)"
+        // above an empty-state panel that already says the same thing, so
+        // there is nothing to navigate between and nothing to say. This is
+        // the unfiltered total, so a filter that happens to match nothing
+        // still keeps the links -- that is when they are most wanted.
+        if ( 1 > (int) ( $this->counts['total'] ?? 0 ) ) {
+            return [];
+        }
+
         // All items view
         $views['all'] = sprintf(
                 '<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
