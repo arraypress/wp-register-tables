@@ -63,6 +63,49 @@ register_admin_table( 'my_orders', [
 `get_items` is handed the query — search, sort, page, filters, already
 resolved — and returns rows. That is the only part that knows about your data.
 
+## Hooks
+
+Every hook is suffixed with the table's own id, so a filter written for one
+plugin's orders table never reaches another's. `{table_id}` below is whatever
+was passed to `register_admin_table()`.
+
+### Filters
+
+| Hook | Filters |
+| --- | --- |
+| `arraypress_table_columns_{table_id}` | The columns, after the config is read |
+| `arraypress_table_hidden_columns_{table_id}` | Which columns start hidden |
+| `arraypress_table_sortable_columns_{table_id}` | Which columns can be sorted |
+| `arraypress_table_views_{table_id}` | The status links above the table |
+| `arraypress_table_row_actions_{table_id}` | The actions under a row |
+| `arraypress_table_bulk_actions_{table_id}` | The bulk actions dropdown |
+| `arraypress_table_query_args_{table_id}` | The arguments before items are fetched |
+| `arraypress_table_admin_notices_{table_id}` | The notices shown above the table |
+
+### Actions
+
+| Hook | Fires |
+| --- | --- |
+| `arraypress_before_render_table_{table_id}` | Before the table is drawn |
+| `arraypress_after_render_table_{table_id}` | After the table is drawn |
+| `arraypress_table_single_action_{table_id}` | A row action with no handler of its own |
+| `arraypress_table_bulk_action_{table_id}` | A bulk action was applied |
+| `arraypress_table_item_deleted_{table_id}` | An item was deleted |
+
+A bulk action also fires a second, narrower action naming the action itself,
+which is usually the one worth hooking:
+
+```php
+add_action( 'arraypress_table_bulk_action_{table_id}_{action}', function ( array $ids ) {
+	foreach ( $ids as $id ) {
+		my_plugin_refund_order( (int) $id );
+	}
+} );
+```
+
+Both the table id and the action name are substituted, and the broader hook in
+the table above still fires alongside it.
+
 ## Requirements
 
 * PHP 8.3 or later

@@ -102,11 +102,23 @@ trait ColumnRenderer {
         $output = '';
 
         // Render "before" content (e.g., avatar)
+        //
+        // Wrapped, because an avatar and a title emitted as bare siblings
+        // stack: the title is a block-level <strong> in most themes, and a
+        // 40px image followed by one puts the name underneath the picture
+        // rather than beside it. Core floats the equivalent -- see
+        // `.column-username img` in list-tables.css -- and this is the hook
+        // that lets us do the same without every consumer writing the CSS.
         if ( isset( $config['before'] ) ) {
-            if ( is_callable( $config['before'] ) ) {
-                $output .= call_user_func( $config['before'], $item );
-            } else {
-                $output .= $config['before'];
+            $before = is_callable( $config['before'] )
+                    ? call_user_func( $config['before'], $item )
+                    : $config['before'];
+
+            if ( '' !== (string) $before ) {
+                $output .= sprintf(
+                        '<span class="list-table-column__before">%s</span>',
+                        $before
+                );
             }
         }
 

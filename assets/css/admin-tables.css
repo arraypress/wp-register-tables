@@ -463,3 +463,23 @@ span.column-customer-email {
     }
 
 }
+
+/*
+ * A column's "before" content — an avatar, a thumbnail, a status dot.
+ *
+ * Floated rather than laid out with flex: the title beside it is often a
+ * block-level <strong>, and the row actions underneath belong in the same
+ * text flow. Core does the same for the users screen, and matching it means
+ * a table built here sits at the same rhythm as one built by WordPress.
+ */
+.list-table-column__before {
+	float: left;
+	margin-right: 10px;
+	margin-top: 1px;
+	line-height: 0;
+}
+
+.list-table-column__before img {
+	display: block;
+	border-radius: 3px;
+}
