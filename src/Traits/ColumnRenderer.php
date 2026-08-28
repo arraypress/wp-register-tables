@@ -105,20 +105,31 @@ trait ColumnRenderer {
         //
         // Wrapped, because an avatar and a title emitted as bare siblings
         // stack: the title is a block-level <strong> in most themes, and a
-        // 40px image followed by one puts the name underneath the picture
-        // rather than beside it. Core floats the equivalent -- see
-        // `.column-username img` in list-tables.css -- and this is the hook
-        // that lets us do the same without every consumer writing the CSS.
+        // A 40px image followed by a block-level title puts the name
+        // underneath the picture rather than beside it. Core floats the
+        // equivalent -- `.column-username img` in list-tables.css -- and the
+        // stylesheet here does the same for a primary column's image, so a
+        // consumer supplying one does not have to write the CSS.
         if ( isset( $config['before'] ) ) {
             $before = is_callable( $config['before'] )
                     ? call_user_func( $config['before'], $item )
                     : $config['before'];
 
             if ( '' !== (string) $before ) {
-                $output .= sprintf(
-                        '<span class="list-table-column__before">%s</span>',
-                        $before
-                );
+                /*
+                 * Unwrapped, and followed by a space, which is exactly what
+                 * users.php does:
+                 *
+                 *     $avatar = get_avatar( $user_object->ID, 32 );
+                 *     ... "$avatar $edit"
+                 *
+                 * A span around it took the float, leaving the image inside
+                 * it floated a second time by the rule meant for the image,
+                 * and carried a border radius and a block display that no
+                 * avatar in the admin has. Bare, one rule applies, and it is
+                 * core's own.
+                 */
+                $output .= $before . ' ';
             }
         }
 

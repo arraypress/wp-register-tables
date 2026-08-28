@@ -140,9 +140,13 @@
    Avatar Styling (matches WordPress users table)
    ========================================================================== */
 
+/* core's own values, from `.column-username img` in list-tables.css. The
+   primary column is included because that is where a `before` image goes,
+   and core only names the columns its own screens happen to use. */
 .wp-list-table .column-name img.avatar,
 .wp-list-table .column-customer img.avatar,
-.wp-list-table .column-product_name img.avatar {
+.wp-list-table .column-product_name img.avatar,
+.wp-list-table .column-primary > img {
     float: left;
     margin-right: 10px;
     margin-top: 1px;
@@ -420,14 +424,3 @@ span.column-customer-email {
  * text flow. Core does the same for the users screen, and matching it means
  * a table built here sits at the same rhythm as one built by WordPress.
  */
-.list-table-column__before {
-	float: left;
-	margin-right: 10px;
-	margin-top: 1px;
-	line-height: 0;
-}
-
-.list-table-column__before img {
-	display: block;
-	border-radius: 3px;
-}
