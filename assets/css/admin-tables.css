@@ -319,19 +319,6 @@ a.column-term:hover {
    Table Tweaks
    ========================================================================== */
 
-.admin-table div.metabox-prefs {
-    margin: 0 0 0 -20px !important;
-}
-
-.admin-table fieldset.metabox-prefs {
-    margin-left: 0 !important;
-}
-
-.admin-table .notice {
-    margin-top: 12px;
-    margin-left: 0;
-}
-
 /* ==========================================================================
    Column Subtitle
    Muted pill label shown beneath or beside the primary column title.

@@ -94,6 +94,39 @@ trait ScreenSetup {
         // Add column visibility options
         self::setup_column_options( $screen, $config );
 
+        /*
+         * The three headings core gives every list screen. They are only ever
+         * announced, never drawn -- WP_List_Table wraps the views, the
+         * pagination and the table itself in <h2 class="screen-reader-text">
+         * and reads these -- so without them a screen reader meets three
+         * unnamed regions where core names them.
+         *
+         * core sets these on edit.php, upload.php and every other list it
+         * ships. A list built from configuration should not be the one that
+         * does not.
+         */
+        $plural = $config['labels']['plural'] ?? __( 'items', 'arraypress' );
+
+        $screen->set_screen_reader_content(
+            [
+				'heading_views'      => sprintf(
+					/* translators: %s: plural item label */
+					__( 'Filter %s list', 'arraypress' ),
+					$plural
+				),
+				'heading_pagination' => sprintf(
+					/* translators: %s: plural item label */
+					__( '%s list navigation', 'arraypress' ),
+					ucfirst( $plural )
+				),
+				'heading_list'       => sprintf(
+					/* translators: %s: plural item label */
+					__( '%s list', 'arraypress' ),
+					ucfirst( $plural )
+				),
+            ]
+        );
+
         // Add help tabs if configured
         if ( ! empty( $config['help'] ) ) {
             self::setup_help_tabs( $screen, $config['help'] );
