@@ -326,11 +326,21 @@ trait Registration {
             $labels['title'] = ucfirst( $labels['plural'] );
         }
 
-        // Add New from singular
+        /*
+         * "Add Product", not "Add New Product". WordPress dropped the "New":
+         * class-wp-post-type.php has
+         *
+         *     'add_new_item' => array( __( 'Add Post' ), __( 'Add Page' ) )
+         *
+         * and that is the label edit.php prints on the button beside the
+         * heading. A list screen saying "Add New Product" next to one saying
+         * "Add Post" is the kind of difference nobody can name and everybody
+         * notices.
+         */
         if ( empty( $labels['add_new'] ) && ! empty( $labels['singular'] ) ) {
             $labels['add_new'] = sprintf(
                     /* translators: %s: the singular name of the thing being added */
-                    __( 'Add New %s', 'arraypress' ),
+                    __( 'Add %s', 'arraypress' ),
                     ucfirst( $labels['singular'] )
             );
         }
