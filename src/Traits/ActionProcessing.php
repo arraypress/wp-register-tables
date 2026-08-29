@@ -12,6 +12,9 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\InlineEdit;
+use ArrayPress\RegisterTables\InlineEditSave;
+
 use ArrayPress\RegisterTables\Request;
 use ArrayPress\RegisterTables\Table;
 
@@ -57,7 +60,7 @@ trait ActionProcessing {
                 // Last, and before the table queries: the rows redraw with
                 // the change already in them, which is core's behaviour --
                 // there, the page reloads.
-                BulkEdit::process_bulk_edit( $id, $config );
+                InlineEditSave::process_bulk_edit( $id, $config );
                 break;
             }
         }

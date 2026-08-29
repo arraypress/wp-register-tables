@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\InlineEdit;
+
 use ArrayPress\RegisterTables\Row;
 
 use ArrayPress\RegisterTables\Columns;
@@ -305,23 +307,42 @@ trait ColumnRenderer {
                 esc_attr( $id )
         );
 
-        if ( ! BulkEdit::has_bulk_edit( $this->config ) ) {
+        $bulk  = InlineEdit::has_bulk_edit( $this->config );
+        $quick = InlineEdit::has_quick_edit( $this->config );
+
+        if ( ! $bulk && ! $quick ) {
             return $checkbox;
         }
 
-        // The title the bulk editor lists this row under. Kept as its own
-        // hidden node rather than scraped out of the rendered title cell,
-        // which by then contains row actions, a thumbnail and whatever else
-        // a column decided to draw.
+        // The title the bulk editor lists this row under, and the quick
+        // editor opens with. Kept as its own hidden node rather than scraped
+        // out of the rendered title cell, which by then contains row actions,
+        // a thumbnail and whatever else a column decided to draw.
+        //
+        // Read through Row::get because a row is very often an array --
+        // get_results() with ARRAY_A, or a plugin that never had objects --
+        // and `$item->title` on one of those is a fatal, not an empty string.
         $title = '';
 
         foreach ( [ 'title', 'name', 'label' ] as $property ) {
-            if ( ! empty( $item->{$property} ) ) {
-                $title = (string) $item->{$property};
+            $value = (string) Row::get( $item, $property, '' );
+
+            if ( '' !== $value ) {
+                $title = $value;
                 break;
             }
         }
 
-        return $checkbox . BulkEdit::inline_data( (int) $id, $title );
+        // What each field currently is, so the quick editor opens showing the
+        // row as it stands rather than blank.
+        $values = [];
+
+        if ( $quick ) {
+            foreach ( InlineEdit::fields( $this->id, $this->config, 'quick_edit' ) as $name => $field ) {
+                $values[ $name ] = (string) Row::get( $item, (string) $name, '' );
+            }
+        }
+
+        return $checkbox . InlineEdit::inline_data( (int) $id, $title, $values );
     }
 }

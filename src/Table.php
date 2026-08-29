@@ -20,7 +20,6 @@ namespace ArrayPress\RegisterTables;
 
 use WP_List_Table;
 use ArrayPress\RegisterTables\Traits\BulkActions;
-use ArrayPress\RegisterTables\Traits\BulkEdit;
 use ArrayPress\RegisterTables\Traits\ColumnDefinitions;
 use ArrayPress\RegisterTables\Traits\ColumnRenderer;
 use ArrayPress\RegisterTables\Traits\EmptyState;
@@ -93,7 +92,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 class Table extends WP_List_Table {
 
     use BulkActions;
-    use BulkEdit;
     use ColumnDefinitions;
     use ColumnRenderer;
     use EmptyState;
@@ -263,11 +261,16 @@ class Table extends WP_List_Table {
 
         $classes = trim( $classes );
 
+        // The row carries its id so Quick Edit can find it, hide it, and
+        // replace it with what the save returned. Core does the same with
+        // `post-{ID}`.
+        $attributes = sprintf( ' id="item-%s"', esc_attr( (string) $this->get_item_id( $item ) ) );
+
         if ( ! empty( $classes ) ) {
-            echo '<tr class="' . esc_attr( $classes ) . '">';
-        } else {
-            echo '<tr>';
+            $attributes .= ' class="' . esc_attr( $classes ) . '"';
         }
+
+        echo '<tr' . $attributes . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts above.
 
         $this->single_row_columns( $item );
         echo '</tr>';

@@ -87,14 +87,30 @@ trait AssetManager {
                 'css/admin-tables.css'
         );
 
-        // Only when there is something to bulk edit. A script that binds
+        // Only when there is something to edit inline. A script that binds
         // nothing is still a request.
-        if ( ! empty( $config['bulk_edit'] ) ) {
+        if ( ! empty( $config['bulk_edit'] ) || ! empty( $config['quick_edit'] ) ) {
             wp_enqueue_composer_script(
-                    'list-table-bulk-edit',
+                    'list-table-inline-edit',
                     __FILE__,
-                    'js/bulk-edit.js',
-                    [ 'jquery' ]
+                    'js/inline-edit.js',
+                    [ 'jquery', 'wp-a11y' ]
+            );
+
+            // Every string the script can show, and where to post to.
+            // Hard-coded English in the script would be untranslatable, and
+            // the four places it can speak are all failure or announcement
+            // text -- exactly the moments where a reader needs their own
+            // language.
+            wp_localize_script(
+                    'list-table-inline-edit',
+                    'arrayPressInlineEdit',
+                    [
+						'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+						'error'          => __( 'The change could not be saved.', 'arraypress' ),
+						'saved'          => __( 'Changes saved.', 'arraypress' ),
+						'removeFromBulk' => __( 'Remove from Bulk Edit', 'arraypress' ),
+                    ]
             );
         }
 

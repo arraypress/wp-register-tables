@@ -369,9 +369,12 @@ final class TableTest extends TestCase {
 			$html = (string) ob_get_clean();
 		}
 
+		// Every row carries its id, so Quick Edit can find and replace it.
+		$this->assertStringContainsString( 'id="item-', $html );
+
 		// The cells are the stub's; what this decides is the row's class.
 		if ( '' === $expected ) {
-			$this->assertStringStartsWith( '<tr>', $html );
+			$this->assertStringNotContainsString( 'class=', $html );
 
 			return;
 		}

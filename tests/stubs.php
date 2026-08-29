@@ -560,3 +560,22 @@ if ( ! function_exists( 'submit_button' ) ) {
 		echo $button; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }
+
+if ( ! function_exists( 'check_ajax_referer' ) ) {
+	/**
+	 * The nonce check, which stops the request when it fails.
+	 *
+	 * Real WordPress dies here, and a stub that returned false instead would
+	 * let every test past the check continue into code the real thing never
+	 * reaches -- which is how a broken nonce check looks like a passing suite.
+	 */
+	function check_ajax_referer( $action, $name = false, $die = true ) {
+		$nonce = $_REQUEST[ $name ] ?? '';
+
+		if ( ! wp_verify_nonce( $nonce, $action ) ) {
+			wp_die( -1, 403 );
+		}
+
+		return 1;
+	}
+}

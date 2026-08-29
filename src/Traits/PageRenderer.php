@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\InlineEdit;
+
 use ArrayPress\RegisterTables\Request;
 use ArrayPress\RegisterTables\Table;
 
@@ -155,7 +157,7 @@ trait PageRenderer {
 
                 $table->display();
 
-                BulkEdit::render_bulk_edit_row( $id, $config, count( $table->get_columns() ) );
+                InlineEdit::render_inline_rows( $id, $config, count( $table->get_columns() ) );
                 ?>
             </form>
 

@@ -81,6 +81,8 @@ was passed to `register_admin_table()`.
 | `arraypress_table_bulk_actions_{table_id}` | The bulk actions dropdown |
 | `arraypress_table_query_args_{table_id}` | The arguments before items are fetched |
 | `arraypress_table_admin_notices_{table_id}` | The notices shown above the table |
+| `arraypress_table_quick_edit_fields_{table_id}` | The fields in the Quick Edit row |
+| `arraypress_table_bulk_edit_fields_{table_id}` | The fields in the Bulk Edit row |
 
 ### Actions
 
@@ -91,6 +93,9 @@ was passed to `register_admin_table()`.
 | `arraypress_table_single_action_{table_id}` | A row action with no handler of its own |
 | `arraypress_table_bulk_action_{table_id}` | A bulk action was applied |
 | `arraypress_table_item_deleted_{table_id}` | An item was deleted |
+| `arraypress_table_quick_edit_{table_id}` | One row was quick edited |
+| `arraypress_table_bulk_edit_{table_id}` | An edit was applied to a selection |
+| `arraypress_table_inline_edit_{table_id}` | Inside either inline editor, to print extra markup |
 
 A bulk action also fires a second, narrower action naming the action itself,
 which is usually the one worth hooking:
@@ -105,6 +110,53 @@ add_action( 'arraypress_table_bulk_action_{table_id}_{action}', function ( array
 
 Both the table id and the action name are substituted, and the broader hook in
 the table above still fires alongside it.
+
+## Quick Edit and Bulk Edit
+
+Core's two inline editors, on a table that is not a post type. Declaring
+either one is enough -- a table with only `quick_edit` gets the same fields in
+its bulk row, and the other way round.
+
+```php
+register_admin_table( 'my_products', [
+	// ...
+	'quick_edit'   => [
+		'status' => [
+			'label'   => __( 'Status', 'my-plugin' ),
+			'options' => [
+				'active' => __( 'Active', 'my-plugin' ),
+				'draft'  => __( 'Draft', 'my-plugin' ),
+			],
+		],
+	],
+	'bulk_actions' => [ 'edit' => __( 'Bulk edit', 'my-plugin' ) ],
+	'callbacks'    => [
+		'get_item' => 'my_plugin_get_product',
+	],
+] );
+```
+
+Neither editor writes anything. They validate what was submitted -- a select
+only accepts a value it actually offered -- and then fire an action, because
+only you know whether a status change also has to reach somewhere else:
+
+```php
+add_action( 'arraypress_table_quick_edit_{table_id}', function ( int $id, array $values ) {
+	my_plugin_update_product( $id, $values );
+}, 10, 2 );
+
+add_action( 'arraypress_table_bulk_edit_{table_id}', function ( array $ids, array $values ) {
+	foreach ( $ids as $id ) {
+		my_plugin_update_product( (int) $id, $values );
+	}
+}, 10, 2 );
+```
+
+Two things are worth knowing. `'edit'` in `bulk_actions` is what reveals the
+bulk row -- without it there is a bulk editor nothing opens. And Quick Edit
+redraws the saved row from `callbacks.get_item`; leave that out and the save
+happens but the row does not change, which reads exactly like a save that
+failed.
 
 ## Requirements
 

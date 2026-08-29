@@ -223,6 +223,11 @@ class Manager {
         // Enqueue CSS/JS assets
         add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
 
+        // Quick Edit saves over ajax, which is a separate request that never
+        // touches the admin page or its screen hooks -- so the endpoint is
+        // registered here rather than anywhere near the table it saves.
+        add_action( 'wp_ajax_arraypress_table_quick_edit', [ InlineEditSave::class, 'handle_quick_edit' ] );
+
         // Add body classes for table pages
         add_filter( 'admin_body_class', [ __CLASS__, 'add_body_class' ] );
 

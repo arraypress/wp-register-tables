@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\InlineEdit;
+
 use ArrayPress\RegisterTables\Manager;
 
 /**
@@ -60,6 +62,29 @@ trait RowActions {
         // Auto-add delete action if delete callback exists and no explicit delete action
         if ( $this->should_add_auto_delete_action( $actions ) ) {
             $actions['delete'] = $this->build_delete_action( $item_id );
+        }
+
+        // Quick Edit is added here rather than being configured, because a
+        // table declaring `quick_edit` fields has already said it wants it --
+        // and a set of fields with nothing to open them is a feature that
+        // silently does not exist. Inserted before delete so the destructive
+        // action stays last, which is where core keeps it.
+        if ( InlineEdit::has_quick_edit( $this->config ) ) {
+            $quick = [
+				'inline hide-if-no-js' => sprintf(
+						'<button type="button" class="button-link editinline" aria-label="%s" aria-expanded="false">%s</button>',
+						esc_attr__( 'Quick edit this item inline', 'arraypress' ),
+						esc_html__( 'Quick&nbsp;Edit', 'arraypress' )
+				),
+            ];
+
+            $delete = array_intersect_key( $actions, [ 'delete' => true ] );
+
+            $actions = array_merge(
+                    array_diff_key( $actions, $delete ),
+                    $quick,
+                    $delete
+            );
         }
 
         /**
