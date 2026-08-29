@@ -42,12 +42,21 @@ final class InlineEdit {
 	/**
 	 * Whether this table has anything to bulk edit.
 	 *
+	 * Either key counts, the same way fields() takes either. A table that
+	 * declares only `quick_edit` still gets a bulk row, because the two are
+	 * the same question asked of the same columns.
+	 *
+	 * Asking for the literal `bulk_edit` key here was a real bug: the fields
+	 * resolved through the fallback, so every test passed, and the bulk row
+	 * was never rendered at all -- leaving "Bulk edit" in the actions
+	 * dropdown opening nothing, on a page that looked fine.
+	 *
 	 * @param array $config Table configuration.
 	 *
 	 * @return bool
 	 */
 	public static function has_bulk_edit( array $config ): bool {
-		return ! empty( $config['bulk_edit'] ) && is_array( $config['bulk_edit'] );
+		return self::declares( $config );
 	}
 
 	/**
@@ -91,7 +100,24 @@ final class InlineEdit {
 	 * @return bool
 	 */
 	public static function has_quick_edit( array $config ): bool {
-		return ! empty( $config['quick_edit'] ) && is_array( $config['quick_edit'] );
+		return self::declares( $config );
+	}
+
+	/**
+	 * Whether either inline editor was configured.
+	 *
+	 * @param array $config Table configuration.
+	 *
+	 * @return bool
+	 */
+	private static function declares( array $config ): bool {
+		foreach ( [ 'quick_edit', 'bulk_edit' ] as $key ) {
+			if ( ! empty( $config[ $key ] ) && is_array( $config[ $key ] ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

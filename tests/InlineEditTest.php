@@ -474,9 +474,21 @@ final class InlineEditTest extends TestCase {
 		$this->assertStringContainsString( 'name="_inline_edit"', $html );
 		$this->assertStringContainsString( 'class="button button-primary save"', $html );
 
+		// Both rows render, from a config that declared only quick_edit.
+		// Asking for the literal bulk_edit key here once left "Bulk edit" in
+		// the dropdown opening nothing, with every test still green.
+		$this->assertStringContainsString( 'id="bulk-edit"', $html );
+		$this->assertStringContainsString( 'name="_bulk_edit_nonce"', $html );
+
+		preg_match( '#<tr id="inline-edit".*?</tr>#s', $html, $quick );
+		preg_match( '#<tr id="bulk-edit".*?</tr>#s', $html, $bulk );
+
 		// No "No Change" sentinel on the quick row: it edits one row, and
-		// every field shows what that row currently is.
-		$this->assertStringNotContainsString( '<option value="-1"', $html );
+		// every field shows what that row currently is. The bulk row is the
+		// opposite -- without the sentinel, opening it and pressing Update
+		// would set every field on every selected row.
+		$this->assertStringNotContainsString( '<option value="-1"', $quick[0] ?? '' );
+		$this->assertStringContainsString( '<option value="-1"', $bulk[0] ?? '' );
 	}
 
 	/**
