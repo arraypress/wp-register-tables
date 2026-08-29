@@ -57,10 +57,25 @@ trait ActionProcessing {
                 self::process_single_actions( $id, $config );
                 self::process_bulk_actions( $id, $config );
 
-                // Last, and before the table queries: the rows redraw with
-                // the change already in them, which is core's behaviour --
-                // there, the page reloads.
-                InlineEditSave::process_bulk_edit( $id, $config );
+                // Last, and after the bulk actions that 'edit' is not one of.
+                $edited = InlineEditSave::process_bulk_edit( $id, $config );
+
+                if ( $edited > 0 ) {
+                    // The same POST-redirect-GET every other bulk action
+                    // ends with. Without it a refresh re-applies the edit,
+                    // and there is nowhere for the notice to come from.
+                    wp_safe_redirect(
+                            add_query_arg(
+                                    [
+										'updated'      => $edited,
+										'_bulk_action' => 'edit',
+                                    ],
+                                    self::get_clean_base_url( $config )
+                            )
+                    );
+                    exit;
+                }
+
                 break;
             }
         }

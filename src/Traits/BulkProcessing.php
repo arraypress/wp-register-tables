@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\RegisterTables\InlineEdit;
+
 use ArrayPress\RegisterTables\Table;
 
 /**
@@ -59,6 +61,19 @@ trait BulkProcessing {
         }
 
         if ( empty( $action ) ) {
+            return;
+        }
+
+        // "Edit" is not a bulk action. It is the control that reveals the
+        // inline editor, and the edit itself is applied by
+        // InlineEditSave::process_bulk_edit() further down -- the same split
+        // core makes in edit.php, where 'edit' gets its own branch instead of
+        // going through the bulk action machinery.
+        //
+        // Falling through to here fired the bulk action hooks, redirected
+        // with "N updated" and exited before the edit was ever applied. The
+        // notice said it had worked and nothing had changed.
+        if ( 'edit' === $action && InlineEdit::has_bulk_edit( $config ) ) {
             return;
         }
 

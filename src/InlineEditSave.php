@@ -43,11 +43,11 @@ final class InlineEditSave {
 	 * @param string $table_id The table id.
 	 * @param array  $config   Table configuration.
 	 *
-	 * @return void
+	 * @return int How many rows were edited, 0 if nothing was.
 	 */
-	public static function process_bulk_edit( string $table_id, array $config ): void {
+	public static function process_bulk_edit( string $table_id, array $config ): int {
 		if ( ! InlineEdit::has_bulk_edit( $config ) || ! isset( $_REQUEST['bulk_edit'] ) ) {
-			return;
+			return 0;
 		}
 
 		$submitted_table = isset( $_REQUEST['table_id'] )
@@ -55,7 +55,7 @@ final class InlineEditSave {
 			: '';
 
 		if ( $submitted_table !== $table_id ) {
-			return;
+			return 0;
 		}
 
 		$nonce = isset( $_REQUEST['_bulk_edit_nonce'] )
@@ -63,13 +63,13 @@ final class InlineEditSave {
 			: '';
 
 		if ( ! wp_verify_nonce( $nonce, 'bulk-edit-' . $table_id ) ) {
-			return;
+			return 0;
 		}
 
 		$capability = (string) ( $config['capability'] ?? 'manage_options' );
 
 		if ( ! current_user_can( $capability ) ) {
-			return;
+			return 0;
 		}
 
 		// The checkboxes post under the plural label, which is also what the
@@ -82,7 +82,7 @@ final class InlineEditSave {
 		);
 
 		if ( [] === $ids ) {
-			return;
+			return 0;
 		}
 
 		$values = [];
@@ -109,7 +109,7 @@ final class InlineEditSave {
 		}
 
 		if ( [] === $values ) {
-			return;
+			return 0;
 		}
 
 		/**
@@ -121,6 +121,8 @@ final class InlineEditSave {
 		 * @since 1.0.0
 		 */
 		do_action( "arraypress_table_bulk_edit_{$table_id}", $ids, $values );
+
+		return count( $ids );
 	}
 
 	/**

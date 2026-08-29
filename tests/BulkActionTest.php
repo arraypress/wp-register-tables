@@ -323,4 +323,100 @@ final class BulkActionTest extends TestCase {
 
 		$this->assertNull( $ran );
 	}
+
+	/* =========================================================================
+	 * Bulk edit is not a bulk action
+	 * ========================================================================= */
+
+	/**
+	 * A bulk edit reaches the edit handler, not the bulk action machinery.
+	 *
+	 * "Edit" has to sit in the bulk actions dropdown, because that dropdown
+	 * is what opens the inline row -- but it is not an action. Letting it
+	 * fall through to process_bulk_actions() meant the action hooks fired,
+	 * the request redirected saying "1 updated", and it exited before the
+	 * edit was applied. The notice said it had worked; nothing had changed.
+	 *
+	 * Neither half of this is visible from a unit test of either function.
+	 * It only appears when both run, in order, against one request.
+	 */
+	public function test_a_bulk_edit_is_not_run_as_a_bulk_action(): void {
+		$acted = null;
+		$edited = null;
+
+		$this->register(
+			[
+				'bulk_actions' => [ 'edit' => 'Bulk edit' ],
+				'bulk_edit'    => [
+					'status' => [
+						'label'   => 'Status',
+						'options' => [ 'active' => 'Active', 'draft' => 'Draft' ],
+					],
+				],
+			],
+			$ran
+		);
+
+		add_action(
+			'arraypress_table_bulk_action_demo',
+			static function ( $ids, $action ) use ( &$acted ): void {
+				$acted = $action;
+			}
+		);
+
+		add_action(
+			'arraypress_table_bulk_edit_demo',
+			static function ( $ids, $values ) use ( &$edited ): void {
+				$edited = [ $ids, $values ];
+			}
+		);
+
+		$_GET['page']                 = 'demo';
+		$_REQUEST['page']             = 'demo';
+		$_REQUEST['action']           = 'edit';
+		$_REQUEST['bulk_edit']        = 'Update';
+		$_REQUEST['table_id']         = 'demo';
+		$_REQUEST['items']            = [ '5', '7' ];
+		$_REQUEST['status']           = 'draft';
+		$_REQUEST['_wpnonce']         = 'nonce';
+		$_REQUEST['_bulk_edit_nonce'] = 'nonce';
+
+		$location = $this->dispatch();
+
+		$this->assertNull( $acted, 'edit must not run as a bulk action' );
+		$this->assertSame( [ [ 5, 7 ], [ 'status' => 'draft' ] ], $edited );
+
+		// And it ends the way every other bulk action ends, so a refresh does
+		// not apply the edit a second time.
+		$this->assertNotNull( $location );
+		$this->assertStringContainsString( 'updated=2', (string) $location );
+	}
+
+	/**
+	 * A table with no inline editing keeps its own 'edit' action.
+	 *
+	 * The carve-out is for the inline editor, not for the word.
+	 */
+	public function test_a_plain_edit_action_still_runs(): void {
+		$acted = null;
+
+		$this->register( [ 'bulk_actions' => [ 'edit' => 'Edit' ] ], $ran );
+
+		add_action(
+			'arraypress_table_bulk_action_demo',
+			static function ( $ids, $action ) use ( &$acted ): void {
+				$acted = $action;
+			}
+		);
+
+		$_GET['page']         = 'demo';
+		$_REQUEST['page']     = 'demo';
+		$_REQUEST['action']   = 'edit';
+		$_REQUEST['items']    = [ '5' ];
+		$_REQUEST['_wpnonce'] = 'nonce';
+
+		$this->dispatch();
+
+		$this->assertSame( 'edit', $acted );
+	}
 }

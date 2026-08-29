@@ -57,8 +57,28 @@
 				self.setBulk();
 			} );
 
-			$bulk.on( 'click', '.cancel', function () {
-				self.revert();
+			/*
+			 * Bound on each row's own elements, never delegated from the
+			 * container holding them.
+			 *
+			 * edit() clones #inline-edit out into the list table, and
+			 * clone(true) copies handlers bound directly to the row -- it
+			 * cannot copy a delegated handler, which stays behind on the
+			 * ancestor the clone just left. Delegating from #inlineedit left
+			 * both Update and Cancel dead in the open editor, on a row that
+			 * looked entirely normal.
+			 *
+			 * The bulk row is moved rather than cloned, so its handlers travel
+			 * with it either way; it is bound the same way for consistency.
+			 */
+			$( '.cancel', $bulk ).on( 'click', function () {
+				return self.revert();
+			} );
+
+			$bulk.on( 'keyup', function ( event ) {
+				if ( 27 === event.which ) {
+					return self.revert();
+				}
 			} );
 
 			// Removing one from the list unticks its row, so the form posts
@@ -79,32 +99,37 @@
 				return;
 			}
 
-			// Delegated, because the row is replaced after every save and a
-			// handler bound to the old row would stop firing after the first.
-			$( '.wp-list-table' ).on( 'click', '.editinline', function ( event ) {
+			// This one is delegated on purpose: the row is replaced after
+			// every save, and a handler bound to the old row would stop
+			// firing. #the-list is never moved.
+			$( '#the-list' ).on( 'click', '.editinline', function ( event ) {
 				event.preventDefault();
 
 				$( this ).attr( 'aria-expanded', 'true' );
 				self.edit( this );
 			} );
 
-			$( '#inlineedit' )
-				.on( 'click', '.save', function () {
-					return self.save();
-				} )
-				.on( 'click', '.cancel', function () {
-					return self.revert();
-				} )
-				.on( 'keydown', 'input, select, textarea', function ( event ) {
-					if ( 13 === event.which && ! $( event.target ).hasClass( 'cancel' ) ) {
-						event.preventDefault();
-						return self.save();
-					}
+			$( '.save', $quick ).on( 'click', function () {
+				return self.save();
+			} );
 
-					if ( 27 === event.which ) {
-						return self.revert();
-					}
-				} );
+			$( '.cancel', $quick ).on( 'click', function () {
+				return self.revert();
+			} );
+
+			$( 'td', $quick ).on( 'keydown', function ( event ) {
+				if ( 13 === event.which && ! $( event.target ).hasClass( 'cancel' ) ) {
+					event.preventDefault();
+
+					return self.save();
+				}
+			} );
+
+			$quick.on( 'keyup', function ( event ) {
+				if ( 27 === event.which ) {
+					return self.revert();
+				}
+			} );
 		},
 
 		/**
@@ -231,7 +256,11 @@
 						return;
 					}
 
-					$( '#item-' + id ).remove();
+					// tr.hidden, not .hidden: the data block each row carries
+					// is a div.hidden, and a bare class selector here removed
+					// every one of them -- so the next Quick Edit opened with
+					// empty fields, on rows that had never been touched.
+					$( '#item-' + id ).siblings( 'tr.hidden' ).addBack().remove();
 					$row.before( html ).remove();
 
 					$( '#item-' + id )
@@ -248,7 +277,6 @@
 						} );
 
 					self.what = '';
-					$( '.hidden', 'table.widefat' ).remove();
 				} )
 				.fail( function () {
 					$( 'table.widefat .spinner' ).removeClass( 'is-active' );
@@ -341,15 +369,14 @@
 			$( 'table.widefat .spinner' ).removeClass( 'is-active' );
 
 			if ( 'bulk-edit' === id ) {
-				$( '#bulk-edit' ).removeClass( 'inline-editor' ).hide().siblings( '.hidden' ).remove();
+				$( '#bulk-edit' ).removeClass( 'inline-editor' ).hide().siblings( 'tr.hidden' ).remove();
 				$( '#bulk-titles' ).empty();
 				$( '#inlineedit' ).append( $( '#bulk-edit' ) );
 
 				return false;
 			}
 
-			$( '#' + id ).siblings( '.hidden' ).remove();
-			$( '#' + id ).remove();
+			$( '#' + id ).siblings( 'tr.hidden' ).addBack().remove();
 
 			id = id.replace( 'edit-', '' );
 			this.what = '';
