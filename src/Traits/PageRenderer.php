@@ -154,6 +154,8 @@ trait PageRenderer {
                 }
 
                 $table->display();
+
+                BulkEdit::render_bulk_edit_row( $id, $config, count( $table->get_columns() ) );
                 ?>
             </form>
 

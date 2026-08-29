@@ -53,6 +53,11 @@ trait ActionProcessing {
                 self::process_filter_redirect( $id, $config );
                 self::process_single_actions( $id, $config );
                 self::process_bulk_actions( $id, $config );
+
+                // Last, and before the table queries: the rows redraw with
+                // the change already in them, which is core's behaviour --
+                // there, the page reloads.
+                BulkEdit::process_bulk_edit( $id, $config );
                 break;
             }
         }

@@ -87,6 +87,17 @@ trait AssetManager {
                 'css/admin-tables.css'
         );
 
+        // Only when there is something to bulk edit. A script that binds
+        // nothing is still a request.
+        if ( ! empty( $config['bulk_edit'] ) ) {
+            wp_enqueue_composer_script(
+                    'list-table-bulk-edit',
+                    __FILE__,
+                    'js/bulk-edit.js',
+                    [ 'jquery' ]
+            );
+        }
+
         // Output dynamic styles for this table's configuration
         self::output_dynamic_styles( $config );
     }

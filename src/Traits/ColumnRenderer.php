@@ -299,10 +299,29 @@ trait ColumnRenderer {
     public function column_cb( $item ): string {
         $id = $this->get_item_id( $item );
 
-        return sprintf(
+        $checkbox = sprintf(
                 '<input type="checkbox" name="%s[]" value="%s" />',
                 esc_attr( $this->config['labels']['plural'] ?? 'items' ),
                 esc_attr( $id )
         );
+
+        if ( ! BulkEdit::has_bulk_edit( $this->config ) ) {
+            return $checkbox;
+        }
+
+        // The title the bulk editor lists this row under. Kept as its own
+        // hidden node rather than scraped out of the rendered title cell,
+        // which by then contains row actions, a thumbnail and whatever else
+        // a column decided to draw.
+        $title = '';
+
+        foreach ( [ 'title', 'name', 'label' ] as $property ) {
+            if ( ! empty( $item->{$property} ) ) {
+                $title = (string) $item->{$property};
+                break;
+            }
+        }
+
+        return $checkbox . BulkEdit::inline_data( (int) $id, $title );
     }
 }

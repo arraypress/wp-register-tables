@@ -20,6 +20,7 @@ namespace ArrayPress\RegisterTables;
 
 use WP_List_Table;
 use ArrayPress\RegisterTables\Traits\BulkActions;
+use ArrayPress\RegisterTables\Traits\BulkEdit;
 use ArrayPress\RegisterTables\Traits\ColumnDefinitions;
 use ArrayPress\RegisterTables\Traits\ColumnRenderer;
 use ArrayPress\RegisterTables\Traits\EmptyState;
@@ -92,6 +93,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 class Table extends WP_List_Table {
 
     use BulkActions;
+    use BulkEdit;
     use ColumnDefinitions;
     use ColumnRenderer;
     use EmptyState;

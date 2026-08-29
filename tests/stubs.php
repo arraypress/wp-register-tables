@@ -131,24 +131,6 @@ if ( ! function_exists( 'number_format_i18n' ) ) {
 	}
 }
 
-if ( ! function_exists( 'apply_filters' ) ) {
-	function apply_filters( $hook, $value, ...$args ) {
-		return $value;
-	}
-}
-
-if ( ! function_exists( 'add_action' ) ) {
-	function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
-		return true;
-	}
-}
-
-if ( ! function_exists( 'add_filter' ) ) {
-	function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
-		return true;
-	}
-}
-
 if ( ! function_exists( 'get_userdata' ) ) {
 	function get_userdata( $user_id ) {
 		return $GLOBALS['rt_users'][ $user_id ] ?? false;
@@ -397,6 +379,16 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+/*
+ * Hooks that actually hold what is hooked.
+ *
+ * These were defined twice in this file: an inert pair earlier that returned
+ * true and dropped the callback, and this recording pair below. The earlier
+ * definitions won the function_exists guard, so add_action stored nothing,
+ * apply_filters ignored every filter, and do_action fired hooks nobody was
+ * listening to. Any test asserting that a hook did something passed because
+ * nothing could disagree.
+ */
 if ( ! function_exists( 'do_action' ) ) {
 	function do_action( $hook, ...$args ) {
 		$GLOBALS['rt_fired'][] = $hook;
@@ -529,5 +521,42 @@ if ( ! function_exists( 'number_format_i18n' ) ) {
 if ( ! function_exists( 'wp_parse_url' ) ) {
 	function wp_parse_url( $url, $component = -1 ) {
 		return parse_url( (string) $url, $component );
+	}
+}
+
+if ( ! function_exists( 'esc_html_e' ) ) {
+	function esc_html_e( $text, $domain = 'default' ) {
+		echo esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr_e' ) ) {
+	function esc_attr_e( $text, $domain = 'default' ) {
+		echo esc_attr( $text );
+	}
+}
+
+if ( ! function_exists( 'wp_nonce_field' ) ) {
+	function wp_nonce_field( $action = -1, $name = '_wpnonce', $referer = true, $display = true ) {
+		$field = '<input type="hidden" name="' . esc_attr( $name ) . '" value="nonce" />';
+
+		if ( $display ) {
+			echo $field; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		return $field;
+	}
+}
+
+if ( ! function_exists( 'submit_button' ) ) {
+	function submit_button( $text = '', $type = 'primary', $name = 'submit', $wrap = true, $other = null ) {
+		$button = '<input type="submit" name="' . esc_attr( $name ) . '" class="button button-' . esc_attr( (string) $type )
+			. '" value="' . esc_attr( $text ) . '" />';
+
+		if ( $wrap ) {
+			$button = '<p class="submit">' . $button . '</p>';
+		}
+
+		echo $button; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }
