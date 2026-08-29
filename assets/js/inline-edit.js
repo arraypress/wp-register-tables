@@ -196,12 +196,45 @@
 					return;
 				}
 
+				// A select only takes a value it actually offers. Assigning
+				// one it does not have leaves selectedIndex at -1, which
+				// renders blank and, worse, drops the field out of
+				// serialize() -- so a row storing something outside the list
+				// (an empty tax code, a status since removed) silently
+				// stopped that field from ever being saved. Left on its own
+				// first option instead, which is at least submittable.
+				if ( 'SELECT' === this.tagName && ! self.offers( this, value ) ) {
+					return;
+				}
+
 				$( this ).val( value );
 			} );
 
 			$editRow.find( ':input:visible' ).first().trigger( 'focus' );
 
 			return false;
+		},
+
+		/**
+		 * Whether a select carries an option with this value.
+		 *
+		 * @param {Element} el    The select.
+		 * @param {string}  value The value.
+		 *
+		 * @return {boolean} Whether it is on offer.
+		 */
+		offers: function ( el, value ) {
+			var found = false;
+
+			jQuery( el ).find( 'option' ).each( function () {
+				if ( this.value === value ) {
+					found = true;
+
+					return false;
+				}
+			} );
+
+			return found;
 		},
 
 		/**
