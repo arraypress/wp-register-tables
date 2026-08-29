@@ -169,6 +169,27 @@ final class InlineEdit {
 	}
 
 	/**
+	 * What to call the row's title field.
+	 *
+	 * The primary column's own heading, so the editor says "Product" over a
+	 * table of products rather than a generic word the rest of the screen
+	 * never uses. Core hard-codes "Title" because it only ever edits posts.
+	 *
+	 * @param array $config Table configuration.
+	 *
+	 * @return string
+	 */
+	private static function title_label( array $config ): string {
+		$column = $config['columns'][ $config['primary_column'] ?? '' ] ?? null;
+
+		// A column is either a label or an array carrying one.
+		$label = is_array( $column ) ? ( $column['label'] ?? '' ) : (string) ( $column ?? '' );
+
+		return '' !== $label ? (string) $label : __( 'Name', 'arraypress' );
+	}
+
+
+	/**
 	 * One control in an inline editor.
 	 *
 	 * A select when it has options and a text box when it does not, which
@@ -184,7 +205,7 @@ final class InlineEdit {
 	private static function render_field( string $name, array $field, bool $bulk ): void {
 		$options = (array) ( $field['options'] ?? [] );
 		?>
-		<label class="inline-edit-<?php echo esc_attr( $name ); ?> alignleft">
+		<label class="inline-edit-<?php echo esc_attr( sanitize_html_class( $name ) ); ?>">
 			<span class="title"><?php echo esc_html( $field['label'] ?? $name ); ?></span>
 			<?php if ( [] !== $options ) : ?>
 				<select name="<?php echo esc_attr( $name ); ?>">
@@ -247,6 +268,25 @@ final class InlineEdit {
 				continue;
 			}
 
+			/*
+			 * Which fields go in which column.
+			 *
+			 * Bulk edit puts them all on the right, because its left column
+			 * is the list of what was selected -- core's layout, and the
+			 * reason that column is only 30% wide.
+			 *
+			 * Quick edit splits them, because its left column holds one text
+			 * input and nothing else. Core's posts screen has five fields a
+			 * side and looks balanced by having enough of them; a generic
+			 * table has three, and putting all three on the right leaves a
+			 * column with one row beside a column with three. The title
+			 * counts as a row, so the left takes floor(n/2) fields and the
+			 * right the rest, which comes out even at any count.
+			 */
+			$half  = $bulk ? 0 : intdiv( count( $fields ), 2 );
+			$left  = $bulk ? [] : array_slice( $fields, 0, $half, true );
+			$right = $bulk ? $fields : array_slice( $fields, $half, null, true );
+
 			$classes = $bulk
 				? 'inline-edit-row inline-edit-row-page bulk-edit-row bulk-edit-row-page bulk-edit-' . $table_id
 				: 'inline-edit-row inline-edit-row-page quick-edit-row quick-edit-row-page inline-edit-' . $table_id;
@@ -265,18 +305,22 @@ final class InlineEdit {
 									</div>
 								<?php else : ?>
 									<label>
-										<span class="title"><?php esc_html_e( 'Name', 'arraypress' ); ?></span>
+										<span class="title"><?php echo esc_html( self::title_label( $config ) ); ?></span>
 										<span class="input-text-wrap">
 											<input type="text" name="row_title" class="ptitle" value="" />
 										</span>
 									</label>
+
+									<?php foreach ( $left as $name => $field ) : ?>
+										<?php self::render_field( (string) $name, (array) $field, $bulk ); ?>
+									<?php endforeach; ?>
 								<?php endif; ?>
 							</div>
 						</fieldset>
 
 						<fieldset class="inline-edit-col-right">
 							<div class="inline-edit-col">
-								<?php foreach ( $fields as $name => $field ) : ?>
+								<?php foreach ( $right as $name => $field ) : ?>
 									<?php self::render_field( (string) $name, (array) $field, $bulk ); ?>
 								<?php endforeach; ?>
 

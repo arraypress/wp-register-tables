@@ -500,4 +500,98 @@ final class InlineEditTest extends TestCase {
 		$this->assertStringContainsString( '<div class="row_title">Deep House Kit</div>', $html );
 		$this->assertStringContainsString( '<div class="status">draft</div>', $html );
 	}
+
+	/* =========================================================================
+	 * Layout
+	 * ========================================================================= */
+
+	/**
+	 * A field label is never floated.
+	 *
+	 * `alignleft` is float: left. Core puts it only inside an
+	 * .inline-edit-group, where two controls are meant to share a line;
+	 * on a plain label it drops every field onto one row, which is what
+	 * this row looked like before.
+	 */
+	public function test_fields_are_not_floated(): void {
+		ob_start();
+
+		try {
+			InlineEdit::render_inline_rows( 'demo', $this->quick_config(), 5 );
+		} finally {
+			$html = (string) ob_get_clean();
+		}
+
+		$this->assertStringNotContainsString( 'alignleft', $html );
+
+		// Core's structure, which is what the stylesheet selects on. Without
+		// span.title the label has no 6em column and the control sits hard
+		// against the text.
+		$this->assertMatchesRegularExpression(
+			'/<label class="inline-edit-status">\s*<span class="title">/',
+			$html
+		);
+	}
+
+	/**
+	 * Quick edit fills both columns; bulk edit fills only the right.
+	 *
+	 * The left column of a bulk row is the list of what was selected, so
+	 * fields there would sit under it. Quick edit has one text input on the
+	 * left, and putting every field on the right leaves a column of one
+	 * beside a column of three -- which is not what posts looks like.
+	 */
+	public function test_the_columns_are_balanced(): void {
+		$config = $this->quick_config();
+
+		// Three fields: one joins the title on the left, two on the right.
+		$config['quick_edit']['vendor'] = [ 'label' => 'Vendor' ];
+
+		ob_start();
+
+		try {
+			InlineEdit::render_inline_rows( 'demo', $config, 5 );
+		} finally {
+			$html = (string) ob_get_clean();
+		}
+
+		preg_match( '#<tr id="inline-edit".*?</tr>#s', $html, $quick );
+		preg_match( '#<tr id="bulk-edit".*?</tr>#s', $html, $bulk );
+
+		$left = static function ( string $row ): string {
+			preg_match( '#col-left.*?</fieldset>#s', $row, $m );
+
+			return $m[0] ?? '';
+		};
+
+		$this->assertStringContainsString( 'name="status"', $left( $quick[0] ) );
+		$this->assertStringNotContainsString( 'name="vendor"', $left( $quick[0] ) );
+
+		// The bulk row's left column holds the selection, nothing else.
+		$this->assertStringContainsString( 'id="bulk-titles"', $left( $bulk[0] ) );
+		$this->assertStringNotContainsString( 'name="status"', $left( $bulk[0] ) );
+	}
+
+	/**
+	 * The title field is named after the column it edits.
+	 */
+	public function test_the_title_field_uses_the_primary_column_label(): void {
+		$config = $this->quick_config() + [
+			'primary_column' => 'title',
+			'columns'        => [ 'title' => [ 'label' => 'Product' ] ],
+		];
+
+		ob_start();
+
+		try {
+			InlineEdit::render_inline_rows( 'demo', $config, 5 );
+		} finally {
+			$html = (string) ob_get_clean();
+		}
+
+		$this->assertMatchesRegularExpression(
+			'/<span class="title">Product<\/span>\s*<span class="input-text-wrap">/',
+			$html
+		);
+	}
 }
