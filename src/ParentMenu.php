@@ -191,7 +191,14 @@ class ParentMenu {
 		}
 		self::$initialized = true;
 
-		add_action( 'admin_menu', [ __CLASS__, 'register_menus' ] );
+		// Before the tables add their own pages, which run at the default
+		// priority. A parent declared inside a table's config is registered
+		// while that table is, after the manager has already hooked its
+		// pages -- and a submenu page added before its parent exists gets a
+		// hook name filed under no parent at all, so WordPress refuses the
+		// page ("not allowed to access") once the parent does appear, and
+		// the first table's entry was then the one fix_menus() removed.
+		add_action( 'admin_menu', [ __CLASS__, 'register_menus' ], 9 );
 		add_action( 'admin_menu', [ __CLASS__, 'fix_menus' ], 999 );
 	}
 
