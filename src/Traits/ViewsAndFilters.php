@@ -176,12 +176,9 @@ trait ViewsAndFilters {
         if ( is_array( $filter ) ) {
             $label = $filter['label'] ?? '';
 
-            // Options are either listed outright or produced by a callback.
-            if ( isset( $filter['options'] ) && is_array( $filter['options'] ) ) {
-                $options = $filter['options'];
-            } elseif ( isset( $filter['options_callback'] ) && is_callable( $filter['options_callback'] ) ) {
-                $options = call_user_func( $filter['options_callback'] );
-            }
+            // Listed outright, named as a kit preset, or produced by a
+            // callback -- the same resolution the value check uses.
+            $options = $this->filter_options( $filter );
         }
 
         /*

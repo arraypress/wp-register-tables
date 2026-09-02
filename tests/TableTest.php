@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Tests;
 
+use ArrayPress\FieldKit\Support\Presets;
 use ArrayPress\RegisterTables\Manager;
 use ArrayPress\RegisterTables\Table;
 use PHPUnit\Framework\TestCase;
@@ -553,5 +554,41 @@ final class RowWithStatus {
 	 */
 	public function get_status(): string {
 		return 'refunded';
+	}
+
+	/**
+	 * A filter may name one of the kit's presets instead of listing options.
+	 *
+	 * The same resolution draws the select and refuses a value outside it,
+	 * so a preset-fed filter is as strict as a listed one.
+	 */
+	public function test_a_filter_can_name_a_preset(): void {
+		Presets::register( 'tt_countries', static fn() => [ 'GB' => 'UK', 'FR' => 'France' ] );
+
+		$seen = null;
+
+		$table = function () use ( &$seen ) {
+			return $this->table(
+				[
+					'filters'   => [ 'country' => [ 'label' => 'Country', 'options' => 'tt_countries' ] ],
+					'callbacks' => [
+						'get_items' => function ( $args ) use ( &$seen ) {
+							$seen = $args;
+
+							return [];
+						},
+					],
+				]
+			);
+		};
+
+		$_GET['country'] = 'FR';
+		$table()->get_data();
+		$this->assertSame( 'FR', $seen['country'] ?? null );
+
+		$_GET['country'] = 'XX';
+		$seen            = null;
+		$table()->get_data();
+		$this->assertArrayNotHasKey( 'country', (array) $seen );
 	}
 }

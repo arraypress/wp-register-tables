@@ -12,6 +12,7 @@ declare( strict_types=1 );
 
 namespace ArrayPress\RegisterTables\Traits;
 
+use ArrayPress\FieldKit\Support\Presets;
 use ArrayPress\RegisterTables\Manager;
 use ArrayPress\RegisterTables\Request;
 
@@ -183,13 +184,44 @@ trait Filtering {
      * @return string The value, or an empty string when there is none to apply.
      */
     private function filter_value( string $filter_key, $filter ): string {
-        $value = Request::text( $filter_key );
+        $value   = Request::text( $filter_key );
+        $options = is_array( $filter ) ? $this->filter_options( $filter ) : [];
 
-        if ( '' === $value || ! is_array( $filter ) || ! isset( $filter['options'] ) || ! is_array( $filter['options'] ) ) {
+        if ( '' === $value || [] === $options ) {
             return $value;
         }
 
-        return array_key_exists( $value, $filter['options'] ) ? $value : '';
+        return array_key_exists( $value, $options ) ? $value : '';
+    }
+
+    /**
+     * The choices a filter offers.
+     *
+     * Listed outright, named as one of the kit's presets -- `countries`,
+     * `roles`, `post_types` and the rest -- or produced by a callback. The
+     * same answer is used to draw the select and to refuse a value that is
+     * not in it, so the two cannot disagree.
+     *
+     * @param array $filter The filter's configuration.
+     *
+     * @return array The options, keyed by value.
+     */
+    private function filter_options( array $filter ): array {
+        $options = $filter['options'] ?? null;
+
+        if ( is_array( $options ) ) {
+            return $options;
+        }
+
+        if ( is_string( $options ) && '' !== $options ) {
+            return Presets::options( $options );
+        }
+
+        if ( isset( $filter['options_callback'] ) && is_callable( $filter['options_callback'] ) ) {
+            return (array) call_user_func( $filter['options_callback'] );
+        }
+
+        return [];
     }
 
     /**
