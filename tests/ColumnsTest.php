@@ -210,6 +210,29 @@ final class ColumnsTest extends TestCase {
 	}
 
 	/**
+	 * A colour column paints its swatch only from a colour.
+	 *
+	 * The value lands in a style attribute, and a style attribute is a place
+	 * a stored string can do more than colour a box. Anything that is not a
+	 * hex or an rgb() triple is printed and not painted.
+	 */
+	public function test_a_swatch_is_painted_only_from_a_colour(): void {
+		$this->assertStringContainsString(
+			'background-color:#ff0000;',
+			Columns::format_color( '#ff0000', [], 'color' )
+		);
+		$this->assertStringContainsString(
+			'background-color:rgb(255, 0, 0);',
+			Columns::format_color( 'rgb(255, 0, 0)', [], 'color' )
+		);
+
+		$html = Columns::format_color( 'red;background:url(evil)', [], 'color' );
+
+		$this->assertStringNotContainsString( 'style=', $html );
+		$this->assertStringContainsString( 'red;background:url(evil)', $html );
+	}
+
+	/**
 	 * A date is rendered in the site's format, not a hardcoded one.
 	 */
 	public function test_a_date_uses_the_sites_format(): void {

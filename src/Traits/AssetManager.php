@@ -14,7 +14,6 @@ namespace ArrayPress\RegisterTables\Traits;
 
 use ArrayPress\RegisterTables\Request;
 use ArrayPress\RegisterTables\Table;
-use ArrayPress\FieldKit\Assets;
 
 /**
  * Loading the stylesheet and script, and only where a table is.
@@ -73,12 +72,11 @@ trait AssetManager {
 
         self::$assets_enqueued = true;
 
-        // The kit's stylesheet, because the header is the kit's. Without it
-        // the markup renders and none of the rules for it load, so the header
-        // falls back to core's .privacy-settings-header — centred, with an
-        // unstyled badge — which is exactly what a settings page looks like
-        // and exactly what a list table should not.
-        ( new Assets() )->enqueue();
+        // Not the kit's stylesheet. It was loaded for the kit's header, and
+        // the header is core's own h1 now; what remains of the kit here is
+        // Display::placeholder(), whose markup wants only core's
+        // .screen-reader-text. A stylesheet and a script on every list
+        // screen, for a class neither of them defines, is a request too many.
 
         // Enqueue CSS from composer assets package
         wp_enqueue_composer_style(

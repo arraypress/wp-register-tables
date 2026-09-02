@@ -82,7 +82,7 @@ trait ScreenSetup {
         }
 
         // Build unique option name for this table
-        $option_name = $id . '_per_page';
+        $option_name = self::per_page_option( $id );
 
         // Add per page screen option
         $screen->add_option( 'per_page', [
@@ -209,22 +209,37 @@ trait ScreenSetup {
     /**
      * Handle screen option saving
      *
-     * Adds filters to allow per_page options to be saved.
-     * Uses both the generic filter and dynamic filters for compatibility.
+     * Adds the filter that lets a table's per_page option be saved.
+     *
+     * Only this library's own options. Core hands every screen option on
+     * the site through this one filter, and matching on the `_per_page`
+     * suffix claimed all of them -- another plugin's was saved as an integer
+     * whether or not that was what it held, and its own filter never saw it.
      *
      * @return void
      * @since 1.0.0
      *
      */
     private static function handle_screen_options(): void {
-        // Generic filter for older WP versions
         add_filter( 'set-screen-option', function ( $status, $option, $value ) {
-            // Match our table per_page options (e.g., 'ate_customers_per_page')
-            if ( str_ends_with( $option, '_per_page' ) ) {
-                return absint( $value );
+            foreach ( array_keys( self::$tables ) as $id ) {
+                if ( $option === self::per_page_option( (string) $id ) ) {
+                    return absint( $value );
+                }
             }
 
             return $status;
         }, 10, 3 );
+    }
+
+    /**
+     * The name a table's per-page preference is stored under.
+     *
+     * @param string $id Table identifier.
+     *
+     * @return string
+     */
+    private static function per_page_option( string $id ): string {
+        return $id . '_per_page';
     }
 }

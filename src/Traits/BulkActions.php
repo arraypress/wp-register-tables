@@ -66,15 +66,4 @@ trait BulkActions {
          */
         return apply_filters( "arraypress_table_bulk_actions_{$this->id}", $actions, $this->config );
     }
-
-    /**
-     * Process bulk actions
-     *
-     * Stub method — actual processing is handled by Manager::process_bulk_actions().
-     *
-     * @since 1.0.0
-     */
-    public function process_bulk_action(): void {
-        // Bulk actions are processed in Manager::process_bulk_actions()
-    }
 }

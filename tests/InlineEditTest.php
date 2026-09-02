@@ -186,6 +186,46 @@ final class InlineEditTest extends TestCase {
 	}
 
 	/**
+	 * The bulk editor asks for the edit capability, not the view one.
+	 *
+	 * A table can be readable by anyone who can see the menu and editable
+	 * only by a manager -- that is what `capabilities['edit']` declares --
+	 * and the editor used to check the view capability, so declaring the
+	 * edit one changed nothing.
+	 */
+	public function test_a_bulk_edit_needs_the_edit_capability(): void {
+		$config = $this->config() + [
+			'capability'   => 'read',
+			'capabilities' => [ 'edit' => 'edit_products' ],
+		];
+
+		$fired = null;
+
+		add_action(
+			'arraypress_table_bulk_edit_demo',
+			static function ( $ids, $values ) use ( &$fired ): void {
+				$fired = [ $ids, $values ];
+			}
+		);
+
+		$this->submit();
+
+		// The view capability alone, which is enough to reach the page.
+		$GLOBALS['rt_caps'] = [ 'read' ];
+
+		InlineEditSave::process_bulk_edit( 'demo', $config );
+
+		$this->assertNull( $fired );
+
+		// With the edit one, the change goes through.
+		$GLOBALS['rt_caps'] = [ 'read', 'edit_products' ];
+
+		InlineEditSave::process_bulk_edit( 'demo', $config );
+
+		$this->assertSame( [ [ 4, 5, 6 ], [ 'status' => 'draft' ] ], $fired );
+	}
+
+	/**
 	 * A table with nothing to bulk edit renders nothing and does nothing.
 	 */
 	public function test_a_table_without_bulk_edit_is_inert(): void {
@@ -365,6 +405,31 @@ final class InlineEditTest extends TestCase {
 		$this->quick_submit( [ 'status' => 'draft' ] );
 
 		$this->assertNotContains( 'arraypress_table_quick_edit_demo', (array) ( $GLOBALS['rt_fired'] ?? [] ) );
+	}
+
+	/**
+	 * Quick edit asks for the edit capability too.
+	 */
+	public function test_a_quick_edit_needs_the_edit_capability(): void {
+		$config = array_merge(
+			$this->quick_config(),
+			[
+				'capability'   => 'read',
+				'capabilities' => [ 'edit' => 'edit_products' ],
+			]
+		);
+
+		$GLOBALS['rt_caps'] = [ 'read' ];
+
+		$this->quick_submit( [ 'status' => 'draft' ], $config );
+
+		$this->assertNotContains( 'arraypress_table_quick_edit_demo', (array) ( $GLOBALS['rt_fired'] ?? [] ) );
+
+		$GLOBALS['rt_caps'] = [ 'read', 'edit_products' ];
+
+		$this->quick_submit( [ 'status' => 'draft' ], $config );
+
+		$this->assertContains( 'arraypress_table_quick_edit_demo', (array) ( $GLOBALS['rt_fired'] ?? [] ) );
 	}
 
 	/**

@@ -65,7 +65,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  * - `callbacks`        (array)    Data callbacks (get_items, get_counts, delete)
  * - `labels`           (array)    UI labels (singular, plural, etc.)
  * - `per_page`         (int)      Items per page default
- * - `status_styles`    (array)    Custom status => CSS class mappings
  * - `capability`       (string)   Single capability for all actions
  * - `capabilities`     (array)    Per-action capabilities (overrides capability)
  * - `flyouts`          (array)    Flyout IDs ['edit' => '', 'view' => '']

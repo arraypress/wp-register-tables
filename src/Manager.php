@@ -94,11 +94,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * | views               | array             | Status view definitions                          |
  * | filters             | array             | Dropdown filter definitions                      |
  * | callbacks           | array             | Data callbacks (get_items, get_counts, delete)   |
- * | status_styles       | array             | Custom status => CSS class mappings              |
  * | capabilities        | array             | Per-action capabilities (overrides capability)   |
  * | per_page            | int               | Items per page default (30)                      |
  * | searchable          | bool              | Enable search box (true)                         |
- * | logo                | string            | Header logo URL                                  |
  * | header_title        | string            | Custom header title                              |
  * | flyouts             | array             | Flyout IDs ['edit' => '', 'view' => '']          |
  * | add_button          | string|callable   | Add button: flyout ID, URL, or callback          |

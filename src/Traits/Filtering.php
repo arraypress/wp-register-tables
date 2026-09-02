@@ -79,7 +79,7 @@ trait Filtering {
     private function has_active_filters(): bool {
         // Check dropdown filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( Request::filled( $filter_key ) ) {
+            if ( '' !== $this->filter_value( $filter_key, $filter ) ) {
                 return true;
             }
         }
@@ -116,11 +116,7 @@ trait Filtering {
 
         // Process custom filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( ! Request::has( $filter_key ) ) {
-                continue;
-            }
-
-            $value = Request::text( $filter_key );
+            $value = $this->filter_value( $filter_key, $filter );
 
             if ( $value === '' ) {
                 continue;
@@ -169,6 +165,31 @@ trait Filtering {
     private function get_search(): string {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- a search term is a view, not an action.
         return Request::text( 's' );
+    }
+
+    /**
+     * What a filter is set to, if it is set to something it offers.
+     *
+     * A filter that lists its options is a select, and a select constrains
+     * a browser but nothing constrains a URL. The value goes into the
+     * consumer's query under the filter's own key, so one the dropdown never
+     * offered is treated as the dropdown left on "All". A filter with no
+     * options -- or with a callback that produces them -- takes what it is
+     * given, sanitised as text.
+     *
+     * @param string $filter_key The filter's key, which is also its query argument.
+     * @param mixed  $filter     Its configuration.
+     *
+     * @return string The value, or an empty string when there is none to apply.
+     */
+    private function filter_value( string $filter_key, $filter ): string {
+        $value = Request::text( $filter_key );
+
+        if ( '' === $value || ! is_array( $filter ) || ! isset( $filter['options'] ) || ! is_array( $filter['options'] ) ) {
+            return $value;
+        }
+
+        return array_key_exists( $value, $filter['options'] ) ? $value : '';
     }
 
     /**

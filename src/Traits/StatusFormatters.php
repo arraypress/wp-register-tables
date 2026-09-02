@@ -115,19 +115,47 @@ trait StatusFormatters {
 	 * @since 1.0.0
 	 */
 	public static function format_color( $value, $item, string $column_name, array $config = [] ): string {
-		$color = (string) $value;
+		$color = trim( (string) $value );
 
-		if ( empty( $color ) ) {
+		if ( '' === $color ) {
 			return self::render_empty();
 		}
 
-		$output = sprintf(
-			'<span class="column-color"><span class="column-color-swatch" style="background-color:%s;"></span><code class="code">%s</code></span>',
-			esc_attr( $color ),
+		// The swatch only for a value that is a colour. It lands in a style
+		// attribute, and a style attribute is a place a stored string can do
+		// more than colour a box -- so anything that is not a hex or an rgb()
+		// triple is printed as text and not painted.
+		$swatch = self::is_css_color( $color )
+			? sprintf( '<span class="column-color-swatch" style="background-color:%s;"></span>', esc_attr( $color ) )
+			: '';
+
+		return sprintf(
+			'<span class="column-color">%s<code class="code">%s</code></span>',
+			$swatch,
 			esc_html( $color )
 		);
+	}
 
-		return $output;
+	/**
+	 * Whether a string is a colour a swatch can safely be painted with.
+	 *
+	 * Hex through core's own check, and rgb() or rgba() by shape. Named
+	 * colours are not accepted: the list is long, and the cost of leaving
+	 * one out is a missing swatch rather than a missing row.
+	 *
+	 * @param string $color The candidate.
+	 *
+	 * @return bool
+	 */
+	private static function is_css_color( string $color ): bool {
+		if ( sanitize_hex_color( $color ) ) {
+			return true;
+		}
+
+		return (bool) preg_match(
+			'/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/i',
+			$color
+		);
 	}
 
 	/**

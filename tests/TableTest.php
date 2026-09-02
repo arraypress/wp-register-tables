@@ -184,6 +184,68 @@ final class TableTest extends TestCase {
 	}
 
 	/**
+	 * Only a sortable column can order the query.
+	 *
+	 * The orderby argument goes into the consumer's query as its ORDER BY,
+	 * and the URL is anybody's to write. A column nobody offered falls back
+	 * to the configured default.
+	 */
+	public function test_only_a_sortable_column_can_order_the_query(): void {
+		$_GET['orderby'] = 'password';
+
+		$seen = null;
+
+		$this->table(
+			[
+				'sortable'  => [ 'name' ],
+				'orderby'   => 'name',
+				'callbacks' => [
+					'get_items' => function ( $args ) use ( &$seen ) {
+						$seen = $args;
+
+						return [];
+					},
+				],
+			]
+		)->get_data();
+
+		$this->assertSame( 'name', $seen['orderby'] ?? null );
+	}
+
+	/**
+	 * A sortable column orders it, under either of its names.
+	 *
+	 * The link core draws carries the orderby value rather than the column
+	 * key, so `['name' => ['display_name', true]]` arrives as display_name.
+	 */
+	public function test_a_sortable_column_orders_the_query(): void {
+		$seen = null;
+
+		$get_items = function ( $args ) use ( &$seen ) {
+			$seen = $args;
+
+			return [];
+		};
+
+		$_GET['orderby'] = 'email';
+
+		$this->table( [ 'sortable' => [ 'email' ], 'callbacks' => [ 'get_items' => $get_items ] ] )->get_data();
+
+		$this->assertSame( 'email', $seen['orderby'] ?? null );
+
+		$_GET['orderby'] = 'display_name';
+
+		$this->table(
+			[
+				'sortable'  => [ 'name' => [ 'display_name', true ] ],
+				'callbacks' => [ 'get_items' => $get_items ],
+			]
+		)->get_data();
+
+		$this->assertSame( 'display_name', $seen['orderby'] ?? null );
+	}
+
+	/**
 	 * A status in the URL becomes a query argument.
 	 */
 	public function test_a_status_reaches_the_query(): void {
@@ -229,6 +291,34 @@ final class TableTest extends TestCase {
 		)->get_data();
 
 		$this->assertSame( 'GB', $seen['country'] ?? null );
+	}
+
+	/**
+	 * A value a filter never offered is not a filter.
+	 *
+	 * A select constrains a browser and nothing constrains a URL, so a
+	 * country the dropdown does not list is treated as the dropdown left on
+	 * "All" rather than handed to the query as a country.
+	 */
+	public function test_an_unoffered_filter_value_is_dropped(): void {
+		$_GET['country'] = 'XX';
+
+		$seen = null;
+
+		$this->table(
+			[
+				'filters'   => [ 'country' => [ 'label' => 'Country', 'options' => [ 'GB' => 'UK' ] ] ],
+				'callbacks' => [
+					'get_items' => function ( $args ) use ( &$seen ) {
+						$seen = $args;
+
+						return [];
+					},
+				],
+			]
+		)->get_data();
+
+		$this->assertArrayNotHasKey( 'country', $seen );
 	}
 
 	/**

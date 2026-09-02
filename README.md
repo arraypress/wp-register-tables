@@ -23,7 +23,7 @@ message follows.
 * Add filters, bulk actions and row actions to the same table
 * Format a column as a price, a date, a status badge or a country, by naming the type
 * Hang the screen off any menu — top level, a post type, Tools, Settings
-* Add a header with tabs and actions, matching the newer core screens
+* Get core's own list-screen heading, with the add button beside it
 
 ## Installation
 

@@ -233,11 +233,14 @@ trait ActionProcessing {
             wp_die( esc_html__( 'Security check failed.', 'arraypress' ) );
         }
 
-        // Check capability
-        if ( ! empty( $action_config['capability'] ) ) {
-            if ( ! current_user_can( $action_config['capability'] ) ) {
-                wp_die( esc_html__( 'You do not have permission to perform this action.', 'arraypress' ) );
-            }
+        // The action's own capability, or failing that the table's edit
+        // one. An action that named none used to be checked against nothing
+        // at all -- past the nonce, anyone who could see the row could act
+        // on it, and the view capability is all it takes to see the row.
+        $capability = (string) ( ( $action_config['capability'] ?? '' ) ?: ( $config['capabilities']['edit'] ?? '' ) );
+
+        if ( '' !== $capability && ! current_user_can( $capability ) ) {
+            wp_die( esc_html__( 'You do not have permission to perform this action.', 'arraypress' ) );
         }
 
         // Call the handler

@@ -86,7 +86,6 @@ trait Registration {
             'views'          => [],
             'filters'        => [],
             'query_args'     => [],
-            'status_styles'  => [],
 
             // Display options
             'per_page'       => 30,
@@ -233,7 +232,6 @@ trait Registration {
 			'get_items'  => null,
 			'get_counts' => null,
 			'delete'     => null,
-			'update'     => null,
         ] );
     }
 

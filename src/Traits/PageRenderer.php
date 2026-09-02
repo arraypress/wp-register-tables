@@ -55,7 +55,6 @@ trait PageRenderer {
 
         // Create and prepare table instance
         $table = new Table( $id, $config );
-        $table->process_bulk_action();
         $table->prepare_items();
 
         /*

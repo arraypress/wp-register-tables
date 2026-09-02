@@ -59,13 +59,9 @@ trait QueryBuilder {
 
         // Process custom filters
         foreach ( $this->config['filters'] as $filter_key => $filter ) {
-            if ( ! Request::has( $filter_key ) ) {
-                continue;
-            }
+            $value = $this->filter_value( $filter_key, $filter );
 
-            $value = Request::text( $filter_key );
-
-            if ( empty( $value ) ) {
+            if ( '' === $value ) {
                 continue;
             }
 
@@ -138,13 +134,7 @@ trait QueryBuilder {
      * @since 1.0.0
      */
     public function prepare_items(): void {
-        // Set up column headers
-        $this->_column_headers = [
-			$this->get_columns(),
-			$this->get_hidden_columns(),
-			$this->get_sortable_columns(),
-			$this->get_primary_column_name(),
-        ];
+        $this->prepare_columns();
 
         // Fetch counts (for status views) and items
         $this->get_counts();
@@ -159,6 +149,26 @@ trait QueryBuilder {
 			'per_page'    => $this->per_page,
 			'total_pages' => ceil( $total / $this->per_page ),
         ] );
+    }
+
+    /**
+     * Set up the column headers without fetching anything.
+     *
+     * Core reads them off the screen when they are not set, and the screen
+     * is the wrong one in an ajax request -- so the one place that draws a
+     * single row outside a page load sets them here, and skips the query
+     * prepare_items() would run to fetch a page it never shows.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function prepare_columns(): void {
+        $this->_column_headers = [
+			$this->get_columns(),
+			$this->get_hidden_columns(),
+			$this->get_sortable_columns(),
+			$this->get_primary_column_name(),
+        ];
     }
 
     /**
@@ -192,11 +202,19 @@ trait QueryBuilder {
         $paged  = max( 1, Request::count( 'paged', 1 ) );
         $offset = $paged > 1 ? $this->per_page * ( $paged - 1 ) : 0;
 
-        $orderby = Request::key( 'orderby', (string) $this->config['orderby'] );
+        $orderby = Request::key( 'orderby' );
         $order   = strtoupper( Request::key( 'order', (string) $this->config['order'] ) );
 
         if ( ! in_array( $order, [ 'ASC', 'DESC' ], true ) ) {
             $order = 'DESC';
+        }
+
+        // Only a column the table said could be sorted by. The value goes
+        // into the consumer's query as its ORDER BY, and the URL is anybody's
+        // to write -- so a column nobody offered falls back to the configured
+        // default rather than reaching the query.
+        if ( ! in_array( $orderby, $this->orderby_whitelist(), true ) ) {
+            $orderby = (string) $this->config['orderby'];
         }
 
         if ( empty( $orderby ) ) {
@@ -209,5 +227,25 @@ trait QueryBuilder {
 			'order'   => $order,
 			'orderby' => $orderby,
         ];
+    }
+
+    /**
+     * Every value the orderby argument may take.
+     *
+     * A sortable column's link carries the first element of its definition
+     * rather than the column key -- `['name' => ['display_name', true]]`
+     * sorts by display_name -- so both spellings are allowed.
+     *
+     * @return string[]
+     */
+    private function orderby_whitelist(): array {
+        $allowed = [];
+
+        foreach ( $this->get_sortable_columns() as $key => $definition ) {
+            $allowed[] = (string) $key;
+            $allowed[] = (string) ( ( (array) $definition )[0] ?? $key );
+        }
+
+        return $allowed;
     }
 }

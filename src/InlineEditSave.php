@@ -66,9 +66,7 @@ final class InlineEditSave {
 			return 0;
 		}
 
-		$capability = (string) ( $config['capability'] ?? 'manage_options' );
-
-		if ( ! current_user_can( $capability ) ) {
+		if ( ! current_user_can( self::edit_capability( $config ) ) ) {
 			return 0;
 		}
 
@@ -149,7 +147,7 @@ final class InlineEditSave {
 
 		check_ajax_referer( 'inline-edit-' . $table_id, '_inline_edit' );
 
-		if ( ! current_user_can( (string) ( $config['capability'] ?? 'manage_options' ) ) ) {
+		if ( ! current_user_can( self::edit_capability( $config ) ) ) {
 			wp_die( -1, 403 );
 		}
 
@@ -191,6 +189,22 @@ final class InlineEditSave {
 	}
 
 	/**
+	 * The capability an inline edit needs.
+	 *
+	 * The edit one, not the view one. A table can be readable by anyone who
+	 * can see the menu and editable only by a shop manager -- that is what
+	 * `capabilities['edit']` declares -- and both editors used to test the
+	 * view capability, so declaring the edit one changed nothing.
+	 *
+	 * @param array $config Table configuration.
+	 *
+	 * @return string
+	 */
+	private static function edit_capability( array $config ): string {
+		return (string) ( $config['capabilities']['edit'] ?? $config['capability'] ?? 'manage_options' );
+	}
+
+	/**
 	 * Draw one row, the way the table would.
 	 *
 	 * @param string $table_id The table id.
@@ -212,9 +226,12 @@ final class InlineEditSave {
 			return;
 		}
 
+		// The column headers and nothing else. prepare_items() would also
+		// fetch the counts and a whole page of rows in order to draw this
+		// one, which the get_item callback has already handed over.
 		$table = new Table( $table_id, $config );
 
-		$table->prepare_items();
+		$table->prepare_columns();
 		$table->single_row( $item );
 	}
 
