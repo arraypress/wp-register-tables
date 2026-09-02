@@ -533,28 +533,6 @@ final class TableTest extends TestCase {
 		$this->assertSame( 12, (int) $table->pagination_args()['total_items'] );
 	}
 
-}
-
-/**
- * A row that answers get_status(), as an ORM's model would.
- */
-final class RowWithStatus {
-
-	/**
-	 * Its title.
-	 *
-	 * @var string
-	 */
-	public string $title = 'Widget';
-
-	/**
-	 * Its status.
-	 *
-	 * @return string
-	 */
-	public function get_status(): string {
-		return 'refunded';
-	}
 
 	/**
 	 * A filter may name one of the kit's presets instead of listing options.
@@ -591,4 +569,26 @@ final class RowWithStatus {
 		$table()->get_data();
 		$this->assertArrayNotHasKey( 'country', (array) $seen );
 	}
+
 }
+
+/**
+ * A row that answers get_status(), as an ORM's model would.
+ */
+final class RowWithStatus {
+
+	/**
+	 * Its title.
+	 *
+	 * @var string
+	 */
+	public string $title = 'Widget';
+
+	/**
+	 * Its status.
+	 *
+	 * @return string
+	 */
+	public function get_status(): string {
+		return 'refunded';
+	}}
