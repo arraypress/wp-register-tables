@@ -208,12 +208,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/arraypress/wp-field-kit.git",
-                "reference": "576f19d8ed61e106aa05b02665ca98ad1c7b74b5"
+                "reference": "41403fdc49ab4929328d90a93f94ee5fd31fd7f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/576f19d8ed61e106aa05b02665ca98ad1c7b74b5",
-                "reference": "576f19d8ed61e106aa05b02665ca98ad1c7b74b5",
+                "url": "https://api.github.com/repos/arraypress/wp-field-kit/zipball/41403fdc49ab4929328d90a93f94ee5fd31fd7f3",
+                "reference": "41403fdc49ab4929328d90a93f94ee5fd31fd7f3",
                 "shasum": ""
             },
             "require": {
@@ -292,7 +292,7 @@
                 "issues": "https://github.com/arraypress/wp-field-kit/issues",
                 "source": "https://github.com/arraypress/wp-field-kit"
             },
-            "time": "2026-09-02T13:23:40+00:00"
+            "time": "2026-09-02T13:33:53+00:00"
         },
         {
             "name": "arraypress/wp-format-utils",
