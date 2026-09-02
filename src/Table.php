@@ -321,6 +321,14 @@ class Table extends WP_List_Table {
      *
      */
     protected function get_items_per_page( $option, $default_value = 30 ): int {
+        // An ajax request -- a quick edit saving and drawing its row back --
+        // never loads the screen API, so the function itself is missing
+        // there. The default is what the page would have used anyway; the
+        // one row being drawn does not page.
+        if ( ! function_exists( 'get_current_screen' ) ) {
+            return $default_value;
+        }
+
         $screen = get_current_screen();
 
         if ( ! $screen ) {
