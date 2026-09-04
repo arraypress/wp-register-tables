@@ -79,7 +79,7 @@ trait AssetManager {
         // screen, for a class neither of them defines, is a request too many.
 
         // Enqueue CSS from composer assets package
-        wp_enqueue_composer_style(
+        arraypress_enqueue_composer_style(
                 'list-table-styles',
                 __FILE__,
                 'css/admin-tables.css'
@@ -88,7 +88,7 @@ trait AssetManager {
         // Only when there is something to edit inline. A script that binds
         // nothing is still a request.
         if ( ! empty( $config['bulk_edit'] ) || ! empty( $config['quick_edit'] ) ) {
-            wp_enqueue_composer_script(
+            arraypress_enqueue_composer_script(
                     'list-table-inline-edit',
                     __FILE__,
                     'js/inline-edit.js',
